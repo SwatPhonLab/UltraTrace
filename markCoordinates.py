@@ -195,11 +195,11 @@ listbox.pack()
 
 #listbox.insert(tkinter.END, "a list entry")
 
-for item in fDict:
+for item in sorted(fDict):
 	listbox.insert(tkinter.END, item)
 listbox.selection_set(0)
 
-subWindow = canvas.create_window((530,80), window=listbox, anchor="nw")
+subWindow = canvas.create_window((150,90), window=listbox, anchor="nw")
 
 window.mainloop()
 
