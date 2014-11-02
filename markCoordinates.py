@@ -4,6 +4,7 @@ import tkinter
 import math
 from sys import argv
 import json
+import os
 
 filebase = argv[1]
 radius = 5
@@ -14,7 +15,10 @@ window = tkinter.Tk(className="measure from point: %s" % filebase)
 baselineStart = (299,599-45)
 baselineEnd = (68,599-252)
 reference = (baselineStart, baselineEnd)
+TRreference = reference
+TBreference = (425, 591)
 ### format = {"TR": {'reference': ((x, y), (x, y)), 'userline': ((x, y), (x, y)), 'intersection': (x, y), 'measurement': x}}
+fDictDefault = {'TR': {'reference': reference, 'type': 'vector'}, 'TB': {'type': 'point', 'reference': TBreference}}
 
 measurementFn = filebase+".measurement"
 #colours = {"TR": {"points": "MediumPurple1"}, "TB": {"dots": "lightgreen"}}
@@ -72,20 +76,26 @@ def writeData(fDict):
 	#print(fDict)
 
 def loadFile(fn):
+	global fDictDefault
 	fDict = {}
-	with open(fn, 'r') as dataFile:
-		fileContents = dataFile.read()
-	fType = type(json.loads(fileContents))
-	# if it's an old-format file:
-	if fType == float:
-		print("old format file detected")
-		measurement = json.loads(fileContents)
-		intersection = measurement2coordinates(reference[0], reference[1], measurement)
-		fDict = {'TR': {'reference': reference, 'measurement': measurement, 'intersection': intersection, 'type': 'vector'}, 'TB': {'type': 'point', 'reference': (425, 591)}}
-		writeData(fDict)
-	# if it's a new-format file:
-	elif fType == dict:
-		fDict = json.loads(fileContents)
+	if os.path.isfile(fn):
+		with open(fn, 'r') as dataFile:
+			fileContents = dataFile.read()
+		fType = type(json.loads(fileContents))
+		# if it's an old-format file:
+		if fType == float:
+			print("old format file detected")
+			measurement = json.loads(fileContents)
+			intersection = measurement2coordinates(reference[0], reference[1], measurement)
+			fDict = fDictDefault
+			fDict['TR']['measurement'] = measurement
+			fDict['TR']['intersection'] = intersection
+			writeData(fDict)
+		# if it's a new-format file:
+		elif fType == dict:
+			fDict = json.loads(fileContents)
+	else:
+		fDict = fDictDefault
 
 	return fDict
 
