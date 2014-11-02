@@ -69,7 +69,7 @@ def writeData(fDict):
 	global measurementFn
 	with open(measurementFn, 'w') as measurementFile:
 		measurementFile.write(json.dumps(fDict, sort_keys=True, indent=3))
-	print(fDict)
+	#print(fDict)
 
 def loadFile(fn):
 	fDict = {}
@@ -100,6 +100,7 @@ def callback(event):
 	global colours
 	curMeasure = listbox.get(listbox.curselection())
 	curMeasureType = fDict[curMeasure]['type']
+	#print(fDict)
 
 	lastClick = click	
 	click = (event.x, event.y)
@@ -128,12 +129,14 @@ def callback(event):
 			fDict[curMeasure]['userline'] = (thislineStart, thislineEnd)
 			writeData(fDict)
 	elif curMeasureType == "point":
+		#print(points)
 		lastPoint = points[curMeasure]
 		points[curMeasure] = canvas.create_oval(event.x-radius, event.y-radius, event.x+radius, event.y+radius, outline=colours[curMeasure]["points"])
 		#if lastClick:
 		if curMeasure in lines:
-			for line in lines[curMeasure]:
-				canvas.delete(line)
+			if lines[curMeasure] != None:
+				for line in lines[curMeasure]:
+					canvas.delete(line)
 		canvas.delete(lastPoint)
 		lines[curMeasure] = (
 			canvas.create_line(click[0]-50, click[1], click[0]+50, click[1], fill=colours[curMeasure]["lines"]),
@@ -155,6 +158,7 @@ points = {}
 references = {}
 
 for measure in fDict:
+	#print(fDict[measure]['type'])
 	if fDict[measure]['type'] == "vector":
 		if "userline" in fDict[measure]:
 			((x1, y1), (x2, y2)) = fDict[measure]['userline']
@@ -176,10 +180,15 @@ for measure in fDict:
 				canvas.create_line(thisX-50, thisY, thisX+50, thisY, fill=colours[measure]["lines"]),
 				canvas.create_line(thisX, thisY-50, thisX, thisY+50, fill=colours[measure]["lines"])
 			)
+		else:
+			points[measure] = None
+			lines[measure] = None
 
 		if "reference" in fDict[measure]:
 			(thisX, thisY) = fDict[measure]['reference']
 			references[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["references"])
+		else:
+			references[measure] = None
 
 	dots[measure] = None
 	
