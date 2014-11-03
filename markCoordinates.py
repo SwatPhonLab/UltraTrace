@@ -130,7 +130,7 @@ def callback(event):
 			if curMeasure in points:
 				canvas.delete(points[curMeasure])
 			intersectionPoint = line_intersection(references[curMeasure], thisLine)
-			points[curMeasure] = canvas.create_oval(intersectionPoint[0]-radius, intersectionPoint[1]-radius, intersectionPoint[0]+radius, intersectionPoint[1]+radius, outline=colours[curMeasureType]["points"])
+			points[curMeasure] = canvas.create_oval(intersectionPoint[0]-radius, intersectionPoint[1]-radius, intersectionPoint[0]+radius, intersectionPoint[1]+radius, outline=colours[curMeasure]["points"])
 			#print(intersectionPoint)
 			hypotenuse = math.hypot(intersectionPoint[0] - baselineStart[0], intersectionPoint[1] - baselineStart[1])
 			#print(hypotenuse)
