@@ -10,7 +10,7 @@ filebase = argv[1]
 radius = 5
 click = None
 
-window = tkinter.Tk(className="measure from point: %s" % filebase)
+window = tkinter.Tk(className="mark points: %s" % filebase)
 
 baselineStart = (299,599-45)
 baselineEnd = (68,599-252)
@@ -168,39 +168,41 @@ points = {}
 references = {}
 
 for measure in fDict:
+	#print(measure)
 	#print(fDict[measure]['type'])
-	if fDict[measure]['type'] == "vector":
-		if "userline" in fDict[measure]:
-			((x1, y1), (x2, y2)) = fDict[measure]['userline']
-			lines[measure] = canvas.create_line(x1, y1, x2, y2, fill='red')
-		else:
-			lines[measure] = None
-		if "intersection" in fDict[measure]:
-			(thisX, thisY) = fDict[measure]['intersection']
-			points[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["points"])
-		else:
-			points[measure] = None
-		if "reference" in fDict[measure]:
-			references[measure] = fDict[measure]['reference']
-	elif fDict[measure]['type'] == "point":
-		if "intersection" in fDict[measure]:
-			(thisX, thisY) = fDict[measure]['intersection']
-			points[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["points"])
-			lines[measure] = (
-				canvas.create_line(thisX-50, thisY, thisX+50, thisY, fill=colours[measure]["lines"]),
-				canvas.create_line(thisX, thisY-50, thisX, thisY+50, fill=colours[measure]["lines"])
-			)
-		else:
-			points[measure] = None
-			lines[measure] = None
+	if measure != "meta":
+		if fDict[measure]['type'] == "vector":
+			if "userline" in fDict[measure]:
+				((x1, y1), (x2, y2)) = fDict[measure]['userline']
+				lines[measure] = canvas.create_line(x1, y1, x2, y2, fill='red')
+			else:
+				lines[measure] = None
+			if "intersection" in fDict[measure]:
+				(thisX, thisY) = fDict[measure]['intersection']
+				points[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["points"])
+			else:
+				points[measure] = None
+			if "reference" in fDict[measure]:
+				references[measure] = fDict[measure]['reference']
+		elif fDict[measure]['type'] == "point":
+			if "intersection" in fDict[measure]:
+				(thisX, thisY) = fDict[measure]['intersection']
+				points[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["points"])
+				lines[measure] = (
+					canvas.create_line(thisX-50, thisY, thisX+50, thisY, fill=colours[measure]["lines"]),
+					canvas.create_line(thisX, thisY-50, thisX, thisY+50, fill=colours[measure]["lines"])
+				)
+			else:
+				points[measure] = None
+				lines[measure] = None
+	
+			if "reference" in fDict[measure]:
+				(thisX, thisY) = fDict[measure]['reference']
+				references[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["references"])
+			else:
+				references[measure] = None
 
-		if "reference" in fDict[measure]:
-			(thisX, thisY) = fDict[measure]['reference']
-			references[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["references"])
-		else:
-			references[measure] = None
-
-	dots[measure] = None
+		dots[measure] = None
 	
 
 canvas.bind("<Button-1>", callback)
@@ -215,7 +217,8 @@ listbox.pack()
 #listbox.insert(tkinter.END, "a list entry")
 
 for item in sorted(fDict):
-	listbox.insert(tkinter.END, item)
+	if item != "meta":
+		listbox.insert(tkinter.END, item)
 listbox.selection_set(0)
 
 subWindow = canvas.create_window((150,90), window=listbox, anchor="nw")
