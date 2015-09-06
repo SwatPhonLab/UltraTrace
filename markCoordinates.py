@@ -12,14 +12,36 @@ click = None
 
 window = tkinter.Tk(className="mark points: %s" % filebase)
 
-baselineStart = (299,599-45)
-baselineEnd = (68,599-252)
-reference = (baselineStart, baselineEnd)
-TRreference = reference
-TBreference = (425, 591)
+baselineStarts = {}
+baselineStarts["2014-10-09"] = (299,599-45)
+baselineStarts["2015-03-28"] = (250,532)
+baselineEnds = {}
+baselineEnds["2014-10-09"] = (68,599-252)
+baselineEnds["2015-03-28"] = (68,370)
+TBreferences = {}
+TBreferences["2014-10-09"] = (425, 591)
+TBreferences["2015-03-28"] = (425, 591)
+
+# e.g., "2014-10-09" from
+#       "/home/jonathan/q/dissertation/data/2014-10-09/bySlide"
+curdir = os.path.split(os.path.split(os.getcwd())[0])[1]
+#print(curdir)
+
+if curdir in baselineStarts and curdir in TBreferences:
+	#baselineStart = (299,599-45)
+	#baselineEnd = (68,599-252)
+	baselineStart = baselineStarts[curdir]
+	baselineEnd = baselineEnds[curdir]
+	reference = (baselineStart, baselineEnd)
+	TRreference = reference
+	TBreference = TBreferences[curdir]
+	#TBreference = (425, 591)
+else:
+	"ERROR: date dir not found"
+
 ### format = {"TR": {'reference': ((x, y), (x, y)), 'userline': ((x, y), (x, y)), 'intersection': (x, y), 'measurement': x}}
 fDictDefault = {'TR': {'reference': reference, 'type': 'vector'}, 'TB': {'type': 'point', 'reference': TBreference}}
-
+#Ey4Gekquc2Bv48v
 measurementFn = filebase+".measurement"
 #colours = {"TR": {"points": "MediumPurple1"}, "TB": {"dots": "lightgreen"}}
 colours = {"TR": {"points": "MediumPurple1"}, "TB": {"points": "SeaGreen1", "lines": "SeaGreen2", "references": "SteelBlue1"}}
