@@ -15,12 +15,24 @@ window = tkinter.Tk(className="mark points: %s" % filebase)
 baselineStarts = {}
 baselineStarts["2014-10-09"] = (299,599-45)
 baselineStarts["2015-03-28"] = (250,532)
+baselineStarts["2015-04-25"] = (250,532)
+baselineStarts["2015-05-21"] = (268,530)
+baselineStarts["2015-11-13"] = (256,468)
+baselineStarts["2015-11-14"] = (281,491)
 baselineEnds = {}
 baselineEnds["2014-10-09"] = (68,599-252)
 baselineEnds["2015-03-28"] = (68,370)
+baselineEnds["2015-04-25"] = (68,380)
+baselineEnds["2015-05-21"] = (68,342)
+baselineEnds["2015-11-13"] = (68,381)
+baselineEnds["2015-11-14"] = (68,298)
 TBreferences = {}
 TBreferences["2014-10-09"] = (425, 591)
 TBreferences["2015-03-28"] = (425, 591)
+TBreferences["2015-04-25"] = (425, 591)
+TBreferences["2015-05-21"] = (425, 591)
+TBreferences["2015-11-13"] = (425, 591)
+TBreferences["2015-11-14"] = (425, 591)
 
 # e.g., "2014-10-09" from
 #       "/home/jonathan/q/dissertation/data/2014-10-09/bySlide"
