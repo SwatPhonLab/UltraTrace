@@ -19,7 +19,7 @@ import os
 
 class markingGUI(tkinter.Tk):
 	def __init__(self):
-		tk.Tk.__init__(self)
+		tkinter.Tk.__init__(self)
 
 		self.setDefaults()
 
@@ -39,10 +39,10 @@ class markingGUI(tkinter.Tk):
 			window=self.listbox, anchor="nw")
 
 	
-	def setDefaults:
+	def setDefaults(self):
 		self.filebase = argv[1]
-		radius = 5
-		click = None
+		self.radius = 5
+		self.click = None
 
 		baselineStarts = {}
 		baselineStarts["2014-10-09"] = (299,599-45)
@@ -74,9 +74,9 @@ class markingGUI(tkinter.Tk):
 		if curdir in baselineStarts and curdir in TBreferences:
 			#baselineStart = (299,599-45)
 			#baselineEnd = (68,599-252)
-			baselineStart = baselineStarts[curdir]
-			baselineEnd = baselineEnds[curdir]
-			reference = (baselineStart, baselineEnd)
+			self.baselineStart = baselineStarts[curdir]
+			self.baselineEnd = baselineEnds[curdir]
+			reference = (self.baselineStart, self.baselineEnd)
 			TRreference = reference
 			TBreference = TBreferences[curdir]
 			#TBreference = (425, 591)
@@ -97,7 +97,7 @@ class markingGUI(tkinter.Tk):
 		self.canvas.pack()
 		#image_tk = ImageTk.PhotoImage(image)
 		self.canvas.create_image(self.image.width()/2, self.image.height()/2, image=self.image)
-		self.canvas.create_line(baselineStart[0], baselineStart[1], baselineEnd[0], baselineEnd[1], fill="blue")
+		self.canvas.create_line(self.baselineStart[0], self.baselineStart[1], self.baselineEnd[0], self.baselineEnd[1], fill="blue")
 
 		#global fDict
 		self.lines = {}
@@ -105,16 +105,14 @@ class markingGUI(tkinter.Tk):
 		self.points = {}
 		self.references = {}
 
-
-
-	def populateList:
+	def populateList(self):
 		for item in sorted(self.fDict):
 			if item != "meta":
 				self.listbox.insert(tkinter.END, item)
 		self.listbox.selection_set(0)
 
 
-	def line_intersection(line1, line2):
+	def line_intersection(self, line1, line2):
 		xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
 		ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
 
@@ -131,7 +129,7 @@ class markingGUI(tkinter.Tk):
 		return x, y
 
 
-	def measurement2coordinates(source, end, distance):
+	def measurement2coordinates(self, source, end, distance):
 		(sourceX, sourceY) = source
 		(endX, endY) = end
 
@@ -151,12 +149,12 @@ class markingGUI(tkinter.Tk):
 
 		return point
 
-	def writeData(): #fDict):
+	def writeData(self): #fDict):
 		with open(self.measurementFn, 'w') as measurementFile:
 			measurementFile.write(json.dumps(self.fDict, sort_keys=True, indent=3))
 		#print(fDict)
 
-	def loadFile(fn):
+	def loadFile(self, fn):
 		fDict = {}
 		if os.path.isfile(fn):
 			with open(fn, 'r') as dataFile:
@@ -183,7 +181,7 @@ class markingGUI(tkinter.Tk):
 
 	#return fDict
 
-	def onLeftClick(event):
+	def onLeftClick(self, event):
 		curMeasure = self.listbox.get(self.listbox.curselection())
 		curMeasureType = self.fDict[curMeasure]['type']
 		#print(fDict)
@@ -193,7 +191,7 @@ class markingGUI(tkinter.Tk):
 		#print("clicked at: ", event.x, event.y)
 		if curMeasureType == "vector":
 			lastDot = self.dots[curMeasure]
-			self.dots[curMeasure] = self.canvas.create_oval(event.x-radius, event.y-radius, event.x+radius, event.y+radius, fill='red')
+			self.dots[curMeasure] = self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, fill='red')
 			if lastClick:
 				if curMeasure in self.lines:
 					self.canvas.delete(self.lines[curMeasure])
@@ -205,10 +203,10 @@ class markingGUI(tkinter.Tk):
 	
 				if curMeasure in self.points:
 					self.canvas.delete(self.points[curMeasure])
-				intersectionPoint = line_intersection(self.references[curMeasure], thisLine)
-				self.points[curMeasure] = self.canvas.create_oval(intersectionPoint[0]-radius, intersectionPoint[1]-radius, intersectionPoint[0]+radius, intersectionPoint[1]+radius, outline=self.colours[curMeasure]["points"])
+				intersectionPoint = self.line_intersection(self.references[curMeasure], thisLine)
+				self.points[curMeasure] = self.canvas.create_oval(intersectionPoint[0]-self.radius, intersectionPoint[1]-self.radius, intersectionPoint[0]+self.radius, intersectionPoint[1]+self.radius, outline=self.colours[curMeasure]["points"])
 				#print(intersectionPoint)
-				hypotenuse = math.hypot(intersectionPoint[0] - baselineStart[0], intersectionPoint[1] - baselineStart[1])
+				hypotenuse = math.hypot(intersectionPoint[0] - self.baselineStart[0], intersectionPoint[1] - self.baselineStart[1])
 				#print(hypotenuse)
 				self.fDict[curMeasure]['measurement'] = hypotenuse
 				self.fDict[curMeasure]['intersection'] = intersectionPoint
@@ -217,7 +215,7 @@ class markingGUI(tkinter.Tk):
 		elif curMeasureType == "point":
 			#print(points)
 			lastPoint = self.points[curMeasure]
-			self.points[curMeasure] = self.canvas.create_oval(event.x-radius, event.y-radius, event.x+radius, event.y+radius, outline=self.colours[curMeasure]["points"])
+			self.points[curMeasure] = self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, outline=self.colours[curMeasure]["points"])
 			#if lastClick:
 			if curMeasure in self.lines:
 				if self.lines[curMeasure] != None:
@@ -225,10 +223,10 @@ class markingGUI(tkinter.Tk):
 						self.canvas.delete(line)
 			self.canvas.delete(lastPoint)
 			self.lines[curMeasure] = (
-				self.canvas.create_line(click[0]-50, click[1], click[0]+50, click[1], fill=colours[curMeasure]["lines"]),
-				self.canvas.create_line(click[0], click[1]-50, click[0], click[1]+50, fill=colours[curMeasure]["lines"])
+				self.canvas.create_line(self.click[0]-50, self.click[1], self.click[0]+50, self.click[1], fill=self.colours[curMeasure]["lines"]),
+				self.canvas.create_line(self.click[0], self.click[1]-50, self.click[0], self.click[1]+50, fill=self.colours[curMeasure]["lines"])
 			)
-			intersectionPoint = (click[0], click[1])
+			intersectionPoint = (self.click[0], self.click[1])
 			Dx = self.fDict[curMeasure]['reference'][0] - intersectionPoint[0]
 			Dy = self.fDict[curMeasure]['reference'][1] - intersectionPoint[1]
 			self.fDict[curMeasure]['intersection'] = intersectionPoint
@@ -242,7 +240,7 @@ class markingGUI(tkinter.Tk):
 		elif curMeasureType == "trace":
 			traceClicks(events)
 	
-	def afterLoad():
+	def afterLoad(self):
 		# runs after loading the file, displays data from file
 		for measure in self.fDict:
 			#print(measure)
@@ -256,7 +254,7 @@ class markingGUI(tkinter.Tk):
 						self.lines[measure] = None
 					if "intersection" in self.fDict[measure]:
 						(thisX, thisY) = self.fDict[measure]['intersection']
-						self.points[measure] = self.canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=self.colours[measure]["points"])
+						self.points[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["points"])
 					else:
 						self.points[measure] = None
 					if "reference" in self.fDict[measure]:
@@ -264,7 +262,7 @@ class markingGUI(tkinter.Tk):
 				elif self.fDict[measure]['type'] == "point":
 					if "intersection" in self.fDict[measure]:
 						(thisX, thisY) = self.fDict[measure]['intersection']
-						self.points[measure] = self.canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=self.colours[measure]["points"])
+						self.points[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["points"])
 						self.lines[measure] = (
 							self.canvas.create_line(thisX-50, thisY, thisX+50, thisY, fill=self.colours[measure]["lines"]),
 							self.canvas.create_line(thisX, thisY-50, thisX, thisY+50, fill=self.colours[measure]["lines"])
@@ -275,7 +273,7 @@ class markingGUI(tkinter.Tk):
 			
 					if "reference" in self.fDict[measure]:
 						(thisX, thisY) = self.fDict[measure]['reference']
-						self.references[measure] = self.canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=self.colours[measure]["references"])
+						self.references[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["references"])
 					else:
 						self.references[measure] = None
 				elif self.fDict[measure]['type'] == "points":
