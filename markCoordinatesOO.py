@@ -181,6 +181,51 @@ class markingGUI(tkinter.Tk):
 
 	#return fDict
 
+	def vectorClick(self, event, curMeasure, lastClick):
+		lastDot = self.dots[curMeasure]
+		self.dots[curMeasure] = self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, fill='red')
+		if lastClick:
+			if curMeasure in self.lines:
+				self.canvas.delete(self.lines[curMeasure])
+			self.lines[curMeasure] = self.canvas.create_line(lastClick[0], lastClick[1], self.click[0], self.click[1], fill='red')
+			thislineStart = (lastClick[0], lastClick[1])
+			thislineEnd = (self.click[0], self.click[1])
+			thisLine = (thislineStart, thislineEnd)
+			self.canvas.delete(lastDot)
+
+			if curMeasure in self.points:
+				self.canvas.delete(self.points[curMeasure])
+			intersectionPoint = self.line_intersection(self.references[curMeasure], thisLine)
+			self.points[curMeasure] = self.canvas.create_oval(intersectionPoint[0]-self.radius, intersectionPoint[1]-self.radius, intersectionPoint[0]+self.radius, intersectionPoint[1]+self.radius, outline=self.colours[curMeasure]["points"])
+			#print(intersectionPoint)
+			hypotenuse = math.hypot(intersectionPoint[0] - self.baselineStart[0], intersectionPoint[1] - self.baselineStart[1])
+			#print(hypotenuse)
+			self.fDict[curMeasure]['measurement'] = hypotenuse
+			self.fDict[curMeasure]['intersection'] = intersectionPoint
+			self.fDict[curMeasure]['userline'] = (thislineStart, thislineEnd)
+			self.writeData() #self.fDict)
+
+	def pointClick(self, event, curMeasure, lastClick):
+		#print(points)
+		lastPoint = self.points[curMeasure]
+		self.points[curMeasure] = self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, outline=self.colours[curMeasure]["points"])
+		#if lastClick:
+		if curMeasure in self.lines:
+			if self.lines[curMeasure] != None:
+				for line in self.lines[curMeasure]:
+					self.canvas.delete(line)
+		self.canvas.delete(lastPoint)
+		self.lines[curMeasure] = (
+			self.canvas.create_line(self.click[0]-50, self.click[1], self.click[0]+50, self.click[1], fill=self.colours[curMeasure]["lines"]),
+			self.canvas.create_line(self.click[0], self.click[1]-50, self.click[0], self.click[1]+50, fill=self.colours[curMeasure]["lines"])
+		)
+		intersectionPoint = (self.click[0], self.click[1])
+		Dx = self.fDict[curMeasure]['reference'][0] - intersectionPoint[0]
+		Dy = self.fDict[curMeasure]['reference'][1] - intersectionPoint[1]
+		self.fDict[curMeasure]['intersection'] = intersectionPoint
+		self.fDict[curMeasure]['measurement'] = (Dx, Dy)
+		self.writeData() #self.fDict)
+
 	def onLeftClick(self, event):
 		curMeasure = self.listbox.get(self.listbox.curselection())
 		curMeasureType = self.fDict[curMeasure]['type']
@@ -190,48 +235,11 @@ class markingGUI(tkinter.Tk):
 		self.click = (event.x, event.y)
 		#print("clicked at: ", event.x, event.y)
 		if curMeasureType == "vector":
-			lastDot = self.dots[curMeasure]
-			self.dots[curMeasure] = self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, fill='red')
-			if lastClick:
-				if curMeasure in self.lines:
-					self.canvas.delete(self.lines[curMeasure])
-				self.lines[curMeasure] = self.canvas.create_line(lastClick[0], lastClick[1], self.click[0], self.click[1], fill='red')
-				thislineStart = (lastClick[0], lastClick[1])
-				thislineEnd = (self.click[0], self.click[1])
-				thisLine = (thislineStart, thislineEnd)
-				self.canvas.delete(lastDot)
-	
-				if curMeasure in self.points:
-					self.canvas.delete(self.points[curMeasure])
-				intersectionPoint = self.line_intersection(self.references[curMeasure], thisLine)
-				self.points[curMeasure] = self.canvas.create_oval(intersectionPoint[0]-self.radius, intersectionPoint[1]-self.radius, intersectionPoint[0]+self.radius, intersectionPoint[1]+self.radius, outline=self.colours[curMeasure]["points"])
-				#print(intersectionPoint)
-				hypotenuse = math.hypot(intersectionPoint[0] - self.baselineStart[0], intersectionPoint[1] - self.baselineStart[1])
-				#print(hypotenuse)
-				self.fDict[curMeasure]['measurement'] = hypotenuse
-				self.fDict[curMeasure]['intersection'] = intersectionPoint
-				self.fDict[curMeasure]['userline'] = (thislineStart, thislineEnd)
-				self.writeData() #self.fDict)
+			self.vectorClick(event, curMeasure, lastClick)
+
 		elif curMeasureType == "point":
-			#print(points)
-			lastPoint = self.points[curMeasure]
-			self.points[curMeasure] = self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, outline=self.colours[curMeasure]["points"])
-			#if lastClick:
-			if curMeasure in self.lines:
-				if self.lines[curMeasure] != None:
-					for line in self.lines[curMeasure]:
-						self.canvas.delete(line)
-			self.canvas.delete(lastPoint)
-			self.lines[curMeasure] = (
-				self.canvas.create_line(self.click[0]-50, self.click[1], self.click[0]+50, self.click[1], fill=self.colours[curMeasure]["lines"]),
-				self.canvas.create_line(self.click[0], self.click[1]-50, self.click[0], self.click[1]+50, fill=self.colours[curMeasure]["lines"])
-			)
-			intersectionPoint = (self.click[0], self.click[1])
-			Dx = self.fDict[curMeasure]['reference'][0] - intersectionPoint[0]
-			Dy = self.fDict[curMeasure]['reference'][1] - intersectionPoint[1]
-			self.fDict[curMeasure]['intersection'] = intersectionPoint
-			self.fDict[curMeasure]['measurement'] = (Dx, Dy)
-			self.writeData() #self.fDict)
+			self.pointClick(event, curMeasure, lastClick)
+
 		#elif curMeasureType == "trace":
 		#	#writeData(fDict)
 		#	delay_ms=500
