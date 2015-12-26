@@ -6,17 +6,6 @@ from sys import argv
 import json
 import os
 
-
-
-#def traceClicks():
-#	print("tracing?")
-#
-#	window.after(500, traceClicks)
-#			
-#	
-
-
-
 class markingGUI(tkinter.Tk):
 	def __init__(self):
 		tkinter.Tk.__init__(self)
@@ -26,6 +15,9 @@ class markingGUI(tkinter.Tk):
 		self.className="mark points: %s" % self.filebase
 
 		self.canvas.bind("<Button-1>", self.onLeftClick)
+		self.canvas.bind("<ButtonRelease-1>", self.onLeftUnClick)
+		self.canvas.bind("<Motion>", self.onMouseMove)
+		self.canvas.bind("<Delete>", self.onDelete)
 		self.canvas.bind("<Button-3>", lambda e: self.destroy())
 		self.listbox = tkinter.Listbox(self, height=3)
 		self.listbox.pack()
@@ -34,9 +26,11 @@ class markingGUI(tkinter.Tk):
 		self.loadFile(self.measurementFn)
 		self.afterLoad()
 
-		self.populateList()
+		self.populateSelector()
 		self.subWindow = self.canvas.create_window((150,90),
 			window=self.listbox, anchor="nw")
+
+		self.canvas.focus_set()
 
 	
 	def setDefaults(self):
@@ -104,12 +98,23 @@ class markingGUI(tkinter.Tk):
 		self.dots = {}
 		self.points = {}
 		self.references = {}
+		self.stillClicked = False
+		self.curCall = None
+		self.paintDelay = 150 # in milliseconds
+		self.prevPosition = (0, 0)
+		self.distanceBuffer = 8
 
-	def populateList(self):
+	def listChange(self, event):
+		#print("focus canvas")
+		self.canvas.focus_set()
+
+	def populateSelector(self):
 		for item in sorted(self.fDict):
 			if item != "meta":
 				self.listbox.insert(tkinter.END, item)
 		self.listbox.selection_set(0)
+		#self.listbox.bind('<<ListboxSelect>>', self.listChange)
+		self.listbox.bind('<ButtonRelease-1>', self.listChange)
 
 
 	def line_intersection(self, line1, line2):
@@ -175,7 +180,7 @@ class markingGUI(tkinter.Tk):
 				for elemName in self.fDictDefault:
 					if elemName not in self.fDict:
 						print("{} not found in data; adding default".format(elemName))
-						fDict[elemName] = self.fDictDefault[elemName]
+						self.fDict[elemName] = self.fDictDefault[elemName]
 		else:
 			self.fDict = self.fDictDefault
 
@@ -226,6 +231,68 @@ class markingGUI(tkinter.Tk):
 		self.fDict[curMeasure]['measurement'] = (Dx, Dy)
 		self.writeData() #self.fDict)
 
+	#def traceClicks(self, event, curMeasure, lastClick):
+	#	print("tracing?")
+	#
+	#	if self.stillClicked:
+	#		print("hargle")
+	#		#self.after(500, self.traceClicks(event, curMeasure, lastClick))
+	
+	def onMouseMove(self, event):
+		if self.stillClicked:
+			curPosition = (event.x, event.y)
+			Dx = abs(curPosition[0] - self.prevPosition[0])
+			Dy = abs(curPosition[1] - self.prevPosition[1])
+			#print(Dx, Dy)
+			if Dx > self.distanceBuffer or Dy > self.distanceBuffer:
+				thisDiamond = self.create_diamond(curPosition)
+				#self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, fill='red')
+				self.points['trace'].append(thisDiamond)
+				self.references['trace'][thisDiamond] = curPosition
+				self.fDict['trace']['points'].append(curPosition)
+				self.writeData()
+				self.prevPosition = curPosition
+	
+
+	def create_diamond(self, centre):
+		#print(centre)
+		return self.canvas.create_polygon(centre[0]-self.radius, centre[1], centre[0], centre[1]+self.radius, centre[0]+self.radius, centre[1], centre[0], centre[1]-self.radius, fill='', outline='red')
+
+	#def trackClicked(self, event):
+		#print("tracing")
+		#
+		#if self.stillClicked:
+		#	curPosition = (event.x, event.y)
+		#	Dx = abs(curPosition[0] - self.prevPosition[0])
+		#	Dy = abs(curPosition[1] - self.prevPosition[1])
+		#	print(Dx, Dy)
+		#	if Dx > self.distanceBuffer or Dy > self.distanceBuffer:
+		#		self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, fill='red')
+		#
+		#	self.prevPosition = curPosition
+		#	#self.curCall = self.after(self.paintDelay, self.trackClicked, event)
+
+	def onLeftUnClick(self, event):
+		self.stillClicked = False
+		if self.curCall != None:
+			self.after_cancel(self.curCall)
+	
+	def onDelete(self, event):
+		curMeasure = self.listbox.get(self.listbox.curselection())
+		curMeasureType = self.fDict[curMeasure]['type']
+
+		if curMeasureType == "points":
+			#print(self.references)
+			if len(self.points['trace'])>=1:
+				toDelete = self.points['trace'][-1]
+				toDeletePt = self.references['trace'][toDelete]
+				#print(toDelete)
+				self.canvas.delete(toDelete)
+				del self.points['trace'][-1]
+				print(toDeletePt)
+				self.fDict['trace']['points'].remove(toDeletePt)
+				self.writeData()
+	
 	def onLeftClick(self, event):
 		curMeasure = self.listbox.get(self.listbox.curselection())
 		curMeasureType = self.fDict[curMeasure]['type']
@@ -245,8 +312,13 @@ class markingGUI(tkinter.Tk):
 		#	delay_ms=500
 		#	time.sleep(delay_ms*0.001)
 		#	print("nothing yet")
-		elif curMeasureType == "trace":
-			traceClicks(events)
+		elif curMeasureType == "points":
+			self.stillClicked = True
+			#self.traceClicks(event, curMeasure, lastClick)
+			self.onMouseMove(event)
+
+		else:
+			print("undefined: {}".format(curMeasureType))
 	
 	def afterLoad(self):
 		# runs after loading the file, displays data from file
@@ -285,9 +357,20 @@ class markingGUI(tkinter.Tk):
 					else:
 						self.references[measure] = None
 				elif self.fDict[measure]['type'] == "points":
-					print("nothing yet")
+					self.references[measure] = {}
+					self.points[measure] = []
+					for tracePt in self.fDict[measure]['points']:
+						thisDiamond = self.create_diamond(tracePt)
+						#self.references[measure]
+						#if measure not in self.references:
+						#
+						if thisDiamond in self.references:
+							print("¡PELIGRO!")
+						self.references[measure][thisDiamond] = tracePt
+						self.points[measure].append(thisDiamond)
 		
 				self.dots[measure] = None
+				#print(self.references, self.points, self.lines, self.dots, measure)
 
 
 
@@ -295,4 +378,5 @@ class markingGUI(tkinter.Tk):
 if __name__ == "__main__":
 	app = markingGUI()
 	#app.after(500, traceClicks)
+	#app.after(500, app.trackClicked)
 	app.mainloop()
