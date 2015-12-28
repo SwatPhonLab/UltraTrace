@@ -83,30 +83,68 @@ class markingGUI(tkinter.Tk):
 		#Ey4Gekquc2Bv48v
 		self.measurementFn = self.filebase+".measurement"
 		#colours = {"TR": {"points": "MediumPurple1"}, "TB": {"dots": "lightgreen"}}
-		self.colours = {"TR": {"points": "MediumPurple1"}, "TB": {"points": "SeaGreen1", "lines": "SeaGreen2", "references": "SteelBlue1"}, "trace": {"points": "IndianRed"}}
+		self.colours = {"TR": {"points": "MediumPurple1"}, "TB": {"points": "SeaGreen1", "lines": "SeaGreen2", "references": "SteelBlue1"}, "trace": {"points": "Red"}} #IndianRed"}}
 
 		#image = Image.open(argv[1] if len(argv) >=2 else "018_516.png")
 		self.image = tkinter.PhotoImage(file=self.filebase+".png")
 		self.canvas = tkinter.Canvas(self, width=self.image.width(), height=self.image.height())
 		self.canvas.pack()
+		self.references = {}
 		#image_tk = ImageTk.PhotoImage(image)
 		self.canvas.create_image(self.image.width()/2, self.image.height()/2, image=self.image)
-		self.canvas.create_line(self.baselineStart[0], self.baselineStart[1], self.baselineEnd[0], self.baselineEnd[1], fill="blue")
+		self.makeTRref()
 
 		#global fDict
 		self.lines = {}
 		self.dots = {}
 		self.points = {}
-		self.references = {}
 		self.stillClicked = False
 		self.curCall = None
 		self.paintDelay = 150 # in milliseconds
 		self.prevPosition = (0, 0)
 		self.distanceBuffer = 8
+		self.prevSelection = None
+
+	def makeTRref(self):
+		self.references['TR'] = self.canvas.create_line(self.baselineStart[0], self.baselineStart[1], self.baselineEnd[0], self.baselineEnd[1], fill="blue")
 
 	def listChange(self, event):
 		#print("focus canvas")
+		curMeasure = self.listbox.get(self.listbox.curselection())
+
+		if curMeasure=='trace':
+			self.hideStuff()
+		else:
+			if self.prevSelection=='trace':
+				self.unHideStuff()
+
+		self.prevSelection = curMeasure
 		self.canvas.focus_set()
+
+	def hideStuff(self):
+		#print("references", self.references)
+		#print("lines", self.lines)
+		#print("points", self.points)
+		for line in self.lines['TB']:
+			self.canvas.delete(line)
+		#print(self.points)
+		self.canvas.delete(self.lines['TR'])
+		self.canvas.delete(self.points['TR'])
+		self.canvas.delete(self.points['TB'])
+		self.canvas.delete(self.references['TR'])
+
+	def unHideStuff(self):
+		for measure in ['TR', 'TB']:
+			self.makePoint(measure)
+			#self.loadPoint(measure)
+			#self.loadVector(measure)
+			#print(self.fDict)
+
+			#self.points[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["points"])
+		self.makeCrossHairs('TB')
+		self.makeReference('TB')
+		self.makeTRref()
+		self.makeLine('TR')
 
 	def populateSelector(self):
 		for item in sorted(self.fDict):
@@ -256,7 +294,7 @@ class markingGUI(tkinter.Tk):
 
 	def create_diamond(self, centre):
 		#print(centre)
-		return self.canvas.create_polygon(centre[0]-self.radius, centre[1], centre[0], centre[1]+self.radius, centre[0]+self.radius, centre[1], centre[0], centre[1]-self.radius, fill='', outline='red')
+		return self.canvas.create_polygon(centre[0]-self.radius, centre[1], centre[0], centre[1]+self.radius, centre[0]+self.radius, centre[1], centre[0], centre[1]-self.radius, fill='', outline=self.colours['trace']['points'])
 
 	#def trackClicked(self, event):
 		#print("tracing")
@@ -274,6 +312,7 @@ class markingGUI(tkinter.Tk):
 
 	def onLeftUnClick(self, event):
 		self.stillClicked = False
+		self.prevPosition = (0, 0)
 		if self.curCall != None:
 			self.after_cancel(self.curCall)
 	
@@ -289,7 +328,7 @@ class markingGUI(tkinter.Tk):
 				#print(toDelete)
 				self.canvas.delete(toDelete)
 				del self.points['trace'][-1]
-				print(toDeletePt)
+				#print(toDeletePt)
 				self.fDict['trace']['points'].remove(toDeletePt)
 				self.writeData()
 	
@@ -320,55 +359,104 @@ class markingGUI(tkinter.Tk):
 		else:
 			print("undefined: {}".format(curMeasureType))
 	
+	def loadVector(self, measure):
+		if "userline" in self.fDict[measure]:
+			#print("BLER", measure)
+			self.makeLine(measure)
+
+		else:
+			self.lines[measure] = None
+		if "intersection" in self.fDict[measure]:
+			(thisX, thisY) = self.fDict[measure]['intersection']
+			self.points[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["points"])
+		else:
+			self.points[measure] = None
+		#if "reference" in self.fDict[measure]:
+			#print("measure", measure)
+			##self.references[measure] = self.fDict[measure]['reference']
+			#self.references[measure] = "HARGLE" #self.fDict[measure]['reference']
+
+	def makeReference(self, measure):
+		#print("ref {}".format(measure))
+		#print(self.fDict[measure]["reference"])
+		(thisX, thisY) = self.fDict[measure]["reference"]
+		self.references[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["references"])
+		
+	def makePoint(self, measure):
+		#if measure=="TB":
+		#	hargle = "intersection"
+		#	bargle = "points"
+		#elif measure=="TR":
+		#	hargle = "reference"
+		#	bargle = "references"
+
+		(thisX, thisY) = self.fDict[measure]["intersection"]
+		#print(thisX, thisY, self.radius)
+		self.points[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["points"])
+	
+	def makeCrossHairs(self, measure):
+		(thisX, thisY) = self.fDict[measure]["intersection"]
+		self.lines[measure] = (
+			self.canvas.create_line(thisX-50, thisY, thisX+50, thisY, fill=self.colours[measure]["lines"]),
+			self.canvas.create_line(thisX, thisY-50, thisX, thisY+50, fill=self.colours[measure]["lines"])
+		)
+		#print("TB lines", self.lines['TB'])
+
+	def makeLine(self, measure):
+		((x1, y1), (x2, y2)) = self.fDict[measure]['userline']
+		self.lines[measure] = self.canvas.create_line(x1, y1, x2, y2, fill='red')
+
+	def loadPoint(self, measure):
+		#print("loadPoint", measure, self.fDict[measure])
+		#print(self.colours)
+		if "intersection" in self.fDict[measure]:
+			#if "lines" in self.colours[measure]:
+			self.makePoint(measure)
+#			(thisX, thisY) = self.fDict[measure]['intersection']
+#			self.points[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["points"])
+			self.makeCrossHairs(measure)
+#			self.lines[measure] = (
+#				self.canvas.create_line(thisX-50, thisY, thisX+50, thisY, fill=self.colours[measure]["lines"]),
+#				self.canvas.create_line(thisX, thisY-50, thisX, thisY+50, fill=self.colours[measure]["lines"])
+#			)
+		else:
+			self.points[measure] = None
+			self.lines[measure] = None
+
+		if "reference" in self.fDict[measure]:
+			self.makeReference(measure)
+#			(thisX, thisY) = self.fDict[measure]['reference']
+#			#print(thisX, thisY, self.radius)
+#			self.references[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["references"])
+		else:
+			self.references[measure] = None
+
+	def loadPoints(self, measure):
+		self.references[measure] = {}
+		self.points[measure] = []
+		for tracePt in self.fDict[measure]['points']:
+			thisDiamond = self.create_diamond(tracePt)
+			#self.references[measure]
+			#if measure not in self.references:
+			#
+			if thisDiamond in self.references:
+				print("¡PELIGRO!")
+			self.references[measure][thisDiamond] = tracePt
+			self.points[measure].append(thisDiamond)
+
 	def afterLoad(self):
 		# runs after loading the file, displays data from file
 		for measure in self.fDict:
 			#print(measure)
 			#print(fDict[measure]['type'])
 			if measure != "meta":
+				#print(measure)
 				if self.fDict[measure]['type'] == "vector":
-					if "userline" in self.fDict[measure]:
-						((x1, y1), (x2, y2)) = self.fDict[measure]['userline']
-						self.lines[measure] = self.canvas.create_line(x1, y1, x2, y2, fill='red')
-					else:
-						self.lines[measure] = None
-					if "intersection" in self.fDict[measure]:
-						(thisX, thisY) = self.fDict[measure]['intersection']
-						self.points[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["points"])
-					else:
-						self.points[measure] = None
-					if "reference" in self.fDict[measure]:
-						self.references[measure] = self.fDict[measure]['reference']
+					self.loadVector(measure)
 				elif self.fDict[measure]['type'] == "point":
-					if "intersection" in self.fDict[measure]:
-						(thisX, thisY) = self.fDict[measure]['intersection']
-						self.points[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["points"])
-						self.lines[measure] = (
-							self.canvas.create_line(thisX-50, thisY, thisX+50, thisY, fill=self.colours[measure]["lines"]),
-							self.canvas.create_line(thisX, thisY-50, thisX, thisY+50, fill=self.colours[measure]["lines"])
-						)
-					else:
-						self.points[measure] = None
-						self.lines[measure] = None
-			
-					if "reference" in self.fDict[measure]:
-						(thisX, thisY) = self.fDict[measure]['reference']
-						self.references[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["references"])
-					else:
-						self.references[measure] = None
+					self.loadPoint(measure)
 				elif self.fDict[measure]['type'] == "points":
-					self.references[measure] = {}
-					self.points[measure] = []
-					for tracePt in self.fDict[measure]['points']:
-						thisDiamond = self.create_diamond(tracePt)
-						#self.references[measure]
-						#if measure not in self.references:
-						#
-						if thisDiamond in self.references:
-							print("¡PELIGRO!")
-						self.references[measure][thisDiamond] = tracePt
-						self.points[measure].append(thisDiamond)
-		
+					self.loadPoints(measure)
 				self.dots[measure] = None
 				#print(self.references, self.points, self.lines, self.dots, measure)
 
