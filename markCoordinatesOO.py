@@ -274,6 +274,7 @@ class markingGUI(tkinter.Tk):
 		total = self.listbox.size()
 		#print(current,total)
 		if total > current+1:
+			self.listbox.selection_clear(current)
 			#self.listbox.activate(current + 1)
 			#self.listbox.selection_set(0)
 			self.listbox.selection_set(current + 1)
@@ -283,6 +284,7 @@ class markingGUI(tkinter.Tk):
 		self.listbox.focus_set()
 		current = self.listbox.curselection()[0]
 		if current > 0:
+			self.listbox.selection_clear(current)
 			#self.listbox.activate(current - 1)
 			#self.listbox.selection_set(0)
 			self.listbox.selection_set(current - 1)
