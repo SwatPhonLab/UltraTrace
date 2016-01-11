@@ -21,6 +21,8 @@ class markingGUI(tkinter.Tk):
 		self.canvas.bind("<Delete>", self.onDelete)
 		self.canvas.bind("<Down>", self.moveDown)
 		self.canvas.bind("<Up>", self.moveUp)
+		self.canvas.bind("<Left>", self.showPrev)
+		self.canvas.bind("<Right>", self.showNext)
 		self.canvas.bind("<Button-3>", lambda e: self.destroy())
 		self.canvas.bind("<Escape>", lambda e: self.destroy())
 		self.canvas.bind("<Button-4>", self.zoomImageOut)
@@ -104,7 +106,11 @@ class markingGUI(tkinter.Tk):
 		#colours = {"TR": {"points": "MediumPurple1"}, "TB": {"dots": "lightgreen"}}
 		self.colours = {"TR": {"points": "MediumPurple1"}, "TB": {"points": "SeaGreen1", "lines": "SeaGreen2", "references": "SteelBlue1"}, "trace": {"points": "Red"}} #IndianRed"}}
 
+		self.whichImage = "main"
 		self.zoomFactor = 2
+		self.curZoomFactor = 1
+		self.zoomed = False
+
 		#image = Image.open(argv[1] if len(argv) >=2 else "018_516.png")
 		self.image = tkinter.PhotoImage(file=self.filebase+".png")
 		self.scaledImage = tkinter.PhotoImage(file=self.filebase+".png").zoom(self.zoomFactor)
@@ -116,7 +122,6 @@ class markingGUI(tkinter.Tk):
 		#image_tk = ImageTk.PhotoImage(image)
 		self.slide = self.canvas.create_image(self.image.width()/2, self.image.height()/2, image=self.image)
 		self.makeTRref()
-		self.zoomed = False
 
 		#global fDict
 		self.lines = {}
@@ -128,6 +133,17 @@ class markingGUI(tkinter.Tk):
 		self.prevPosition = (0, 0)
 		self.distanceBuffer = 8
 		self.prevSelection = None
+
+		base = self.filebase.split("_")[0]
+		nɛxt = int(self.filebase.split("_")[1])+1
+		prev = int(self.filebase.split("_")[1])-1
+		nextImageFn = "./adjacent/{}_{}.png".format(base, nɛxt)
+		prevImageFn = "./adjacent/{}_{}.png".format(base, prev)
+		self.nextImage = tkinter.PhotoImage(file=nextImageFn)
+		self.prevImage = tkinter.PhotoImage(file=prevImageFn)
+		self.nextImageScaled = tkinter.PhotoImage(file=nextImageFn).zoom(self.zoomFactor)
+		self.prevImageScaled = tkinter.PhotoImage(file=prevImageFn).zoom(self.zoomFactor)
+
 
 
 	def zoomImageIn(self, event):
@@ -143,6 +159,7 @@ class markingGUI(tkinter.Tk):
 			self.canvas.tag_lower(self.slide)
 			self.canvas.pack()
 			self.zoomed = True
+			self.curZoomFactor = self.zoomFactor
 
 		#self.image.scale("all", event.x, event.y, 1.1, 1.1)
 		##self.image.zoom(1.1)
@@ -158,9 +175,48 @@ class markingGUI(tkinter.Tk):
 			#self.raiseStuff()
 			self.canvas.pack()
 			self.zoomed = False
+			self.curZoomFactor = 1
 		#self.canvas.scale("all", event.x, event.y, 0.9, 0.9)
 		##self.image.scale("all", event.x, event.y, 0.9, 0.9)
 		#self.canvas.configure(scrollregion = self.canvas.bbox("all"))
+
+	def showNext(self, event):
+		if self.whichImage != "next":
+			self.canvas.delete(self.slide)
+			if self.zoomed:
+				self.slide = self.canvas.create_image(self.image.width()*self.zoomFactor/2, 0, image=self.nextImageScaled)
+			else:
+				self.slide = self.canvas.create_image(self.image.width()/2, self.image.height()/2, image=self.nextImage)
+
+			self.canvas.tag_lower(self.slide)
+			self.canvas.pack()
+			self.whichImage = "next"
+		else:
+			self.resetImageToMain()
+		
+	def showPrev(self, event):
+		if self.whichImage != "prev":
+			self.canvas.delete(self.slide)
+			if self.zoomed:
+				self.slide = self.canvas.create_image(self.image.width()*self.zoomFactor/2, 0, image=self.prevImageScaled)
+			else:
+				self.slide = self.canvas.create_image(self.image.width()/2, self.image.height()/2, image=self.prevImage)
+			self.canvas.tag_lower(self.slide)
+			self.canvas.pack()
+			self.whichImage = "prev"
+		else:
+			self.resetImageToMain()
+
+	def resetImageToMain(self):
+		self.canvas.delete(self.slide)
+		if self.zoomed:
+			self.slide = self.canvas.create_image(self.image.width()*self.zoomFactor/2, 0, image=self.scaledImage)
+		else:
+			self.slide = self.canvas.create_image(self.image.width()/2, self.image.height()/2, image=self.image)
+		self.canvas.tag_lower(self.slide)
+		self.canvas.pack()
+		self.whichImage = "main"
+
 
 	def makeTRref(self):
 		self.references['TR'] = self.canvas.create_line(self.baselineStart[0], self.baselineStart[1], self.baselineEnd[0], self.baselineEnd[1], fill="blue")
@@ -344,7 +400,7 @@ class markingGUI(tkinter.Tk):
 		#print(event.x, event.y)
 		#print(true_x, true_y)
 		lastPoint = self.points[curMeasure]
-		self.points[curMeasure] = self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, outline=self.colours[curMeasure]["points"])
+		self.points[curMeasure] = self.canvas.create_oval(event.x-self.radius*self.curZoomFactor, event.y-self.radius*self.curZoomFactor, event.x+self.radius*self.curZoomFactor, event.y+self.radius*self.curZoomFactor, outline=self.colours[curMeasure]["points"])
 		#if lastClick:
 		if curMeasure in self.lines:
 			if self.lines[curMeasure] != None:
@@ -352,8 +408,8 @@ class markingGUI(tkinter.Tk):
 					self.canvas.delete(line)
 		self.canvas.delete(lastPoint)
 		self.lines[curMeasure] = (
-			self.canvas.create_line(event.x-50, event.y, event.x+50, event.y, fill=self.colours[curMeasure]["lines"]),
-			self.canvas.create_line(event.x, event.y-50, event.x, event.y+50, fill=self.colours[curMeasure]["lines"])
+			self.canvas.create_line(event.x-50*self.curZoomFactor, event.y, event.x+50*self.curZoomFactor, event.y, fill=self.colours[curMeasure]["lines"]),
+			self.canvas.create_line(event.x, event.y-50*self.curZoomFactor, event.x, event.y+50*self.curZoomFactor, fill=self.colours[curMeasure]["lines"])
 		)
 		intersectionPoint = (self.click[0], self.click[1])
 		Dx = self.fDict[curMeasure]['reference'][0] - intersectionPoint[0]
@@ -371,23 +427,23 @@ class markingGUI(tkinter.Tk):
 	
 	def onMouseMove(self, event):
 		if self.stillClicked:
-			curPosition = (event.x, event.y)
-			Dx = abs(curPosition[0] - self.prevPosition[0])
-			Dy = abs(curPosition[1] - self.prevPosition[1])
-			#print(Dx, Dy)
-			if Dx > self.distanceBuffer or Dy > self.distanceBuffer:
-				thisDiamond = self.create_diamond(curPosition)
+			curPosition = self.click #(event.x, event.y)
+			Dx = abs(event.x - self.prevPosition[0]) #*self.curZoomFactor
+			Dy = abs(event.y - self.prevPosition[1]) #*self.curZoomFactor
+			print(Dx, Dy)
+			if Dx > self.distanceBuffer*self.curZoomFactor or Dy > self.distanceBuffer*self.curZoomFactor:
+				thisDiamond = self.create_diamond((event.x, event.y))
 				#self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, fill='red')
 				self.points['trace'].append(thisDiamond)
 				self.references['trace'][thisDiamond] = curPosition
-				self.fDict['trace']['points'].append(curPosition)
+				self.fDict['trace']['points'].append(curPosition)  # FIXME: but different if zoomed
 				self.writeData()
-				self.prevPosition = curPosition
+				self.prevPosition = (event.x, event.y)
 	
 
 	def create_diamond(self, centre):
 		#print(centre)
-		return self.canvas.create_polygon(centre[0]-self.radius, centre[1], centre[0], centre[1]+self.radius, centre[0]+self.radius, centre[1], centre[0], centre[1]-self.radius, fill='', outline=self.colours['trace']['points'])
+		return self.canvas.create_polygon(centre[0]-self.radius*self.curZoomFactor, centre[1], centre[0], centre[1]+self.radius*self.curZoomFactor, centre[0]+self.radius*self.curZoomFactor, centre[1], centre[0], centre[1]-self.radius*self.curZoomFactor, fill='', outline=self.colours['trace']['points'])
 
 	#def trackClicked(self, event):
 		#print("tracing")
