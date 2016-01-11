@@ -2,7 +2,8 @@
 
 import tkinter
 import math
-from sys import argv
+#from sys import argv
+import sys
 import json
 import os
 
@@ -18,8 +19,13 @@ class markingGUI(tkinter.Tk):
 		self.canvas.bind("<ButtonRelease-1>", self.onLeftUnClick)
 		self.canvas.bind("<Motion>", self.onMouseMove)
 		self.canvas.bind("<Delete>", self.onDelete)
+		self.canvas.bind("<Down>", self.moveDown)
+		self.canvas.bind("<Up>", self.moveUp)
 		self.canvas.bind("<Button-3>", lambda e: self.destroy())
-		self.listbox = tkinter.Listbox(self, height=3)
+		self.canvas.bind("<Escape>", lambda e: self.destroy())
+		self.canvas.bind("<Button-4>", self.zoomImageOut)
+		self.canvas.bind("<Button-5>", self.zoomImageIn)
+		self.listbox = tkinter.Listbox(self, height=3, selectmode=tkinter.SINGLE)
 		self.listbox.pack()
 
 		# load and process file
@@ -34,7 +40,7 @@ class markingGUI(tkinter.Tk):
 
 	
 	def setDefaults(self):
-		self.filebase = argv[1]
+		self.filebase = sys.argv[1]
 		self.radius = 5
 		self.click = None
 
@@ -62,8 +68,20 @@ class markingGUI(tkinter.Tk):
 
 		# e.g., "2014-10-09" from
 		#       "/home/jonathan/q/dissertation/data/2014-10-09/bySlide"
-		curdir = os.path.split(os.path.split(os.getcwd())[0])[1]
-		#print(curdir)
+		metafn = "dir.metadata"
+		if os.path.exists(metafn):
+			with open(metafn, 'r') as metadataFile:
+				fileContents = metadataFile.read()
+			metadata = json.loads(fileContents)
+			curdir = metadata["date"]
+		
+		else:
+			curdirTuple = os.path.split(os.path.split(os.getcwd())[0])
+			curdir = curdirTuple[1]
+			if curdir not in baselineStarts:
+				#last attempt
+				curdir = os.path.split(os.path.split(curdirTuple[0])[1])[1]
+			print(curdir)
 	
 		if curdir in baselineStarts and curdir in TBreferences:
 			#baselineStart = (299,599-45)
@@ -75,7 +93,8 @@ class markingGUI(tkinter.Tk):
 			TBreference = TBreferences[curdir]
 			#TBreference = (425, 591)
 		else:
-			"ERROR: date dir not found"
+			print("ERROR: date dir not found")
+			sys.exit(-1)
 
 		### format = {"TR": {'reference': ((x, y), (x, y)), 'userline': ((x, y), (x, y)), 'intersection': (x, y), 'measurement': x}}
 		#fDictDefault = {'TR': {'reference': reference, 'type': 'vector'}, 'TB': {'type': 'point', 'reference': TBreference}}
@@ -85,14 +104,19 @@ class markingGUI(tkinter.Tk):
 		#colours = {"TR": {"points": "MediumPurple1"}, "TB": {"dots": "lightgreen"}}
 		self.colours = {"TR": {"points": "MediumPurple1"}, "TB": {"points": "SeaGreen1", "lines": "SeaGreen2", "references": "SteelBlue1"}, "trace": {"points": "Red"}} #IndianRed"}}
 
+		self.zoomFactor = 2
 		#image = Image.open(argv[1] if len(argv) >=2 else "018_516.png")
 		self.image = tkinter.PhotoImage(file=self.filebase+".png")
-		self.canvas = tkinter.Canvas(self, width=self.image.width(), height=self.image.height())
+		self.scaledImage = tkinter.PhotoImage(file=self.filebase+".png").zoom(self.zoomFactor)
+		self.width = self.image.width()
+		self.height = self.image.height()
+		self.canvas = tkinter.Canvas(self, width=self.width, height=self.height)
 		self.canvas.pack()
 		self.references = {}
 		#image_tk = ImageTk.PhotoImage(image)
-		self.canvas.create_image(self.image.width()/2, self.image.height()/2, image=self.image)
+		self.slide = self.canvas.create_image(self.image.width()/2, self.image.height()/2, image=self.image)
 		self.makeTRref()
+		self.zoomed = False
 
 		#global fDict
 		self.lines = {}
@@ -104,6 +128,39 @@ class markingGUI(tkinter.Tk):
 		self.prevPosition = (0, 0)
 		self.distanceBuffer = 8
 		self.prevSelection = None
+
+
+	def zoomImageIn(self, event):
+		#factor = 2
+		if not self.zoomed:
+			self.canvas.delete(self.slide)
+			#scaledImage = self.image.subsample(2, 2)
+			#print(factor)
+			#self.scaledImage = tkinter.PhotoImage(file=self.filebase+".png")#.zoom(factor)
+			##self.canvas.scale("all", event.x, event.y, factor, factor)
+			self.canvas.scale("all", 0, self.height, self.zoomFactor, self.zoomFactor)
+			self.slide = self.canvas.create_image(self.image.width()*self.zoomFactor/2, 0, image=self.scaledImage)
+			self.canvas.tag_lower(self.slide)
+			self.canvas.pack()
+			self.zoomed = True
+
+		#self.image.scale("all", event.x, event.y, 1.1, 1.1)
+		##self.image.zoom(1.1)
+		#self.canvas.configure(scrollregion = self.canvas.bbox("all"))
+	
+	def zoomImageOut(self, event):
+		#factor = 2
+		if self.zoomed:
+			self.canvas.delete(self.slide)
+			self.canvas.scale("all", 0, self.height, 1/self.zoomFactor, 1/self.zoomFactor)
+			self.slide = self.canvas.create_image(self.image.width()/2, self.image.height()/2, image=self.image)
+			self.canvas.tag_lower(self.slide)
+			#self.raiseStuff()
+			self.canvas.pack()
+			self.zoomed = False
+		#self.canvas.scale("all", event.x, event.y, 0.9, 0.9)
+		##self.image.scale("all", event.x, event.y, 0.9, 0.9)
+		#self.canvas.configure(scrollregion = self.canvas.bbox("all"))
 
 	def makeTRref(self):
 		self.references['TR'] = self.canvas.create_line(self.baselineStart[0], self.baselineStart[1], self.baselineEnd[0], self.baselineEnd[1], fill="blue")
@@ -120,6 +177,15 @@ class markingGUI(tkinter.Tk):
 
 		self.prevSelection = curMeasure
 		self.canvas.focus_set()
+
+	def raiseStuff(self):
+		for line in self.lines['TB']:
+			self.canvas.tag_raise(line)
+		self.canvas.tag_raise(self.lines['TR'])
+		self.canvas.tag_raise(self.points['TR'])
+		self.canvas.tag_raise(self.points['TB'])
+		self.canvas.tag_raise(self.references['TR'])
+
 
 	def hideStuff(self):
 		#print("references", self.references)
@@ -146,6 +212,26 @@ class markingGUI(tkinter.Tk):
 		self.makeTRref()
 		self.makeLine('TR')
 
+	def moveDown(self, event):
+		self.listbox.focus_set()
+		current = self.listbox.curselection()[0]
+		total = self.listbox.size()
+		#print(current,total)
+		if total > current+1:
+			#self.listbox.activate(current + 1)
+			#self.listbox.selection_set(0)
+			self.listbox.selection_set(current + 1)
+		#self.canvas.focus_set()
+
+	def moveUp(self, event):
+		self.listbox.focus_set()
+		current = self.listbox.curselection()[0]
+		if current > 0:
+			#self.listbox.activate(current - 1)
+			#self.listbox.selection_set(0)
+			self.listbox.selection_set(current - 1)
+		#self.canvas.focus_set()
+
 	def populateSelector(self):
 		for item in sorted(self.fDict):
 			if item != "meta":
@@ -153,6 +239,7 @@ class markingGUI(tkinter.Tk):
 		self.listbox.selection_set(0)
 		#self.listbox.bind('<<ListboxSelect>>', self.listChange)
 		self.listbox.bind('<ButtonRelease-1>', self.listChange)
+		self.listbox.bind('<KeyRelease>', self.listChange)
 
 
 	def line_intersection(self, line1, line2):
@@ -250,6 +337,12 @@ class markingGUI(tkinter.Tk):
 
 	def pointClick(self, event, curMeasure, lastClick):
 		#print(points)
+		#true_x = self.canvas.canvasx(event.x)
+		#true_y = self.canvas.canvasy(event.y)
+		#true_x = event.x/2
+		#true_y = event.y/2
+		#print(event.x, event.y)
+		#print(true_x, true_y)
 		lastPoint = self.points[curMeasure]
 		self.points[curMeasure] = self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, outline=self.colours[curMeasure]["points"])
 		#if lastClick:
@@ -259,8 +352,8 @@ class markingGUI(tkinter.Tk):
 					self.canvas.delete(line)
 		self.canvas.delete(lastPoint)
 		self.lines[curMeasure] = (
-			self.canvas.create_line(self.click[0]-50, self.click[1], self.click[0]+50, self.click[1], fill=self.colours[curMeasure]["lines"]),
-			self.canvas.create_line(self.click[0], self.click[1]-50, self.click[0], self.click[1]+50, fill=self.colours[curMeasure]["lines"])
+			self.canvas.create_line(event.x-50, event.y, event.x+50, event.y, fill=self.colours[curMeasure]["lines"]),
+			self.canvas.create_line(event.x, event.y-50, event.x, event.y+50, fill=self.colours[curMeasure]["lines"])
 		)
 		intersectionPoint = (self.click[0], self.click[1])
 		Dx = self.fDict[curMeasure]['reference'][0] - intersectionPoint[0]
@@ -338,7 +431,10 @@ class markingGUI(tkinter.Tk):
 		#print(fDict)
 
 		lastClick = self.click	
-		self.click = (event.x, event.y)
+		if self.zoomed:
+			self.click = (event.x/2, (self.height+event.y)/2)
+		else:
+			self.click = (event.x, event.y)
 		#print("clicked at: ", event.x, event.y)
 		if curMeasureType == "vector":
 			self.vectorClick(event, curMeasure, lastClick)
@@ -403,8 +499,9 @@ class markingGUI(tkinter.Tk):
 		#print("TB lines", self.lines['TB'])
 
 	def makeLine(self, measure):
-		((x1, y1), (x2, y2)) = self.fDict[measure]['userline']
-		self.lines[measure] = self.canvas.create_line(x1, y1, x2, y2, fill='red')
+		if "userline" in self.fDict[measure]:
+			((x1, y1), (x2, y2)) = self.fDict[measure]['userline']
+			self.lines[measure] = self.canvas.create_line(x1, y1, x2, y2, fill='red')
 
 	def loadPoint(self, measure):
 		#print("loadPoint", measure, self.fDict[measure])

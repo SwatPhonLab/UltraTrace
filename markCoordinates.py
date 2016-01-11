@@ -37,7 +37,7 @@ TBreferences["2015-11-14"] = (425, 591)
 # e.g., "2014-10-09" from
 #       "/home/jonathan/q/dissertation/data/2014-10-09/bySlide"
 curdir = os.path.split(os.path.split(os.getcwd())[0])[1]
-#print(curdir)
+print(curdir)
 
 if curdir in baselineStarts and curdir in TBreferences:
 	#baselineStart = (299,599-45)
@@ -52,11 +52,12 @@ else:
 	"ERROR: date dir not found"
 
 ### format = {"TR": {'reference': ((x, y), (x, y)), 'userline': ((x, y), (x, y)), 'intersection': (x, y), 'measurement': x}}
-fDictDefault = {'TR': {'reference': reference, 'type': 'vector'}, 'TB': {'type': 'point', 'reference': TBreference}}
+#fDictDefault = {'TR': {'reference': reference, 'type': 'vector'}, 'TB': {'type': 'point', 'reference': TBreference}}
+fDictDefault = {'TR': {'reference': reference, 'type': 'vector'}, 'TB': {'type': 'point', 'reference': TBreference}, 'trace': {'points': [], 'type': 'points'}}
 #Ey4Gekquc2Bv48v
 measurementFn = filebase+".measurement"
 #colours = {"TR": {"points": "MediumPurple1"}, "TB": {"dots": "lightgreen"}}
-colours = {"TR": {"points": "MediumPurple1"}, "TB": {"points": "SeaGreen1", "lines": "SeaGreen2", "references": "SteelBlue1"}}
+colours = {"TR": {"points": "MediumPurple1"}, "TB": {"points": "SeaGreen1", "lines": "SeaGreen2", "references": "SteelBlue1"}, "trace": {"points": "IndianRed"}}
 
 
 #image = Image.open(argv[1] if len(argv) >=2 else "018_516.png")
@@ -128,6 +129,10 @@ def loadFile(fn):
 		# if it's a new-format file:
 		elif fType == dict:
 			fDict = json.loads(fileContents)
+			for elemName in fDictDefault:
+				if elemName not in fDict:
+					print("{} not found in data; adding default".format(elemName))
+					fDict[elemName] = fDictDefault[elemName]
 	else:
 		fDict = fDictDefault
 
@@ -142,6 +147,7 @@ def callback(event):
 	global reference
 	global listbox
 	global colours
+	global delayTimer
 	curMeasure = listbox.get(listbox.curselection())
 	curMeasureType = fDict[curMeasure]['type']
 	#print(fDict)
@@ -192,6 +198,18 @@ def callback(event):
 		fDict[curMeasure]['intersection'] = intersectionPoint
 		fDict[curMeasure]['measurement'] = (Dx, Dy)
 		writeData(fDict)
+	#elif curMeasureType == "trace":
+	#	#writeData(fDict)
+	#	delay_ms=500
+	#	time.sleep(delay_ms*0.001)
+	#	print("nothing yet")
+	elif curMeasureType == "trace":
+		traceClicks(events)
+
+def traceClicks():
+	print("tracing?")
+
+	window.after(500, traceClicks)
 			
 
 #global fDict
@@ -201,43 +219,48 @@ dots = {}
 points = {}
 references = {}
 
-for measure in fDict:
-	#print(measure)
-	#print(fDict[measure]['type'])
-	if measure != "meta":
-		if fDict[measure]['type'] == "vector":
-			if "userline" in fDict[measure]:
-				((x1, y1), (x2, y2)) = fDict[measure]['userline']
-				lines[measure] = canvas.create_line(x1, y1, x2, y2, fill='red')
-			else:
-				lines[measure] = None
-			if "intersection" in fDict[measure]:
-				(thisX, thisY) = fDict[measure]['intersection']
-				points[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["points"])
-			else:
-				points[measure] = None
-			if "reference" in fDict[measure]:
-				references[measure] = fDict[measure]['reference']
-		elif fDict[measure]['type'] == "point":
-			if "intersection" in fDict[measure]:
-				(thisX, thisY) = fDict[measure]['intersection']
-				points[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["points"])
-				lines[measure] = (
-					canvas.create_line(thisX-50, thisY, thisX+50, thisY, fill=colours[measure]["lines"]),
-					canvas.create_line(thisX, thisY-50, thisX, thisY+50, fill=colours[measure]["lines"])
-				)
-			else:
-				points[measure] = None
-				lines[measure] = None
+def afterLoad():
+	# runs after loading the file, displays data from file
+	for measure in fDict:
+		#print(measure)
+		#print(fDict[measure]['type'])
+		if measure != "meta":
+			if fDict[measure]['type'] == "vector":
+				if "userline" in fDict[measure]:
+					((x1, y1), (x2, y2)) = fDict[measure]['userline']
+					lines[measure] = canvas.create_line(x1, y1, x2, y2, fill='red')
+				else:
+					lines[measure] = None
+				if "intersection" in fDict[measure]:
+					(thisX, thisY) = fDict[measure]['intersection']
+					points[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["points"])
+				else:
+					points[measure] = None
+				if "reference" in fDict[measure]:
+					references[measure] = fDict[measure]['reference']
+			elif fDict[measure]['type'] == "point":
+				if "intersection" in fDict[measure]:
+					(thisX, thisY) = fDict[measure]['intersection']
+					points[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["points"])
+					lines[measure] = (
+						canvas.create_line(thisX-50, thisY, thisX+50, thisY, fill=colours[measure]["lines"]),
+						canvas.create_line(thisX, thisY-50, thisX, thisY+50, fill=colours[measure]["lines"])
+					)
+				else:
+					points[measure] = None
+					lines[measure] = None
+		
+				if "reference" in fDict[measure]:
+					(thisX, thisY) = fDict[measure]['reference']
+					references[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["references"])
+				else:
+					references[measure] = None
+			elif fDict[measure]['type'] == "points":
+				print("nothing yet")
 	
-			if "reference" in fDict[measure]:
-				(thisX, thisY) = fDict[measure]['reference']
-				references[measure] = canvas.create_oval(thisX-radius, thisY-radius, thisX+radius, thisY+radius, outline=colours[measure]["references"])
-			else:
-				references[measure] = None
-
-		dots[measure] = None
+			dots[measure] = None
 	
+afterLoad()
 
 canvas.bind("<Button-1>", callback)
 #canvas.bind("<31>", lambda event: w.focus_set())
@@ -257,6 +280,7 @@ listbox.selection_set(0)
 
 subWindow = canvas.create_window((150,90), window=listbox, anchor="nw")
 
+window.after(500, traceClicks)
 window.mainloop()
 
 #181,547
