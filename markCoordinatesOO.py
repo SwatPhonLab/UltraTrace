@@ -19,6 +19,7 @@ class markingGUI(tkinter.Tk):
 		self.canvas.bind("<ButtonRelease-1>", self.onLeftUnClick)
 		self.canvas.bind("<Motion>", self.onMouseMove)
 		self.canvas.bind("<Delete>", self.onDelete)
+		self.canvas.bind("<Tab>", self.onDelete)
 		self.canvas.bind("<Down>", self.moveDown)
 		self.canvas.bind("<Up>", self.moveUp)
 		self.canvas.bind("<Left>", self.showPrev)
@@ -43,6 +44,7 @@ class markingGUI(tkinter.Tk):
 	
 	def setDefaults(self):
 		self.filebase = sys.argv[1]
+		print(self.filebase)
 		self.radius = 5
 		self.click = None
 
@@ -83,7 +85,7 @@ class markingGUI(tkinter.Tk):
 			if curdir not in baselineStarts:
 				#last attempt
 				curdir = os.path.split(os.path.split(curdirTuple[0])[1])[1]
-			print(curdir)
+			#print(curdir)
 	
 		if curdir in baselineStarts and curdir in TBreferences:
 			#baselineStart = (299,599-45)
@@ -428,11 +430,16 @@ class markingGUI(tkinter.Tk):
 	#		#self.after(500, self.traceClicks(event, curMeasure, lastClick))
 	
 	def onMouseMove(self, event):
+		if self.zoomed:
+			self.click = (event.x/2, (self.height+event.y)/2)
+		else:
+			self.click = (event.x, event.y)
+
 		if self.stillClicked:
 			curPosition = self.click #(event.x, event.y)
 			Dx = abs(event.x - self.prevPosition[0]) #*self.curZoomFactor
 			Dy = abs(event.y - self.prevPosition[1]) #*self.curZoomFactor
-			print(Dx, Dy)
+			#print(Dx, Dy)
 			if Dx > self.distanceBuffer*self.curZoomFactor or Dy > self.distanceBuffer*self.curZoomFactor:
 				thisDiamond = self.create_diamond((event.x, event.y))
 				#self.canvas.create_oval(event.x-self.radius, event.y-self.radius, event.x+self.radius, event.y+self.radius, fill='red')
