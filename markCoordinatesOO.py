@@ -41,7 +41,7 @@ class markingGUI(tkinter.Tk):
 
 		self.canvas.focus_set()
 
-	
+
 	def setDefaults(self):
 		self.filebase = sys.argv[1]
 		print(self.filebase)
@@ -55,6 +55,14 @@ class markingGUI(tkinter.Tk):
 		baselineStarts["2015-05-21"] = (268,530)
 		baselineStarts["2015-11-13"] = (256,468)
 		baselineStarts["2015-11-14"] = (281,491)
+		baselineStarts["2016-01-20"] = (258,530)
+		#baselineStarts["2015-09-10"] = (247,610)
+		baselineStarts["2015-09-10"] = (264,529)
+		#baselineStarts["2016-02-18"] = (247,613)
+		baselineStarts["2016-02-18"] = (277,534)
+		#baselineStarts["2016-02-19"] = (254,534) # one dot down
+		baselineStarts["2016-02-19"] = (259,501)
+		baselineStarts["2016-02-20"] = (272,497)
 		baselineEnds = {}
 		baselineEnds["2014-10-09"] = (68,599-252)
 		baselineEnds["2015-03-28"] = (68,370)
@@ -62,6 +70,12 @@ class markingGUI(tkinter.Tk):
 		baselineEnds["2015-05-21"] = (68,342)
 		baselineEnds["2015-11-13"] = (68,381)
 		baselineEnds["2015-11-14"] = (68,298)
+		baselineEnds["2016-01-20"] = (68,369) # a guess
+		#baselineEnds["2015-09-10"] = (67,454) # a guess
+		baselineEnds["2015-09-10"] = (67,304) # a guess
+		baselineEnds["2016-02-18"] = (67,327) # a guess
+		baselineEnds["2016-02-19"] = (67,322) # a guess
+		baselineEnds["2016-02-20"] = (67,330) # a guess
 		TBreferences = {}
 		TBreferences["2014-10-09"] = (425, 591)
 		TBreferences["2015-03-28"] = (425, 591)
@@ -69,16 +83,27 @@ class markingGUI(tkinter.Tk):
 		TBreferences["2015-05-21"] = (425, 591)
 		TBreferences["2015-11-13"] = (425, 591)
 		TBreferences["2015-11-14"] = (425, 591)
+		TBreferences["2016-01-20"] = (425, 591)
+		TBreferences["2015-09-10"] = (425, 591)
+		TBreferences["2016-02-18"] = (425, 591)
+		TBreferences["2016-02-19"] = (425, 591)
+		TBreferences["2016-02-20"] = (425, 591)
 
 		# e.g., "2014-10-09" from
 		#       "/home/jonathan/q/dissertation/data/2014-10-09/bySlide"
 		metafn = "dir.metadata"
+		newmetafn = os.path.join("bySlide", metafn)
+		#print(newmetafn)
 		if os.path.exists(metafn):
 			with open(metafn, 'r') as metadataFile:
 				fileContents = metadataFile.read()
 			metadata = json.loads(fileContents)
 			curdir = metadata["date"]
-		
+		elif os.path.exists(newmetafn):
+			with open(newmetafn, 'r') as metadataFile:
+				fileContents = metadataFile.read()
+			metadata = json.loads(fileContents)
+			curdir = metadata["date"]
 		else:
 			curdirTuple = os.path.split(os.path.split(os.getcwd())[0])
 			curdir = curdirTuple[1]
@@ -86,7 +111,7 @@ class markingGUI(tkinter.Tk):
 				#last attempt
 				curdir = os.path.split(os.path.split(curdirTuple[0])[1])[1]
 			#print(curdir)
-	
+
 		if curdir in baselineStarts and curdir in TBreferences:
 			#baselineStart = (299,599-45)
 			#baselineEnd = (68,599-252)
@@ -97,7 +122,7 @@ class markingGUI(tkinter.Tk):
 			TBreference = TBreferences[curdir]
 			#TBreference = (425, 591)
 		else:
-			print("ERROR: date dir not found")
+			print("ERROR: date dir OR file to trace not found OR date dir not in TBreferences")
 			sys.exit(-1)
 
 		### format = {"TR": {'reference': ((x, y), (x, y)), 'userline': ((x, y), (x, y)), 'intersection': (x, y), 'measurement': x}}
@@ -166,7 +191,7 @@ class markingGUI(tkinter.Tk):
 		#self.image.scale("all", event.x, event.y, 1.1, 1.1)
 		##self.image.zoom(1.1)
 		#self.canvas.configure(scrollregion = self.canvas.bbox("all"))
-	
+
 	def zoomImageOut(self, event):
 		#factor = 2
 		if self.zoomed:
@@ -195,7 +220,7 @@ class markingGUI(tkinter.Tk):
 			self.whichImage = "next"
 		else:
 			self.resetImageToMain()
-		
+
 	def showPrev(self, event):
 		if self.whichImage != "prev":
 			self.canvas.delete(self.slide)
@@ -249,8 +274,10 @@ class markingGUI(tkinter.Tk):
 		#print("references", self.references)
 		#print("lines", self.lines)
 		#print("points", self.points)
-		for line in self.lines['TB']:
-			self.canvas.delete(line)
+		if 'TB' in self.lines:
+			if self.lines['TB'] != None:
+				for line in self.lines['TB']:
+					self.canvas.delete(line)
 		#print(self.points)
 		self.canvas.delete(self.lines['TR'])
 		self.canvas.delete(self.points['TR'])
@@ -311,7 +338,7 @@ class markingGUI(tkinter.Tk):
 
 		div = det(xdiff, ydiff)
 		if div == 0:
-		   raise Exception('lines do not intersect')
+			raise Exception('lines do not intersect')
 
 		d = (det(*line1), det(*line2))
 		x = det(d, xdiff) / div
@@ -428,7 +455,7 @@ class markingGUI(tkinter.Tk):
 	#	if self.stillClicked:
 	#		print("hargle")
 	#		#self.after(500, self.traceClicks(event, curMeasure, lastClick))
-	
+
 	def onMouseMove(self, event):
 		if self.zoomed:
 			self.click = (event.x/2, (self.height+event.y)/2)
@@ -448,7 +475,7 @@ class markingGUI(tkinter.Tk):
 				self.fDict['trace']['points'].append(curPosition)  # FIXME: but different if zoomed
 				self.writeData()
 				self.prevPosition = (event.x, event.y)
-	
+
 
 	def create_diamond(self, centre):
 		#print(centre)
@@ -473,7 +500,7 @@ class markingGUI(tkinter.Tk):
 		self.prevPosition = (0, 0)
 		if self.curCall != None:
 			self.after_cancel(self.curCall)
-	
+
 	def onDelete(self, event):
 		curMeasure = self.listbox.get(self.listbox.curselection())
 		curMeasureType = self.fDict[curMeasure]['type']
@@ -489,13 +516,13 @@ class markingGUI(tkinter.Tk):
 				#print(toDeletePt)
 				self.fDict['trace']['points'].remove(toDeletePt)
 				self.writeData()
-	
+
 	def onLeftClick(self, event):
 		curMeasure = self.listbox.get(self.listbox.curselection())
 		curMeasureType = self.fDict[curMeasure]['type']
 		#print(fDict)
 
-		lastClick = self.click	
+		lastClick = self.click
 		if self.zoomed:
 			self.click = (event.x/2, (self.height+event.y)/2)
 		else:
@@ -519,7 +546,7 @@ class markingGUI(tkinter.Tk):
 
 		else:
 			print("undefined: {}".format(curMeasureType))
-	
+
 	def loadVector(self, measure):
 		if "userline" in self.fDict[measure]:
 			#print("BLER", measure)
@@ -542,7 +569,7 @@ class markingGUI(tkinter.Tk):
 		#print(self.fDict[measure]["reference"])
 		(thisX, thisY) = self.fDict[measure]["reference"]
 		self.references[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["references"])
-		
+
 	def makePoint(self, measure):
 		#if measure=="TB":
 		#	hargle = "intersection"
@@ -554,7 +581,7 @@ class markingGUI(tkinter.Tk):
 		(thisX, thisY) = self.fDict[measure]["intersection"]
 		#print(thisX, thisY, self.radius)
 		self.points[measure] = self.canvas.create_oval(thisX-self.radius, thisY-self.radius, thisX+self.radius, thisY+self.radius, outline=self.colours[measure]["points"])
-	
+
 	def makeCrossHairs(self, measure):
 		(thisX, thisY) = self.fDict[measure]["intersection"]
 		self.lines[measure] = (
