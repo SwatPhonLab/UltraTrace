@@ -63,6 +63,7 @@ class markingGUI(tkinter.Tk):
 		#baselineStarts["2016-02-19"] = (254,534) # one dot down
 		baselineStarts["2016-02-19"] = (259,501)
 		baselineStarts["2016-02-20"] = (272,497)
+		baselineStarts["2016-03-16"] = (287,501)
 		baselineEnds = {}
 		baselineEnds["2014-10-09"] = (68,599-252)
 		baselineEnds["2015-03-28"] = (68,370)
@@ -76,6 +77,7 @@ class markingGUI(tkinter.Tk):
 		baselineEnds["2016-02-18"] = (67,327) # a guess
 		baselineEnds["2016-02-19"] = (67,322) # a guess
 		baselineEnds["2016-02-20"] = (67,330) # a guess
+		baselineEnds["2016-03-16"] = (67,320) # a guess
 		TBreferences = {}
 		TBreferences["2014-10-09"] = (425, 591)
 		TBreferences["2015-03-28"] = (425, 591)
@@ -88,6 +90,7 @@ class markingGUI(tkinter.Tk):
 		TBreferences["2016-02-18"] = (425, 591)
 		TBreferences["2016-02-19"] = (425, 591)
 		TBreferences["2016-02-20"] = (425, 591)
+		TBreferences["2016-03-16"] = (425, 591)
 
 		# e.g., "2014-10-09" from
 		#       "/home/jonathan/q/dissertation/data/2014-10-09/bySlide"
