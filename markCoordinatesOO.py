@@ -169,10 +169,13 @@ class markingGUI(tkinter.Tk):
 		prev = int(self.filebase.split("_")[1])-1
 		nextImageFn = "./adjacent/{}_{}.png".format(base, nɛxt)
 		prevImageFn = "./adjacent/{}_{}.png".format(base, prev)
-		self.nextImage = tkinter.PhotoImage(file=nextImageFn)
-		self.prevImage = tkinter.PhotoImage(file=prevImageFn)
-		self.nextImageScaled = tkinter.PhotoImage(file=nextImageFn).zoom(self.zoomFactor)
-		self.prevImageScaled = tkinter.PhotoImage(file=prevImageFn).zoom(self.zoomFactor)
+		if os.path.exists(nextImageFn) and os.path.exists(prevImageFn):
+			self.nextImage = tkinter.PhotoImage(file=nextImageFn)
+			self.prevImage = tkinter.PhotoImage(file=prevImageFn)
+			self.nextImageScaled = tkinter.PhotoImage(file=nextImageFn).zoom(self.zoomFactor)
+			self.prevImageScaled = tkinter.PhotoImage(file=prevImageFn).zoom(self.zoomFactor)
+		else:
+			print("WARNING: no previous and/or next frame images!")
 
 
 
