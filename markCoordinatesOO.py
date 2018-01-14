@@ -6,10 +6,78 @@ import math
 import sys
 import json
 import os
+import argparse
 
 class markingGUI(tkinter.Tk):
 	def __init__(self):
 		tkinter.Tk.__init__(self)
+
+		# require and parse some arguments
+		parser = argparse.ArgumentParser(description='Process some integers.')
+		parser.add_argument('path', help='path (unique to a participant) where subdirectories contain raw data')
+		parser.add_argument('--init', action='store_true', help='add this argument to create a metadata file')
+		args = parser.parse_args()
+
+		# need to make sure we are given a valid path
+		if os.path.exists( args.path ):
+
+			self.path = args.path
+			self.metadata = os.path.join( self.path, 'metadata.json' )
+
+			# need to have some way of storing our data
+			if args.init == False and os.path.exists( self.metadata ) == False:
+				print( 'Error locating metadata: %s\nTo create new metadata file, rerun with --init' % self.metadata )
+				exit()
+
+			else:
+				if os.path.exists( self.metadata ):
+					print( "loading data from %s" % self.metadata )
+					with open( self.metadata, 'r' ) as f:
+						data = json.load( f )
+
+				else: # if we get here, then we know args.init=TRUE
+					print( "creating new datafile: %s" % self.metadata )
+					data = {
+						'path': str(self.path),
+						'participant': str(os.path.basename( os.path.normpath(self.path) )),
+						'alignedFiles': {} }
+
+				# we know for sure that we have a `data` object
+
+				# hardcode some required fields
+				REQUIRED_FIELDS = { '.dicom', '.flac', '.TextGrid', '.timetag' }
+
+				# now get the objects in subdirectories
+				alignedFiles = {}
+				for path, directories, filenames in os.walk( self.path ):
+					for filename in filenames:
+						filenameNoExtension, fileExtension = os.path.splitext( filename )
+						if filenameNoExtension not in alignedFiles:
+							alignedFiles[filenameNoExtension] = {}
+						alignedFiles[filenameNoExtension][fileExtension] = os.path.join( path, filename )
+
+				# and align them if they have all of the required filetypes
+				toRemove = set()
+				for filenameNoExtension in alignedFiles:
+					if alignedFiles[filenameNoExtension].keys() != REQUIRED_FIELDS:
+						toRemove.add(filenameNoExtension)
+				for key in toRemove:
+					alignedFiles.pop( key )
+
+
+				# overwrite old data
+				data['alignedFiles'] = alignedFiles
+				with open( self.metadata, 'w' ) as f:
+					json.dump( data, f, indent=3 )
+
+				exit()
+
+
+		else:
+			print( "Error locating path: %s" % args.path )
+			exit()
+
+		# old stuff
 
 		self.setDefaults()
 
