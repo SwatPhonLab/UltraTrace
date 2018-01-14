@@ -12,70 +12,24 @@ class markingGUI(tkinter.Tk):
 	def __init__(self):
 		tkinter.Tk.__init__(self)
 
-		# require and parse some arguments
+		# require a $PATH and parse it
 		parser = argparse.ArgumentParser(description='Process some integers.')
 		parser.add_argument('path', help='path (unique to a participant) where subdirectories contain raw data')
-		parser.add_argument('--init', action='store_true', help='add this argument to create a metadata file')
 		args = parser.parse_args()
 
 		# need to make sure we are given a valid path
 		if os.path.exists( args.path ):
 
 			self.path = args.path
-			self.metadata = os.path.join( self.path, 'metadata.json' )
-
-			# need to have some way of storing our data
-			if args.init == False and os.path.exists( self.metadata ) == False:
-				print( 'Error locating metadata: %s\nTo create new metadata file, rerun with --init' % self.metadata )
-				exit()
-
-			else:
-				if os.path.exists( self.metadata ):
-					print( "loading data from %s" % self.metadata )
-					with open( self.metadata, 'r' ) as f:
-						data = json.load( f )
-
-				else: # if we get here, then we know args.init=TRUE
-					print( "creating new datafile: %s" % self.metadata )
-					data = {
-						'path': str(self.path),
-						'participant': str(os.path.basename( os.path.normpath(self.path) )),
-						'alignedFiles': {} }
-
-				# we know for sure that we have a `data` object
-
-				# hardcode some required fields
-				REQUIRED_FIELDS = { '.dicom', '.flac', '.TextGrid', '.timetag' }
-
-				# now get the objects in subdirectories
-				alignedFiles = {}
-				for path, directories, filenames in os.walk( self.path ):
-					for filename in filenames:
-						filenameNoExtension, fileExtension = os.path.splitext( filename )
-						if filenameNoExtension not in alignedFiles:
-							alignedFiles[filenameNoExtension] = {}
-						alignedFiles[filenameNoExtension][fileExtension] = os.path.join( path, filename )
-
-				# and align them if they have all of the required filetypes
-				toRemove = set()
-				for filenameNoExtension in alignedFiles:
-					if alignedFiles[filenameNoExtension].keys() != REQUIRED_FIELDS:
-						toRemove.add(filenameNoExtension)
-				for key in toRemove:
-					alignedFiles.pop( key )
-
-
-				# overwrite old data
-				data['alignedFiles'] = alignedFiles
-				with open( self.metadata, 'w' ) as f:
-					json.dump( data, f, indent=3 )
-
-				exit()
-
+			self.metadataFile = os.path.join( self.path, 'metadata.json' )
+			self.metadata = self.get_metadata( self.metadataFile )
 
 		else:
 			print( "Error locating path: %s" % args.path )
 			exit()
+
+		# end progress
+		exit()
 
 		# old stuff
 
@@ -109,6 +63,59 @@ class markingGUI(tkinter.Tk):
 
 		self.canvas.focus_set()
 
+	def get_metadata(self, mdfile):
+		"""
+		opens a metadata file (or creates one if it doesn't exist), recursively searches a directory
+			for acceptable files, writes appropriate data back into memory, and returns the metadata object
+
+		acceptable files: the metadata file requires matching files w/in subdirectories based on filenames
+			for example, it will try to locate files that have the same base filename and
+			each of a set of required extensions
+		"""
+
+		# either load up existing metadata
+		if os.path.exists( mdfile ):
+			print( "loading data from %s" % mdfile )
+			with open( mdfile, 'r' ) as f:
+				data = json.load( f )
+
+		# or make some new stuff ... no reason to separate these yet at the moment
+		#... maybe later on we'll have other types of data stored in here?
+		else:
+			print( "creating new datafile: %s" % mdfile )
+			data = {
+				'path': str(self.path),
+				'participant': str(os.path.basename( os.path.normpath(self.path) )),
+				'alignedFiles': {} }
+
+		# hardcode some required fields
+		REQUIRED_FIELDS = { '.dicom', '.flac', '.TextGrid', '.timetag' }
+		alignedFiles, unalignedFiles, unaligned = {}, {}, set()
+
+		# now get the objects in subdirectories
+		for path, dirs, fs in os.walk( self.path ):
+			for f in fs:
+				fNoExt, fExt = os.path.splitext( f ) # e.g. 00.dicom -> 00, .dicom
+				if fNoExt not in alignedFiles:
+					alignedFiles[fNoExt] = {}
+				alignedFiles[fNoExt][fExt] = os.path.join( path, f )
+
+		# and align them if they have all of the required filetypes
+		# if not, move them to another object `unaligned files`
+		for fNoExt in alignedFiles:
+			if alignedFiles[fNoExt].keys() != REQUIRED_FIELDS:
+				unaligned.add(fNoExt)
+		for key in unaligned:
+			unalignedFiles[key] = alignedFiles.pop( key )
+
+		# overwrite old data
+		data['alignedFiles'] = alignedFiles
+		data['unalignedFiles'] = unalignedFiles
+		with open( mdfile, 'w' ) as f:
+			json.dump( data, f, indent=3 )
+
+		# and return it so that we can keep it in memory
+		return data
 
 	def setDefaults(self):
 		self.filebase = sys.argv[1]
