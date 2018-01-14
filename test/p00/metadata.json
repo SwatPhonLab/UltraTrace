@@ -1,0 +1,24 @@
+{
+   "alignedFiles": {
+      "02": {
+         ".dicom": "test/p00/02.dicom",
+         ".flac": "test/p00/flac/02.flac",
+         ".timetag": "test/p00/timetags/02.timetag",
+         ".TextGrid": "test/p00/TextGrid/02.TextGrid"
+      },
+      "00": {
+         ".flac": "test/p00/flac/00.flac",
+         ".dicom": "test/p00/dicom/00.dicom",
+         ".timetag": "test/p00/timetags/00.timetag",
+         ".TextGrid": "test/p00/TextGrid/00.TextGrid"
+      },
+      "44": {
+         ".flac": "test/p00/44.flac",
+         ".TextGrid": "test/p00/44.TextGrid",
+         ".dicom": "test/p00/44.dicom",
+         ".timetag": "test/p00/44.timetag"
+      }
+   },
+   "path": "test/p00",
+   "participant": "p00"
+}
