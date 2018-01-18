@@ -1,24 +1,44 @@
 {
+   "path": "projects/dicom-annotator/test/p00/",
    "alignedFiles": {
-      "02": {
-         ".dicom": "test/p00/02.dicom",
-         ".flac": "test/p00/flac/02.flac",
-         ".timetag": "test/p00/timetags/02.timetag",
-         ".TextGrid": "test/p00/TextGrid/02.TextGrid"
-      },
       "00": {
-         ".flac": "test/p00/flac/00.flac",
          ".dicom": "test/p00/dicom/00.dicom",
-         ".timetag": "test/p00/timetags/00.timetag",
-         ".TextGrid": "test/p00/TextGrid/00.TextGrid"
+         ".TextGrid": "test/p00/TextGrid/00.TextGrid",
+         ".flac": "test/p00/flac/00.flac",
+         ".timetag": "test/p00/timetags/00.timetag"
       },
       "44": {
-         ".flac": "test/p00/44.flac",
-         ".TextGrid": "test/p00/44.TextGrid",
          ".dicom": "test/p00/44.dicom",
-         ".timetag": "test/p00/44.timetag"
+         ".timetag": "test/p00/44.timetag",
+         ".flac": "test/p00/44.flac",
+         ".TextGrid": "test/p00/44.TextGrid"
+      },
+      "test": {
+         ".dicom": "test/p00/timetags/test.dicom",
+         ".TextGrid": "test/p00/timetags/test.TextGrid",
+         ".flac": "test/p00/timetags/test.flac",
+         ".timetag": "test/p00/timetags/test.timetag"
+      },
+      "02": {
+         ".dicom": "test/p00/02.dicom",
+         ".TextGrid": "test/p00/TextGrid/02.TextGrid",
+         ".flac": "test/p00/flac/02.flac",
+         ".timetag": "test/p00/timetags/02.timetag"
       }
    },
-   "path": "test/p00",
-   "participant": "p00"
+   "participant": "p00",
+   "unalignedFiles": {
+      "03": {
+         ".flac": "test/p00/flac/03.flac"
+      },
+      "metadata": {
+         ".json": "test/p00/metadata.json"
+      },
+      "01": {
+         ".dicom": "test/p00/dicom/01.dicom"
+      },
+      "test2": {
+         ".flac": "test/p00/timetags/test2.flac"
+      }
+   }
 }

@@ -20,48 +20,45 @@ class markingGUI(tkinter.Tk):
 		# need to make sure we are given a valid path
 		if os.path.exists( args.path ):
 
-			self.path = args.path
-			self.metadataFile = os.path.join( self.path, 'metadata.json' )
+			self.filebase = args.path
+			self.metadataFile = os.path.join( self.filebase, 'metadata.json' )
 			self.metadata = self.get_metadata( self.metadataFile )
+
+			# old stuff
+
+			self.setDefaults()
+
+			self.className="mark points: %s" % self.filebase
+
+			self.canvas.bind("<Button-1>", self.onLeftClick)
+			self.canvas.bind("<ButtonRelease-1>", self.onLeftUnClick)
+			self.canvas.bind("<Motion>", self.onMouseMove)
+			self.canvas.bind("<Delete>", self.onDelete)
+			self.canvas.bind("<Tab>", self.onDelete)
+			self.canvas.bind("<Down>", self.moveDown)
+			self.canvas.bind("<Up>", self.moveUp)
+			self.canvas.bind("<Left>", self.showPrev)
+			self.canvas.bind("<Right>", self.showNext)
+			self.canvas.bind("<Button-3>", lambda e: self.destroy())
+			self.canvas.bind("<Escape>", lambda e: self.destroy())
+			self.canvas.bind("<Button-4>", self.zoomImageOut)
+			self.canvas.bind("<Button-5>", self.zoomImageIn)
+			self.listbox = tkinter.Listbox(self, height=3, selectmode=tkinter.SINGLE)
+			self.listbox.pack()
+
+			# load and process file
+			self.loadFile(self.measurementFn)
+			self.afterLoad()
+
+			self.populateSelector()
+			self.subWindow = self.canvas.create_window((150,90),
+				window=self.listbox, anchor="nw")
+
+			self.canvas.focus_set()
 
 		else:
 			print( "Error locating path: %s" % args.path )
 			exit()
-
-		# end progress
-		exit()
-
-		# old stuff
-
-		self.setDefaults()
-
-		self.className="mark points: %s" % self.filebase
-
-		self.canvas.bind("<Button-1>", self.onLeftClick)
-		self.canvas.bind("<ButtonRelease-1>", self.onLeftUnClick)
-		self.canvas.bind("<Motion>", self.onMouseMove)
-		self.canvas.bind("<Delete>", self.onDelete)
-		self.canvas.bind("<Tab>", self.onDelete)
-		self.canvas.bind("<Down>", self.moveDown)
-		self.canvas.bind("<Up>", self.moveUp)
-		self.canvas.bind("<Left>", self.showPrev)
-		self.canvas.bind("<Right>", self.showNext)
-		self.canvas.bind("<Button-3>", lambda e: self.destroy())
-		self.canvas.bind("<Escape>", lambda e: self.destroy())
-		self.canvas.bind("<Button-4>", self.zoomImageOut)
-		self.canvas.bind("<Button-5>", self.zoomImageIn)
-		self.listbox = tkinter.Listbox(self, height=3, selectmode=tkinter.SINGLE)
-		self.listbox.pack()
-
-		# load and process file
-		self.loadFile(self.measurementFn)
-		self.afterLoad()
-
-		self.populateSelector()
-		self.subWindow = self.canvas.create_window((150,90),
-			window=self.listbox, anchor="nw")
-
-		self.canvas.focus_set()
 
 	def get_metadata(self, mdfile):
 		"""
@@ -84,8 +81,8 @@ class markingGUI(tkinter.Tk):
 		else:
 			print( "creating new datafile: %s" % mdfile )
 			data = {
-				'path': str(self.path),
-				'participant': str(os.path.basename( os.path.normpath(self.path) )),
+				'path': str( self.filebase ),
+				'participant': str( os.path.basename( os.path.normpath( self.filebase ))),
 				'alignedFiles': {} }
 
 		# hardcode some required fields
@@ -93,9 +90,9 @@ class markingGUI(tkinter.Tk):
 		alignedFiles, unalignedFiles, unaligned = {}, {}, set()
 
 		# now get the objects in subdirectories
-		for path, dirs, fs in os.walk( self.path ):
+		for path, dirs, fs in os.walk( self.filebase ):
 			for f in fs:
-				fNoExt, fExt = os.path.splitext( f ) # e.g. 00.dicom -> 00, .dicom
+				fNoExt, fExt = os.path.splitext( f ) # e.g. `00.dicom` -> `00`, `.dicom`
 				if fNoExt not in alignedFiles:
 					alignedFiles[fNoExt] = {}
 				alignedFiles[fNoExt][fExt] = os.path.join( path, f )
@@ -118,7 +115,6 @@ class markingGUI(tkinter.Tk):
 		return data
 
 	def setDefaults(self):
-		self.filebase = sys.argv[1]
 		print(self.filebase)
 		self.radius = 5
 		self.click = None
