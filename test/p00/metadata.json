@@ -1,44 +1,79 @@
 {
-   "path": "projects/dicom-annotator/test/p00/",
-   "alignedFiles": {
-      "00": {
-         ".dicom": "test/p00/dicom/00.dicom",
-         ".TextGrid": "test/p00/TextGrid/00.TextGrid",
-         ".flac": "test/p00/flac/00.flac",
-         ".timetag": "test/p00/timetags/00.timetag"
+   "path": "test/p00",
+   "participant": "p00",
+   "files": {
+      "02": {
+         ".TextGrid": "test/p00/TextGrid/02.TextGrid",
+         ".json": null,
+         "right": "03",
+         ".flac": "test/p00/flac/02.flac",
+         ".timetag": "test/p00/timetags/02.timetag",
+         ".dicom": "test/p00/02.dicom",
+         "left": "01"
+      },
+      "20150629171639": {
+         ".TextGrid": "test/p00/20150629171639.TextGrid",
+         ".json": null,
+         "right": "44",
+         ".flac": "test/p00/20150629171639.flac",
+         ".timetag": null,
+         ".dicom": null,
+         "left": "03",
+         ".wav": "test/p00/20150629171639.wav"
       },
       "44": {
-         ".dicom": "test/p00/44.dicom",
-         ".timetag": "test/p00/44.timetag",
+         ".TextGrid": "test/p00/44.TextGrid",
+         ".json": null,
+         "right": "test",
          ".flac": "test/p00/44.flac",
-         ".TextGrid": "test/p00/44.TextGrid"
+         ".timetag": "test/p00/44.timetag",
+         ".dicom": "test/p00/44.dicom",
+         "left": "20150629171639"
       },
-      "test": {
-         ".dicom": "test/p00/timetags/test.dicom",
-         ".TextGrid": "test/p00/timetags/test.TextGrid",
-         ".flac": "test/p00/timetags/test.flac",
-         ".timetag": "test/p00/timetags/test.timetag"
-      },
-      "02": {
-         ".dicom": "test/p00/02.dicom",
-         ".TextGrid": "test/p00/TextGrid/02.TextGrid",
-         ".flac": "test/p00/flac/02.flac",
-         ".timetag": "test/p00/timetags/02.timetag"
-      }
-   },
-   "participant": "p00",
-   "unalignedFiles": {
-      "03": {
-         ".flac": "test/p00/flac/03.flac"
-      },
-      "metadata": {
-         ".json": "test/p00/metadata.json"
+      "00": {
+         ".TextGrid": "test/p00/TextGrid/00.TextGrid",
+         ".json": null,
+         "right": "01",
+         ".flac": "test/p00/flac/00.flac",
+         ".timetag": "test/p00/timetags/00.timetag",
+         ".dicom": "test/p00/dicom/00.dicom",
+         "left": null
       },
       "01": {
-         ".dicom": "test/p00/dicom/01.dicom"
+         ".TextGrid": null,
+         ".json": null,
+         "right": "02",
+         ".flac": null,
+         ".timetag": null,
+         ".dicom": "test/p00/dicom/01.dicom",
+         "left": "00"
+      },
+      "03": {
+         ".TextGrid": null,
+         ".json": null,
+         "right": "20150629171639",
+         ".flac": "test/p00/flac/03.flac",
+         ".timetag": null,
+         ".dicom": null,
+         "left": "02"
+      },
+      "test": {
+         ".TextGrid": "test/p00/timetags/test.TextGrid",
+         ".json": null,
+         "right": "test2",
+         ".flac": "test/p00/timetags/test.flac",
+         ".timetag": "test/p00/timetags/test.timetag",
+         ".dicom": "test/p00/timetags/test.dicom",
+         "left": "44"
       },
       "test2": {
-         ".flac": "test/p00/timetags/test2.flac"
+         ".TextGrid": null,
+         ".json": null,
+         "right": null,
+         ".flac": "test/p00/timetags/test2.flac",
+         ".timetag": null,
+         ".dicom": null,
+         "left": "test"
       }
    }
 }

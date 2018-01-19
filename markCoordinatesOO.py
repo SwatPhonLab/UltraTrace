@@ -1,69 +1,240 @@
 #!/usr/bin/env python3
 
-import tkinter
-import math
-#from sys import argv
-import sys
+from textgrid import TextGrid, IntervalTier, PointTier
+from tkinter import *
+from PIL import Image, ImageTk # pip install pillow
+from numpy import *
+
+import math	# might not need this
+import sys	 # might not need this
 import json
 import os
 import argparse
+import dicom
 
-class markingGUI(tkinter.Tk):
+class markingGUI(Tk):
 	def __init__(self):
-		tkinter.Tk.__init__(self)
+		Tk.__init__(self)
+		self.geometry('1000x700')
 
 		# require a $PATH and parse it
-		parser = argparse.ArgumentParser(description='Process some integers.')
+		parser = argparse.ArgumentParser()
 		parser.add_argument('path', help='path (unique to a participant) where subdirectories contain raw data')
 		args = parser.parse_args()
 
 		# need to make sure we are given a valid path
 		if os.path.exists( args.path ):
-
-			self.filebase = args.path
-			self.metadataFile = os.path.join( self.filebase, 'metadata.json' )
-			self.metadata = self.get_metadata( self.metadataFile )
-
-			# old stuff
-
-			self.setDefaults()
-
-			self.className="mark points: %s" % self.filebase
-
-			self.canvas.bind("<Button-1>", self.onLeftClick)
-			self.canvas.bind("<ButtonRelease-1>", self.onLeftUnClick)
-			self.canvas.bind("<Motion>", self.onMouseMove)
-			self.canvas.bind("<Delete>", self.onDelete)
-			self.canvas.bind("<Tab>", self.onDelete)
-			self.canvas.bind("<Down>", self.moveDown)
-			self.canvas.bind("<Up>", self.moveUp)
-			self.canvas.bind("<Left>", self.showPrev)
-			self.canvas.bind("<Right>", self.showNext)
-			self.canvas.bind("<Button-3>", lambda e: self.destroy())
-			self.canvas.bind("<Escape>", lambda e: self.destroy())
-			self.canvas.bind("<Button-4>", self.zoomImageOut)
-			self.canvas.bind("<Button-5>", self.zoomImageIn)
-			self.listbox = tkinter.Listbox(self, height=3, selectmode=tkinter.SINGLE)
-			self.listbox.pack()
-
-			# load and process file
-			self.loadFile(self.measurementFn)
-			self.afterLoad()
-
-			self.populateSelector()
-			self.subWindow = self.canvas.create_window((150,90),
-				window=self.listbox, anchor="nw")
-
-			self.canvas.focus_set()
-
+			self.path = args.path
+			self.metadataFile = os.path.join( self.path, 'metadata.json' )
+			self.metadata = self.getMetadata( self.metadataFile )
 		else:
 			print( "Error locating path: %s" % args.path )
 			exit()
 
-	def get_metadata(self, mdfile):
+		# set up two variables to track our current file
+		# one will hold the index w/in the sorted list
+		# the other will hold the name of the file at that index
+		# to get the metadata of the current file, call self.getCurrentData(key)
+		self.currentFID = 0 # we know that we always have at least one file
+		self.currentSV, self.loadDicomSV = StringVar(self), StringVar(self)
+		self.currentSV.set( self.files[ self.currentFID ] )
+		self.dicomimage = None
+
+		# ==============
+		# playback frame:	to hold all of our soundfile/TextGrid functionality
+		# ==============
+		self.playbackFrame = Frame(self, height=200, bg='blue')
+
+
+
+		# non playback stuff
+		self.mainFrame = Frame(self)
+
+		# ==============
+		# control frame:	to hold all of our file navigation (w/in our given directory) functionality
+		# ==============
+		self.controlFrame = Frame(self.mainFrame)
+
+		# display our currently selected filename
+		self.participantFrame = Frame(self.controlFrame)
+		self.participantLabel1 = Label(self.participantFrame, text='Current participant:', justify=CENTER, pady=0)
+		self.participantLabel2 = Label(self.participantFrame, text=self.metadata['participant'], justify=CENTER, pady=0)
+
+		# navigate between all available files in this directory
+		self.navFrame = Frame(self.controlFrame)
+		self.navLeftButton = Button(self.navFrame, text='<', command=self.navFramePanLeft)
+		self.navJumpToMenu = OptionMenu(self.navFrame, self.currentSV, *self.files, command=self.navFrameJumpToFile)
+		self.navRightButton= Button(self.navFrame, text='>', command=self.navFramePanRight)
+		if self.getCurrentData('right') == None:
+			self.navRightButton['state'] = DISABLED
+
+		# display information about files with this filename
+		self.availableFilesFrame = Frame(self.controlFrame, width=200)
+		self.availableFilesLabel1 = Label(self.availableFilesFrame, text='Available files:', justify=LEFT, pady=0)
+		self.availableFilesList = Listbox(self.availableFilesFrame)
+
+		# don't want to automatically load the DICOM file because it's so huge
+		self.loadDicomButton = Button(self.controlFrame, text='Show DICOM', command=self.showDicom)
+		self.loadDicomLabel = Label(self.controlFrame, textvariable=self.loadDicomSV, pady=0)
+
+		# ==============
+		# tracing frame:	to hold all of our actual image-tracing functionality
+		# ==============
+		self.tracingFrame = Frame(self.mainFrame, bg='grey')
+
+		# display the image if it exists
+		self.dicomImageLabel = Label(self.tracingFrame, image=self.dicomimage)
+
+		# populate everything
+		self.currentFrameUpdate()
+
+		# pack all of our objects
+		self.playbackFrame.pack(side=BOTTOM, fill=X, expand=0)
+		self.mainFrame.pack(side=BOTTOM, fill=BOTH, expand=1)
+		self.controlFrame.pack(side=LEFT, fill=Y, expand=0)
+		self.participantFrame.pack(expand=0)
+		self.participantLabel1.pack()
+		self.participantLabel2.pack()
+		self.navFrame.pack(expand=0)
+		self.navLeftButton.pack(side=LEFT)
+		self.navJumpToMenu.pack(side=LEFT)
+		self.navRightButton.pack(side=LEFT)
+		self.availableFilesFrame.pack(expand=0)
+		self.availableFilesLabel1.pack()
+		self.availableFilesList.pack()
+		self.loadDicomButton.pack()
+		self.loadDicomLabel.pack()
+		self.tracingFrame.pack(side=LEFT, fill=BOTH, expand=1)
+		self.dicomImageLabel.pack()
+
+		return
+
+		self.setDefaults()
+
+		self.className="mark points: %s" % self.filebase
+
+		# bind buttons to actions
+		self.canvas.bind("<Button-1>", self.onLeftClick)
+		self.canvas.bind("<ButtonRelease-1>", self.onLeftUnClick)
+		self.canvas.bind("<Motion>", self.onMouseMove)
+		self.canvas.bind("<Delete>", self.onDelete)
+		self.canvas.bind("<Tab>", self.onDelete)
+		self.canvas.bind("<Down>", self.moveDown)
+		self.canvas.bind("<Up>", self.moveUp)
+		self.canvas.bind("<Left>", self.showPrev)
+		self.canvas.bind("<Right>", self.showNext)
+		self.canvas.bind("<Button-3>", lambda e: self.destroy())
+		self.canvas.bind("<Escape>", lambda e: self.destroy())
+		self.canvas.bind("<Button-4>", self.zoomImageOut)
+		self.canvas.bind("<Button-5>", self.zoomImageIn)
+
+		self.listbox = Listbox(self, height=3, selectmode=SINGLE)
+		self.listbox.pack()
+
+		# load and process file
+		self.loadFile(self.measurementFn)
+		self.afterLoad()
+
+		self.populateSelector()
+		self.subWindow = self.canvas.create_window((150,90),
+			window=self.listbox, anchor="nw")
+
+		self.canvas.focus_set()
+
+	def getCurrentData(self, key):
+		"""
+		returns data about the current file ... either everything or just a specfic key
+		"""
+		if key == 'all':
+			return self.metadata['files'][ self.currentSV.get() ].keys()
+		return self.metadata['files'][ self.currentSV.get() ][key]
+
+	def currentFrameUpdate(self):
+		# update the StringVars tracking the current file
+		self.currentSV.set( self.files[ self.currentFID ] )
+		self.loadDicomSV.set( '' )
+
+		# reset other variables
+		self.textgrid = None
+		self.dicom = None
+		self.dicomfile = None
+		self.dicomImageLabel['image'] = None
+
+		# check if we can pan left
+		if self.getCurrentData('left') == None:
+			self.navLeftButton['state'] = DISABLED
+		else:
+			self.navLeftButton['state'] = NORMAL
+
+		# check if we can pan right
+		if self.getCurrentData('right') == None:
+			self.navRightButton['state'] = DISABLED
+		else:
+			self.navRightButton['state'] = NORMAL
+
+		# clear contents and build new listbox
+		self.availableFilesList.delete(0, END)
+		for key in self.getCurrentData('all'):
+			if key not in { 'left', 'right' }:
+				self.availableFilesList.insert(END, '%s:' % key )
+				self.availableFilesList.insert(END, '\t%s' % self.getCurrentData(key) )
+
+		# bring our current TextGrid into memory if it exists
+		tgfile = self.getCurrentData('.TextGrid')
+		if tgfile != None:
+			self.textgrid = TextGrid( tgfile, self.currentSV.get() )
+
+		if self.getCurrentData('.dicom') == None:
+			self.loadDicomButton['state'] = DISABLED
+		else:
+			self.loadDicomButton['state'] = NORMAL
+
+	def showDicom(self):
+
+		# bring our current dicom file into memory if it exists
+		dicomfile = self.getCurrentData('.dicom')
+		try:
+
+			# load the dicom using a library
+			data = dicom.read_file( dicomfile )
+			# save a reference to it to avoid python garbage collection
+			self.dicomimage = self.getImageFromDicom( data, 0 )
+			# display it
+			self.dicomImageLabel['image'] = self.dicomimage
+
+		except dicom.errors.InvalidDicomError:
+			self.loadDicomSV.set('Error loading DICOM file.')
+
+	def navFramePanLeft(self):
+		"""
+		controls self.navLeftButton for panning between available files
+		"""
+
+		# change the index of the current file
+		self.currentFID -= 1
+
+		# update
+		self.currentFrameUpdate()
+
+	def navFramePanRight(self):
+		"""
+		controls self.navRightButton for panning between available files
+		"""
+
+		# change the index of the current file
+		self.currentFID += 1
+
+		# update
+		self.currentFrameUpdate()
+
+	def navFrameJumpToFile(self, choice):
+		self.currentFID = self.files.index( choice )
+		self.currentFrameUpdate()
+
+	def getMetadata(self, mdfile):
 		"""
 		opens a metadata file (or creates one if it doesn't exist), recursively searches a directory
-			for acceptable files, writes appropriate data back into memory, and returns the metadata object
+			for acceptable files, writes metadata back into memory, and returns the metadata object
 
 		acceptable files: the metadata file requires matching files w/in subdirectories based on filenames
 			for example, it will try to locate files that have the same base filename and
@@ -81,43 +252,96 @@ class markingGUI(tkinter.Tk):
 		else:
 			print( "creating new datafile: %s" % mdfile )
 			data = {
-				'path': str( self.filebase ),
-				'participant': str( os.path.basename( os.path.normpath( self.filebase ))),
-				'alignedFiles': {} }
+				'path': str(self.path),
+				'participant': str(os.path.basename( os.path.normpath(self.path) )),
+				'files': {} }
 
-		# hardcode some required fields
-		REQUIRED_FIELDS = { '.dicom', '.flac', '.TextGrid', '.timetag' }
-		alignedFiles, unalignedFiles, unaligned = {}, {}, set()
+		# we want each object to have entries for everything here
+		fileKeys = { 'left', 'right', '.dicom', '.flac', '.TextGrid', '.timetag', '.json' }
+		files = {}
 
 		# now get the objects in subdirectories
-		for path, dirs, fs in os.walk( self.filebase ):
+		for path, dirs, fs in os.walk( self.path ):
 			for f in fs:
-				fNoExt, fExt = os.path.splitext( f ) # e.g. `00.dicom` -> `00`, `.dicom`
-				if fNoExt not in alignedFiles:
-					alignedFiles[fNoExt] = {}
-				alignedFiles[fNoExt][fExt] = os.path.join( path, f )
+				# exclude some files explicitly here
+				if f not in { 'metadata.json', }:
+					fNoExt, fExt = os.path.splitext( f ) # e.g. 00.dicom -> 00, .dicom
+					if fNoExt not in files:
+						files[fNoExt] = { key:None for key in fileKeys }
+					files[fNoExt][fExt] = os.path.join( path, f )
 
-		# and align them if they have all of the required filetypes
-		# if not, move them to another object `unaligned files`
-		for fNoExt in alignedFiles:
-			if alignedFiles[fNoExt].keys() != REQUIRED_FIELDS:
-				unaligned.add(fNoExt)
-		for key in unaligned:
-			unalignedFiles[key] = alignedFiles.pop( key )
+		# sort the files so that we can guess about left/right ... extrema get None/null
+		left = None
+		for key in sorted( files.keys() ):
+			if left != None:
+				files[left]['right'] = key
+			files[key]['left'] = left
+			left = key
+
+		# check that we find at least one file
+		if len(data['files']) == 0:
+			print( 'Unable to find any files' )
+			exit()
 
 		# overwrite old data
-		data['alignedFiles'] = alignedFiles
-		data['unalignedFiles'] = unalignedFiles
+		data['files'] = files
 		with open( mdfile, 'w' ) as f:
 			json.dump( data, f, indent=3 )
 
 		# and return it so that we can keep it in memory
+		self.files = sorted(list(data['files'].keys()))
 		return data
 
+	def getImageFromDicom(self, data, frame=0):
+		"""
+		convert DICOM file to PGM image
+		based on the code at : https://github.com/pieper/pydicom/blob/master/source/dicom/contrib/pydicom_Tkinter.py
+		"""
+
+		# convert the data to a numpy array, only keeping the frame-relevant pixel data
+		arr = data.pixel_array.astype(float64)[frame,:,:]
+		# use PIL (Pillow) libraries to convert this to something readable by tkinter
+		photoImage = ImageTk.PhotoImage( Image.fromarray(arr) )
+
+		return photoImage
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	def setDefaults(self):
+		self.filebase = sys.argv[1]
 		print(self.filebase)
 		self.radius = 5
 		self.click = None
+
 
 		baselineStarts = {}
 		baselineStarts["2014-10-09"] = (299,599-45)
@@ -164,7 +388,7 @@ class markingGUI(tkinter.Tk):
 		TBreferences["2016-03-16"] = (425, 591)
 
 		# e.g., "2014-10-09" from
-		#       "/home/jonathan/q/dissertation/data/2014-10-09/bySlide"
+		#	   "/home/jonathan/q/dissertation/data/2014-10-09/bySlide"
 		metafn = "dir.metadata"
 		newmetafn = os.path.join("bySlide", metafn)
 		#print(newmetafn)
@@ -213,11 +437,11 @@ class markingGUI(tkinter.Tk):
 		self.zoomed = False
 
 		#image = Image.open(argv[1] if len(argv) >=2 else "018_516.png")
-		self.image = tkinter.PhotoImage(file=self.filebase+".png")
-		self.scaledImage = tkinter.PhotoImage(file=self.filebase+".png").zoom(self.zoomFactor)
+		self.image = PhotoImage(file=self.filebase+".png")
+		self.scaledImage = PhotoImage(file=self.filebase+".png").zoom(self.zoomFactor)
 		self.width = self.image.width()
 		self.height = self.image.height()
-		self.canvas = tkinter.Canvas(self, width=self.width, height=self.height)
+		self.canvas = Canvas(self, width=self.width, height=self.height)
 		self.canvas.pack()
 		self.references = {}
 		#image_tk = ImageTk.PhotoImage(image)
@@ -241,10 +465,10 @@ class markingGUI(tkinter.Tk):
 		nextImageFn = "./adjacent/{}_{}.png".format(base, nɛxt)
 		prevImageFn = "./adjacent/{}_{}.png".format(base, prev)
 		if os.path.exists(nextImageFn) and os.path.exists(prevImageFn):
-			self.nextImage = tkinter.PhotoImage(file=nextImageFn)
-			self.prevImage = tkinter.PhotoImage(file=prevImageFn)
-			self.nextImageScaled = tkinter.PhotoImage(file=nextImageFn).zoom(self.zoomFactor)
-			self.prevImageScaled = tkinter.PhotoImage(file=prevImageFn).zoom(self.zoomFactor)
+			self.nextImage = PhotoImage(file=nextImageFn)
+			self.prevImage = PhotoImage(file=prevImageFn)
+			self.nextImageScaled = PhotoImage(file=nextImageFn).zoom(self.zoomFactor)
+			self.prevImageScaled = PhotoImage(file=prevImageFn).zoom(self.zoomFactor)
 		else:
 			print("WARNING: no previous and/or next frame images!")
 
@@ -256,7 +480,7 @@ class markingGUI(tkinter.Tk):
 			self.canvas.delete(self.slide)
 			#scaledImage = self.image.subsample(2, 2)
 			#print(factor)
-			#self.scaledImage = tkinter.PhotoImage(file=self.filebase+".png")#.zoom(factor)
+			#self.scaledImage = PhotoImage(file=self.filebase+".png")#.zoom(factor)
 			##self.canvas.scale("all", event.x, event.y, factor, factor)
 			self.canvas.scale("all", 0, self.height, self.zoomFactor, self.zoomFactor)
 			self.slide = self.canvas.create_image(self.image.width()*self.zoomFactor/2, 0, image=self.scaledImage)
@@ -399,7 +623,7 @@ class markingGUI(tkinter.Tk):
 	def populateSelector(self):
 		for item in sorted(self.fDict):
 			if item != "meta":
-				self.listbox.insert(tkinter.END, item)
+				self.listbox.insert(END, item)
 		self.listbox.selection_set(0)
 		#self.listbox.bind('<<ListboxSelect>>', self.listChange)
 		self.listbox.bind('<ButtonRelease-1>', self.listChange)
