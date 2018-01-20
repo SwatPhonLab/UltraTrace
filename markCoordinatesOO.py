@@ -3,7 +3,6 @@
 from textgrid import TextGrid, IntervalTier, PointTier
 from tkinter import *
 from PIL import Image, ImageTk # pip install pillow
-from numpy import *
 
 import math	# might not need this
 import sys	 # might not need this
@@ -11,11 +10,13 @@ import json
 import os
 import argparse
 import dicom
+import numpy
 
 class markingGUI(Tk):
 	def __init__(self):
+
+		# need this first
 		Tk.__init__(self)
-		self.geometry('1000x700')
 
 		# require a $PATH and parse it
 		parser = argparse.ArgumentParser()
@@ -31,14 +32,32 @@ class markingGUI(Tk):
 			print( "Error locating path: %s" % args.path )
 			exit()
 
-		# set up two variables to track our current file
-		# one will hold the index w/in the sorted list
-		# the other will hold the name of the file at that index
-		# to get the metadata of the current file, call self.getCurrentData(key)
-		self.currentFID = 0 # we know that we always have at least one file
-		self.currentSV, self.loadDicomSV = StringVar(self), StringVar(self)
+		self.setDefaults()
+		self.setupTk()
+
+		# populate everything
+		self.changeFilesUpdate()
+
+	def setDefaults(self):
+
+		self.currentFID = 0 				# file index w/in list of sorted files
+		self.frame = 0						# current frame of dicom file
+		self.dicomImage = None  			# PhotoImage of the current dicom frame
+		self.dicomImageOnCanvas = None		# PhotoImage on the canvas, used to delete old stuff when we change images
+		self.currentFrames = [ 'test' ] 	# need to initialize to garbage or else Tk will be mad
+		self.zoomFactor = 0					# make sure we don't zoom in/out too far
+
+		# instatiate string variables
+		self.currentSV = StringVar(self)
+		self.loadDicomSV = StringVar(self)
+		self.frameSV = StringVar(self)
+
+		# initialize string variables
 		self.currentSV.set( self.files[ self.currentFID ] )
-		self.dicomimage = None
+		self.frameSV.set( 'Frame X of X' )
+
+	def setupTk(self):
+		self.geometry('1000x800')
 
 		# ==============
 		# playback frame:	to hold all of our soundfile/TextGrid functionality
@@ -61,12 +80,10 @@ class markingGUI(Tk):
 		self.participantLabel2 = Label(self.participantFrame, text=self.metadata['participant'], justify=CENTER, pady=0)
 
 		# navigate between all available files in this directory
-		self.navFrame = Frame(self.controlFrame)
-		self.navLeftButton = Button(self.navFrame, text='<', command=self.navFramePanLeft)
-		self.navJumpToMenu = OptionMenu(self.navFrame, self.currentSV, *self.files, command=self.navFrameJumpToFile)
-		self.navRightButton= Button(self.navFrame, text='>', command=self.navFramePanRight)
-		if self.getCurrentData('right') == None:
-			self.navRightButton['state'] = DISABLED
+		self.navFileFrame = Frame(self.controlFrame)
+		self.navFileLeftButton = Button(self.navFileFrame, text='<', command=self.navFileFramePanLeft)
+		self.navFileJumpToMenu = OptionMenu(self.navFileFrame, self.currentSV, *self.files, command=self.navFileFrameJumpTo)
+		self.navFileRightButton= Button(self.navFileFrame, text='>', command=self.navFileFramePanRight)
 
 		# display information about files with this filename
 		self.availableFilesFrame = Frame(self.controlFrame, width=200)
@@ -74,19 +91,22 @@ class markingGUI(Tk):
 		self.availableFilesList = Listbox(self.availableFilesFrame)
 
 		# don't want to automatically load the DICOM file because it's so huge
-		self.loadDicomButton = Button(self.controlFrame, text='Show DICOM', command=self.showDicom)
+		self.loadDicomButton = Button(self.controlFrame, text='Show DICOM', command=self.loadDicom)
 		self.loadDicomLabel = Label(self.controlFrame, textvariable=self.loadDicomSV, pady=0)
 
+		# navigate between dicom frames
+		self.navDicomFrame = Frame(self.controlFrame)
+		self.navDicomLeftButton = Button(self.navDicomFrame, text='<', command=self.navDicomFramePanLeft)
+		self.navDicomJumpToMenu = OptionMenu(self.navDicomFrame, self.frameSV, *self.currentFrames, command=self.navDicomFrameJumpTo)
+		self.navDicomRightButton= Button(self.navDicomFrame, text='>', command=self.navDicomFramePanRight)
+
 		# ==============
-		# tracing frame:	to hold all of our actual image-tracing functionality
+		# ultrasound frame:	to hold our image
 		# ==============
-		self.tracingFrame = Frame(self.mainFrame, bg='grey')
+		self.ultrasoundFrame = Frame(self.mainFrame, bg='grey')
 
 		# display the image if it exists
-		self.dicomImageLabel = Label(self.tracingFrame, image=self.dicomimage)
-
-		# populate everything
-		self.currentFrameUpdate()
+		self.dicomImageCanvas = Canvas(self.ultrasoundFrame, width=800, height=600)
 
 		# pack all of our objects
 		self.playbackFrame.pack(side=BOTTOM, fill=X, expand=0)
@@ -95,20 +115,310 @@ class markingGUI(Tk):
 		self.participantFrame.pack(expand=0)
 		self.participantLabel1.pack()
 		self.participantLabel2.pack()
-		self.navFrame.pack(expand=0)
-		self.navLeftButton.pack(side=LEFT)
-		self.navJumpToMenu.pack(side=LEFT)
-		self.navRightButton.pack(side=LEFT)
+		self.navFileFrame.pack(expand=0)
+		self.navFileLeftButton.pack(side=LEFT)
+		self.navFileJumpToMenu.pack(side=LEFT)
+		self.navFileRightButton.pack(side=LEFT)
 		self.availableFilesFrame.pack(expand=0)
 		self.availableFilesLabel1.pack()
 		self.availableFilesList.pack()
+		#self.loadDicomButton.pack()
+		#self.loadDicomLabel.pack()
+		self.navDicomFrame.pack()
+		# don't pack these until we press the button
+		#self.navDicomLeftButton.pack(side=LEFT)
+		#self.navDicomJumpToMenu.pack(side=LEFT)
+		#self.navDicomRightButton.pack(side=LEFT)
+		self.ultrasoundFrame.pack(side=LEFT, fill=BOTH, expand=1)
+		self.dicomImageCanvas.pack()
+
+		self.bind('<Left>', lambda a: self.navDicomFramePanLeft() )
+		self.bind('<Right>', lambda a: self.navDicomFramePanRight() )
+		self.bind('<Up>', lambda a: self.zoomIn() )
+		self.bind('<MouseWheel>', self.zoom )
+		self.bind('<Down>', lambda a: self.zoomOut() )
+		self.dicomImageCanvas.bind('<Button-1>', lambda a: self.clickInCanvas() )
+		self.dicomImageCanvas.bind('<ButtonRelease-1>', lambda a: self.unclickInCanvas() )
+
+	def clickInCanvas(self):
+		print( 'clicked in canvas' )
+
+	def unclickInCanvas(self):
+		print( 'unclicked in canvas' )
+
+	def zoom(self, event):
+		if event.delta > 0:
+			self.zoomIn()
+		else:
+			self.zoomOut()
+
+	def zoomIn(self):
+		print( 'zoom in' )
+
+	def zoomOut(self):
+		print( 'zoom out' )
+
+	def changeFilesUpdate(self):
+
+		# update the StringVars tracking the current file
+		self.currentSV.set( self.files[ self.currentFID ] )
+		self.loadDicomSV.set( '' )
+
+		# reset other variables
+		self.textgrid = None
+		self.dicomImageCanvas.delete(self.dicomImageOnCanvas)
+		self.dicom = None
+		self.frame = 0
+		self.currentFrames = []
+
 		self.loadDicomButton.pack()
+		self.loadDicomLabel.pack_forget()
+		self.navDicomLeftButton.pack_forget()
+		self.navDicomJumpToMenu.pack_forget()
+		self.navDicomRightButton.pack_forget()
+
+		# check if we can pan left
+		if self.getCurrentData('left') == None:
+			self.navFileLeftButton['state'] = DISABLED
+		else:
+			self.navFileLeftButton['state'] = NORMAL
+
+		# check if we can pan right
+		if self.getCurrentData('right') == None:
+			self.navFileRightButton['state'] = DISABLED
+		else:
+			self.navFileRightButton['state'] = NORMAL
+
+		# clear contents and build new listbox
+		self.availableFilesList.delete(0, END)
+		for key in self.getCurrentData('all'):
+			if key not in { 'left', 'right' }:
+				self.availableFilesList.insert(END, '%s:' % key )
+				self.availableFilesList.insert(END, '\t%s' % self.getCurrentData(key) )
+
+		# bring our current TextGrid into memory if it exists
+		tgfile = self.getCurrentData('.TextGrid')
+		if tgfile != None:
+			self.textgrid = TextGrid( tgfile, self.currentSV.get() )
+
+		# check if we have a dicom file to bring into memory
+		if self.getCurrentData('.dicom') == None:
+			self.loadDicomButton['state'] = DISABLED
+		else:
+			self.loadDicomButton['state'] = NORMAL
+
+	def navFileFramePanLeft(self):
+		"""
+		controls self.navFileLeftButton for panning between available files
+		"""
+
+		# change the index of the current file
+		self.currentFID -= 1
+
+		# update
+		self.changeFilesUpdate()
+
+	def navFileFramePanRight(self):
+		"""
+		controls self.navFileRightButton for panning between available files
+		"""
+
+		# change the index of the current file
+		self.currentFID += 1
+
+		# update
+		self.changeFilesUpdate()
+
+	def navFileFrameJumpTo(self, choice):
+		self.currentFID = self.files.index( choice )
+		self.changeFilesUpdate()
+
+	def changeFramesUpdate(self):
+
+		self.dicomImageCanvas.delete(self.dicomImageOnCanvas)
+
+		# check if we can pan left
+		if self.frame == 0:
+			self.navDicomLeftButton['state'] = DISABLED
+		else:
+			self.navDicomLeftButton['state'] = NORMAL
+
+		# check if we can pan right
+		if self.frame == len(self.currentFrames)-1:
+			self.navDicomRightButton['state'] = DISABLED
+		else:
+			self.navDicomRightButton['state'] = NORMAL
+
+		self.frameSV.set( self.currentFrames[ self.frame ] )
+
+		self.showDicom()
+
+	def navDicomFramePanLeft(self):
+		if self.dicom != None and self.frame > 0:
+			self.frame -= 1
+			self.changeFramesUpdate()
+
+	def navDicomFramePanRight(self):
+		if self.dicom != None and self.frame < len(self.currentFrames) - 1:
+			self.frame += 1
+			self.changeFramesUpdate()
+
+	def navDicomFrameJumpTo(self, choice):
+		self.frame = self.currentFrames.index( choice )
+		self.changeFramesUpdate()
+
+	def loadDicom(self):
+		"""
+		brings a dicom file into memory if it exists and displays the image (usually frame 0 here)
+		"""
+		dicomfile = self.getCurrentData('.dicom')
+		try:
+			# load the dicom using a library ...
+			# ... but we only want to load this once and not on every different frame
+			self.dicom = dicom.read_file( dicomfile )
+			self.showDicom()
+
+			self.navDicomLeftButton.pack(side=LEFT)
+			self.navDicomJumpToMenu.pack(side=LEFT)
+			self.navDicomRightButton.pack(side=LEFT)
+
+			frames = self.dicom.pixel_array.shape[0]
+			self.currentFrames = [ 'Frame %d of %d' % (i+1, frames) for i in range(frames) ]
+			self.frameSV.set(self.currentFrames[0])
+			menu = self.navDicomJumpToMenu['menu']
+			menu.delete(0, END)
+			for option in self.currentFrames:
+				menu.add_command(label=option, command=(lambda o=option: self.navDicomFrameJumpTo(o)))
+
+			self.loadDicomButton.pack_forget()
+			self.loadDicomSV.set('Loaded %d frames.' % frames)
+
+			self.changeFramesUpdate()
+
+		except dicom.errors.InvalidDicomError:
+			self.loadDicomSV.set('Error loading DICOM file.')
+
 		self.loadDicomLabel.pack()
-		self.tracingFrame.pack(side=LEFT, fill=BOTH, expand=1)
-		self.dicomImageLabel.pack()
 
-		return
+	def showDicom(self):
+		# save a reference to it to avoid python garbage collection
+		self.dicomImage = self.getImageFromDicom( self.dicom, self.frame )
+		# display it and save self.dicomImageOnCanvas so that we can delete it from the canvas later
+		self.dicomImageOnCanvas = self.dicomImageCanvas.create_image((400,300), image=self.dicomImage)
 
+	def getImageFromDicom(self, data, frame=0):
+		"""
+		convert DICOM file to PGM image
+		based on the code at : https://github.com/pieper/pydicom/blob/master/source/dicom/contrib/pydicom_Tkinter.py
+		"""
+
+		# convert the data to a numpy array, only keeping the frame-relevant pixel data
+		arr = data.pixel_array.astype(numpy.float64)[frame,:,:]
+		# use PIL (Pillow) libraries to convert this to something readable by tkinter
+		photoImage = ImageTk.PhotoImage( Image.fromarray(arr) )
+
+		return photoImage
+
+	def getCurrentData(self, key):
+		"""
+		returns data about the current file ... either everything or just a specfic key
+		"""
+		if key == 'all':
+			return self.metadata['files'][ self.currentSV.get() ].keys()
+		return self.metadata['files'][ self.currentSV.get() ][key]
+
+	def getMetadata(self, mdfile):
+		"""
+		opens a metadata file (or creates one if it doesn't exist), recursively searches a directory
+			for acceptable files, writes metadata back into memory, and returns the metadata object
+
+		acceptable files: the metadata file requires matching files w/in subdirectories based on filenames
+			for example, it will try to locate files that have the same base filename and
+			each of a set of required extensions
+		"""
+
+		# either load up existing metadata
+		if os.path.exists( mdfile ):
+			print( "loading data from %s" % mdfile )
+			with open( mdfile, 'r' ) as f:
+				data = json.load( f )
+
+		# or make some new stuff ... no reason to separate these yet at the moment
+		#... maybe later on we'll have other types of data stored in here?
+		else:
+			print( "creating new datafile: %s" % mdfile )
+			data = {
+				'path': str(self.path),
+				'participant': str(os.path.basename( os.path.normpath(self.path) )),
+				'files': {},
+				'traces': { 'default':[] } }
+
+		# we want each object to have entries for everything here
+		fileKeys = { 'left', 'right', '.dicom', '.flac', '.TextGrid', '.timetag' }
+		files = {}
+
+		# now get the objects in subdirectories
+		for path, dirs, fs in os.walk( self.path ):
+			for f in fs:
+				# exclude some files explicitly here
+				if f not in { 'metadata.json', }:
+					fNoExt, fExt = os.path.splitext( f ) # e.g. 00.dicom -> 00, .dicom
+					if fNoExt not in files:
+						files[fNoExt] = { key:None for key in fileKeys }
+					files[fNoExt][fExt] = os.path.join( path, f )
+
+		# sort the files so that we can guess about left/right ... extrema get None/null
+		left = None
+		for key in sorted( files.keys() ):
+			if left != None:
+				files[left]['right'] = key
+			files[key]['left'] = left
+			left = key
+
+		# check that we find at least one file
+		if len(files) == 0:
+			print( 'Unable to find any files' )
+			exit()
+
+		# overwrite old data
+		data['files'] = files
+		with open( mdfile, 'w' ) as f:
+			json.dump( data, f, indent=3 )
+
+		# and return it so that we can keep it in memory
+		self.files = sorted(list(data['files'].keys()))
+		return data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		"""
 		self.setDefaults()
 
 		self.className="mark points: %s" % self.filebase
@@ -140,203 +450,9 @@ class markingGUI(Tk):
 			window=self.listbox, anchor="nw")
 
 		self.canvas.focus_set()
-
-	def getCurrentData(self, key):
-		"""
-		returns data about the current file ... either everything or just a specfic key
-		"""
-		if key == 'all':
-			return self.metadata['files'][ self.currentSV.get() ].keys()
-		return self.metadata['files'][ self.currentSV.get() ][key]
-
-	def currentFrameUpdate(self):
-		# update the StringVars tracking the current file
-		self.currentSV.set( self.files[ self.currentFID ] )
-		self.loadDicomSV.set( '' )
-
-		# reset other variables
-		self.textgrid = None
-		self.dicom = None
-		self.dicomfile = None
-		self.dicomImageLabel['image'] = None
-
-		# check if we can pan left
-		if self.getCurrentData('left') == None:
-			self.navLeftButton['state'] = DISABLED
-		else:
-			self.navLeftButton['state'] = NORMAL
-
-		# check if we can pan right
-		if self.getCurrentData('right') == None:
-			self.navRightButton['state'] = DISABLED
-		else:
-			self.navRightButton['state'] = NORMAL
-
-		# clear contents and build new listbox
-		self.availableFilesList.delete(0, END)
-		for key in self.getCurrentData('all'):
-			if key not in { 'left', 'right' }:
-				self.availableFilesList.insert(END, '%s:' % key )
-				self.availableFilesList.insert(END, '\t%s' % self.getCurrentData(key) )
-
-		# bring our current TextGrid into memory if it exists
-		tgfile = self.getCurrentData('.TextGrid')
-		if tgfile != None:
-			self.textgrid = TextGrid( tgfile, self.currentSV.get() )
-
-		if self.getCurrentData('.dicom') == None:
-			self.loadDicomButton['state'] = DISABLED
-		else:
-			self.loadDicomButton['state'] = NORMAL
-
-	def showDicom(self):
-
-		# bring our current dicom file into memory if it exists
-		dicomfile = self.getCurrentData('.dicom')
-		try:
-
-			# load the dicom using a library
-			data = dicom.read_file( dicomfile )
-			# save a reference to it to avoid python garbage collection
-			self.dicomimage = self.getImageFromDicom( data, 0 )
-			# display it
-			self.dicomImageLabel['image'] = self.dicomimage
-
-		except dicom.errors.InvalidDicomError:
-			self.loadDicomSV.set('Error loading DICOM file.')
-
-	def navFramePanLeft(self):
-		"""
-		controls self.navLeftButton for panning between available files
 		"""
 
-		# change the index of the current file
-		self.currentFID -= 1
-
-		# update
-		self.currentFrameUpdate()
-
-	def navFramePanRight(self):
-		"""
-		controls self.navRightButton for panning between available files
-		"""
-
-		# change the index of the current file
-		self.currentFID += 1
-
-		# update
-		self.currentFrameUpdate()
-
-	def navFrameJumpToFile(self, choice):
-		self.currentFID = self.files.index( choice )
-		self.currentFrameUpdate()
-
-	def getMetadata(self, mdfile):
-		"""
-		opens a metadata file (or creates one if it doesn't exist), recursively searches a directory
-			for acceptable files, writes metadata back into memory, and returns the metadata object
-
-		acceptable files: the metadata file requires matching files w/in subdirectories based on filenames
-			for example, it will try to locate files that have the same base filename and
-			each of a set of required extensions
-		"""
-
-		# either load up existing metadata
-		if os.path.exists( mdfile ):
-			print( "loading data from %s" % mdfile )
-			with open( mdfile, 'r' ) as f:
-				data = json.load( f )
-
-		# or make some new stuff ... no reason to separate these yet at the moment
-		#... maybe later on we'll have other types of data stored in here?
-		else:
-			print( "creating new datafile: %s" % mdfile )
-			data = {
-				'path': str(self.path),
-				'participant': str(os.path.basename( os.path.normpath(self.path) )),
-				'files': {} }
-
-		# we want each object to have entries for everything here
-		fileKeys = { 'left', 'right', '.dicom', '.flac', '.TextGrid', '.timetag', '.json' }
-		files = {}
-
-		# now get the objects in subdirectories
-		for path, dirs, fs in os.walk( self.path ):
-			for f in fs:
-				# exclude some files explicitly here
-				if f not in { 'metadata.json', }:
-					fNoExt, fExt = os.path.splitext( f ) # e.g. 00.dicom -> 00, .dicom
-					if fNoExt not in files:
-						files[fNoExt] = { key:None for key in fileKeys }
-					files[fNoExt][fExt] = os.path.join( path, f )
-
-		# sort the files so that we can guess about left/right ... extrema get None/null
-		left = None
-		for key in sorted( files.keys() ):
-			if left != None:
-				files[left]['right'] = key
-			files[key]['left'] = left
-			left = key
-
-		# check that we find at least one file
-		if len(data['files']) == 0:
-			print( 'Unable to find any files' )
-			exit()
-
-		# overwrite old data
-		data['files'] = files
-		with open( mdfile, 'w' ) as f:
-			json.dump( data, f, indent=3 )
-
-		# and return it so that we can keep it in memory
-		self.files = sorted(list(data['files'].keys()))
-		return data
-
-	def getImageFromDicom(self, data, frame=0):
-		"""
-		convert DICOM file to PGM image
-		based on the code at : https://github.com/pieper/pydicom/blob/master/source/dicom/contrib/pydicom_Tkinter.py
-		"""
-
-		# convert the data to a numpy array, only keeping the frame-relevant pixel data
-		arr = data.pixel_array.astype(float64)[frame,:,:]
-		# use PIL (Pillow) libraries to convert this to something readable by tkinter
-		photoImage = ImageTk.PhotoImage( Image.fromarray(arr) )
-
-		return photoImage
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	def setDefaults(self):
+	def setDefaults_____old(self):
 		self.filebase = sys.argv[1]
 		print(self.filebase)
 		self.radius = 5

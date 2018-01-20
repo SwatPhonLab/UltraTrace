@@ -1,79 +1,74 @@
 {
-   "path": "test/p00",
+   "path": "test/p00/",
    "participant": "p00",
    "files": {
       "02": {
-         ".TextGrid": "test/p00/TextGrid/02.TextGrid",
-         ".json": null,
-         "right": "03",
+         ".dicom": "test/p00/02.dicom",
+         "left": "01",
          ".flac": "test/p00/flac/02.flac",
          ".timetag": "test/p00/timetags/02.timetag",
-         ".dicom": "test/p00/02.dicom",
-         "left": "01"
+         "right": "03",
+         ".TextGrid": "test/p00/TextGrid/02.TextGrid"
       },
       "20150629171639": {
-         ".TextGrid": "test/p00/20150629171639.TextGrid",
-         ".json": null,
-         "right": "44",
-         ".flac": "test/p00/20150629171639.flac",
-         ".timetag": null,
          ".dicom": null,
          "left": "03",
+         ".flac": "test/p00/20150629171639.flac",
+         ".timetag": null,
+         "right": "44",
+         ".TextGrid": "test/p00/20150629171639.TextGrid",
          ".wav": "test/p00/20150629171639.wav"
       },
       "44": {
-         ".TextGrid": "test/p00/44.TextGrid",
-         ".json": null,
-         "right": "test",
+         ".dicom": "test/p00/44.dicom",
+         "left": "20150629171639",
          ".flac": "test/p00/44.flac",
          ".timetag": "test/p00/44.timetag",
-         ".dicom": "test/p00/44.dicom",
-         "left": "20150629171639"
+         "right": "test",
+         ".TextGrid": "test/p00/44.TextGrid"
       },
       "00": {
-         ".TextGrid": "test/p00/TextGrid/00.TextGrid",
-         ".json": null,
-         "right": "01",
+         ".dicom": "test/p00/dicom/00.dicom",
+         "left": null,
          ".flac": "test/p00/flac/00.flac",
          ".timetag": "test/p00/timetags/00.timetag",
-         ".dicom": "test/p00/dicom/00.dicom",
-         "left": null
+         "right": "01",
+         ".TextGrid": "test/p00/TextGrid/00.TextGrid"
       },
       "01": {
-         ".TextGrid": null,
-         ".json": null,
-         "right": "02",
+         ".dicom": "test/p00/dicom/01.dicom",
+         "left": "00",
          ".flac": null,
          ".timetag": null,
-         ".dicom": "test/p00/dicom/01.dicom",
-         "left": "00"
+         "right": "02",
+         ".TextGrid": null
       },
       "03": {
-         ".TextGrid": null,
-         ".json": null,
-         "right": "20150629171639",
+         ".dicom": null,
+         "left": "02",
          ".flac": "test/p00/flac/03.flac",
          ".timetag": null,
-         ".dicom": null,
-         "left": "02"
+         "right": "20150629171639",
+         ".TextGrid": null
       },
       "test": {
-         ".TextGrid": "test/p00/timetags/test.TextGrid",
-         ".json": null,
-         "right": "test2",
+         ".dicom": "test/p00/timetags/test.dicom",
+         "left": "44",
          ".flac": "test/p00/timetags/test.flac",
          ".timetag": "test/p00/timetags/test.timetag",
-         ".dicom": "test/p00/timetags/test.dicom",
-         "left": "44"
+         "right": "test2",
+         ".TextGrid": "test/p00/timetags/test.TextGrid"
       },
       "test2": {
-         ".TextGrid": null,
-         ".json": null,
-         "right": null,
+         ".dicom": null,
+         "left": "test",
          ".flac": "test/p00/timetags/test2.flac",
          ".timetag": null,
-         ".dicom": null,
-         "left": "test"
+         "right": null,
+         ".TextGrid": null
       }
+   },
+   "traces": {
+      "default": []
    }
 }
