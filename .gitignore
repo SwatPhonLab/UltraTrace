@@ -1,2 +1,5 @@
-kik-EN
+# don't track our data
+test
+
+# or annoying system files
 .DS_Store
