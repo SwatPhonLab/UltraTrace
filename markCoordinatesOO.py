@@ -5,27 +5,21 @@ from textgrid import TextGrid, IntervalTier, PointTier
 from tkinter import *
 from PIL import Image, ImageTk # pip install pillow
 
-import numpy as np  # for manipulating dicom
+import numpy as np
 
-import math	# might not need this
-import sys	 # might not need this
-import json
-import os
 import argparse
-import dicom  # for manipulating dicom
+import datetime
+import dicom
+import json
+import math
+import os
 import pygame # for playing music
 import random
-import datetime
 import shutil
 
 # some globals
-_CROSSHAIR_LENGTH = 20
 _CROSSHAIR_DRAG_BUFFER = 20
 _CROSSHAIR_SELECT_RADIUS = 12
-_CROSSHAIR_SELECTED_WIDTH = 3
-_CROSSHAIR_UNSELECTED_WIDTH = 2
-_DEFAULT_TRACE_STYLE = 'default'
-_LOAD_ALL_DICOM_SLIDES = False
 
 class AutoScrollbar(Scrollbar):
 	def set(self, lo, hi):
@@ -34,12 +28,11 @@ class AutoScrollbar(Scrollbar):
 
 class ZoomFrame(Frame):
 	def __init__(self, master, delta, ):
-		Frame.__init__(self, master, bg='blue')
+		Frame.__init__(self, master)
 		self.resetCanvas(master)
 
 		self.delta = delta
 		self.maxZoom = 5
-		self.zoom = 0
 
 	def resetCanvas(self, master):
 		vScrollbar = AutoScrollbar( self, orient='vertical', command=self.scrollY )
@@ -62,6 +55,7 @@ class ZoomFrame(Frame):
 		self.origX = self.canvas.xview()[0] - 1
 		self.origY = self.canvas.yview()[0] - 150
 
+		self.zoom = 0
 		self.imgscale = 1.0
 		self.image = None
 
@@ -97,8 +91,6 @@ class ZoomFrame(Frame):
 				imageid = self.canvas.create_image(max(bbox2[0], bbox1[0]), max(bbox2[1], bbox1[1]), anchor='nw', image=imagetk)
 				self.canvas.lower(imageid)  # set image into background
 				self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
-
-			#self.master.update()
 
 	def wheel(self, event):
 
@@ -139,133 +131,138 @@ class ZoomFrame(Frame):
 		self.canvas.scan_dragto( event.x, event.y, gain=4 )
 		self.showImage()
 
+class Header(Label):
+	def __init__(self, master, text):
+		Label.__init__(self, master, text=text, font='TkDefaultFont 12 bold')
+
 class Crosshairs(object):
-	def __init__(self, parent, x, y, save=True, transform=True):
+	def __init__(self, zframe, x, y, color, transform=True):
+		'''
+		Crosshairs() serves two purposes:
+		 	- handling (visual) placement of a `+` onto the zframe canvas
+			- keeping track of point locations for saving/loading trace data
 
-		trace = parent.traceSV.get()
+		@param
+			zframe :	reference to the ZoomFrame containing the tracing canvas
+			x :			x-canvas-coordinate of where we should place the center of the Crosshairs
+			y :			y-canvas-coordinate of where we should place the center of the Crosshairs
+			color :		color for when unselected
+			transform : Boolean RE whether the coordinates need to be adjusted
+		'''
 
-		self.save = parent.writeCrosshairsToTraces
+		# keep a reference to the zframe
+		self.zframe = zframe
 
-		self.zframe = parent.zframe
-		self.canvas = self.zframe.canvas
-		self.zoomAtBirth = self.zframe.zoom
-
+		# set defaults here
 		self.selectedColor  = 'blue'
-		self.unselectedColor= parent.metadata.getTraceLevel( key='color' )
+		self.unselectedColor= color
+		self.selectedWidth  = 3
+		self.unselectedWidth= 2
+		self.defaultLength  = 12
 
-		self.origX, self.origY = x, y
+		# store position data
 		self.x, self.y = x, y
 		if transform:
 			self.x, self.y = self.transformCoords(x,y)
-		self.defaultLength = _CROSSHAIR_LENGTH/2.0
 		self.len = self.transformLength( self.defaultLength )
-
-		self.hline = self.canvas.create_line(self.x-self.len, self.y, self.x+self.len, self.y, fill=self.unselectedColor, width=_CROSSHAIR_UNSELECTED_WIDTH)
-		self.vline = self.canvas.create_line(self.x, self.y-self.len, self.x, self.y+self.len, fill=self.unselectedColor, width=_CROSSHAIR_UNSELECTED_WIDTH)
+		self.resetTrueCoords()
 		self.isSelected = False
 		self.isVisible = True
-		self.hasChanged = transform
 
-		if trace not in parent.currentCrosshairs:
-			parent.currentCrosshairs[ trace ] = []
-		parent.currentCrosshairs[ trace ].append( self )
+		# draw on the canvas
+		self.hline = self.zframe.canvas.create_line(self.x-self.len, self.y, self.x+self.len, self.y, fill=self.unselectedColor, width=self.unselectedWidth)
+		self.vline = self.zframe.canvas.create_line(self.x, self.y-self.len, self.x, self.y+self.len, fill=self.unselectedColor, width=self.unselectedWidth)
 
-		if save:
-			self.save()
+	def resetTrueCoords(self):
+		'''
+		This function calculates the `true` coordinates for saving our crosshairs to the metadata file.
+		The values are calculated relative to the top left corner of the canvas at 1x zoom.  We need to
+		make sure to call this every time we change the position of a Crosshairs.
+		'''
+		containerX, containerY = self.zframe.canvas.coords( self.zframe.container )[:2]
+		absoluteX = (self.x-containerX) / self.zframe.imgscale
+		absoluteY = (self.y-containerY) / self.zframe.imgscale
+		self.trueX, self.trueY = absoluteX, absoluteY
 
-	def getAbsoluteCenter(self):
-		if self.hasChanged:
-			containerX, containerY = self.canvas.coords( self.zframe.container )[:2]
-			absoluteX = (self.x-containerX) * self.zframe.delta**self.zoomAtBirth
-			absoluteY = (self.y-containerY) * self.zframe.delta**self.zoomAtBirth
-			self.origX, self.origY = absoluteX, absoluteY
-			self.hasChanged = False
-		else:
-			absoluteX, absoluteY = self.origX, self.origY
-
-		return absoluteX, absoluteY
+	def getTrueCoords(self):
+		''' called when we're saving to file '''
+		return self.trueX, self.trueY
 
 	def transformCoords(self, x, y):
-		x += self.canvas.canvasx(0)
-		y += self.canvas.canvasy(0)
+		''' transforms coordinates by the canvas offsets '''
+		x += self.zframe.canvas.canvasx(0)
+		y += self.zframe.canvas.canvasy(0)
 		return x,y
 
-	def getCenter(self):
-		coords = self.canvas.coords(self.hline)
-		if len(coords) < 3:
-			print(coords)
-			print(self.hline)
-			print(self.vline)
-		coords = ( (coords[0]+coords[2])/2.0, coords[1] )
-		return coords
-
 	def transformLength(self, l):
+		''' transforms a length by our current zoom-amount '''
 		return l * self.zframe.imgscale
 
 	def getDistance(self, click):
-		if self.isVisible:
-			click  = self.transformCoords(*click)
-			coords = self.getCenter()
-			dx = abs( coords[0] - click[0] )
-			dy = abs( coords[1] - click[1] )
-			return math.sqrt( dx**2 + dy**2 )
-		else:
-			return float('inf')
+		''' calculates the distance from centerpoint to a click event '''
+		click  = self.transformCoords(*click)
+		dx = abs( self.x - click[0] )
+		dy = abs( self.y - click[1] )
+		return math.sqrt( dx**2 + dy**2 ) if self.isVisible else float('inf') # invisible points infinitely far away
 
 	def select(self):
+		''' select this Crosshairs '''
 		if self.isVisible:
-			self.canvas.itemconfig( self.hline, fill=self.selectedColor, width=_CROSSHAIR_SELECTED_WIDTH)
-			self.canvas.itemconfig( self.vline, fill=self.selectedColor, width=_CROSSHAIR_SELECTED_WIDTH)
+			self.zframe.canvas.itemconfig( self.hline, fill=self.selectedColor, width=self.selectedWidth)
+			self.zframe.canvas.itemconfig( self.vline, fill=self.selectedColor, width=self.selectedWidth)
 			self.isSelected = True
 
 	def unselect(self):
+		''' stop selecting this Crosshairs '''
 		if self.isVisible:
-			self.canvas.itemconfig( self.hline, fill=self.unselectedColor, width=_CROSSHAIR_UNSELECTED_WIDTH)
-			self.canvas.itemconfig( self.vline, fill=self.unselectedColor, width=_CROSSHAIR_UNSELECTED_WIDTH)
+			self.zframe.canvas.itemconfig( self.hline, fill=self.unselectedColor, width=self.unselectedWidth)
+			self.zframe.canvas.itemconfig( self.vline, fill=self.unselectedColor, width=self.unselectedWidth)
 			self.isSelected = False
 
 	def undraw(self):
-		self.canvas.itemconfigure( self.hline, state='hidden' )
-		self.canvas.itemconfigure( self.vline, state='hidden' )
+		''' use this instead of deleting objects to make undos easier '''
+		self.zframe.canvas.itemconfigure( self.hline, state='hidden' )
+		self.zframe.canvas.itemconfigure( self.vline, state='hidden' )
 		self.unselect()
 		self.isVisible = False
 
 	def draw(self):
+		''' called when we undo a delete '''
 		if self.isVisible == False:
-			self.canvas.itemconfigure( self.hline, state='normal' )
-			self.canvas.itemconfigure( self.vline, state='normal' )
+			self.zframe.canvas.itemconfigure( self.hline, state='normal' )
+			self.zframe.canvas.itemconfigure( self.vline, state='normal' )
 			self.isVisible = True
 
-	def dragTo(self, click):
+	def dragTo(self, point):
+		''' move the centerpoint to a given point (calculated in main class) '''
 		if self.isVisible:
 
-			self.x, self.y = click
+			self.x, self.y = point
 			self.len = self.transformLength( self.defaultLength )
-			self.canvas.coords( self.hline, self.x-self.len, self.y, self.x+self.len, self.y )
-			self.canvas.coords( self.vline, self.x, self.y-self.len, self.x, self.y+self.len )
-			self.hasChanged = True
-
-			self.save()
+			self.zframe.canvas.coords( self.hline, self.x-self.len, self.y, self.x+self.len, self.y )
+			self.zframe.canvas.coords( self.vline, self.x, self.y-self.len, self.x, self.y+self.len )
+			self.resetTrueCoords() # update our `true` coordinates for write-out
 
 	def recolor(self, color):
+		''' change the fill color of the Crosshairs '''
 		if self.isVisible:
 			oldColor = self.unselectedColor
-			self.unselectedColor = color
+			self.unselectedColor = color # change this in the background (i.e. don't unselect)
 			if self.isSelected == False:
-				self.canvas.itemconfig( self.hline, fill=color )
-				self.canvas.itemconfig( self.vline, fill=color )
-			return oldColor
+				self.zframe.canvas.itemconfig( self.hline, fill=color )
+				self.zframe.canvas.itemconfig( self.vline, fill=color )
+			return oldColor # return so that undo/redo can grab it
 
 class Metadata(object):
 	def __init__(self, parent, path, backupmdfile=None):
-		"""
+		'''
 		opens a metadata file (or creates one if it doesn't exist), recursively searches a directory
 			for acceptable files, writes metadata back into memory, and returns the metadata object
 
 		acceptable files: the metadata file requires matching files w/in subdirectories based on filenames
 			for example, it will try to locate files that have the same base filename and
 			each of a set of required extensions
-		"""
+		'''
 
 		if os.path.exists( path ) == False:
 			print( "Error locating path: %s" % path )
@@ -294,12 +291,12 @@ class Metadata(object):
 			self.data = {
 				'path': str(self.path),
 				'participant': str(os.path.basename( os.path.normpath(self.path) )),
-				'defaultTraceName': 'default',
+				'defaultTraceName': 'tongue',
 				'defaultTraceColor': 'red',
 				'files': {} }
 
 			# we want each object to have entries for everything here
-			fileKeys = { '_prev', '_next', '.dicom', '.flac', '.TextGrid', '.timetag', '.pycom' }
+			fileKeys = { '_prev', '_next', '.dicom', '.flac', '.TextGrid', '.timetag', '.pycom', 'processed' } # and `processed`
 			files = {}
 
 			# now get the objects in subdirectories
@@ -307,10 +304,16 @@ class Metadata(object):
 				for f in fs:
 					# exclude some filetypes explicitly here
 					fNoExt, fExt = os.path.splitext( f ) # e.g. 00.dicom -> 00, .dicom
-					if fExt not in { '.json', }:
+					if fExt not in { '.json', '.png' }:  # don't watch to catch our meta-files
 						if fNoExt not in files:
 							files[fNoExt] = { key:None for key in fileKeys }
 						files[fNoExt][fExt] = os.path.join( path, f )
+					# check for preprocessed dicom files
+					if '_dicom_to_png' in path:
+						name, frame = fNoExt.split( '_frame_' )
+						if files[name]['processed'] == None:
+							files[name]['processed'] = {}
+						files[name]['processed'][str(int(frame))] = os.path.join( path, f )
 
 			# check that we find at least one file
 			if len(files) == 0:
@@ -364,6 +367,15 @@ class Metadata(object):
 
 	def getFilenames( self ):
 		return [ f['name'] for f in self.data['files'] ]
+
+	def getPreprocessedDicom( self, _fileid=None, _frame=None ):
+
+		frame = self.parent.frame if _frame==None else _frame
+		processed = self.getFileLevel( 'processed' )
+		try:
+			return processed[str(frame-1)]
+		except: # catches missing frames and missing preprocessed data
+			return None
 
 	def getTopLevel( self, key ):
 		if key in self.data.keys():
@@ -463,6 +475,7 @@ class markingGUI(Tk):
 
 		# declare string variables
 		self.currentFileSV = StringVar(self)
+		self.preprocessSV = StringVar(self)
 		self.loadDicomSV = StringVar(self)
 		self.frameSV = StringVar(self)
 		self.traceSV = StringVar(self)
@@ -470,6 +483,7 @@ class markingGUI(Tk):
 
 		# initialize string variables
 		self.currentFileSV.set( self.metadata.files[ self.currentFID ] )
+		self.preprocessSV.set( 'Warning: slow' )
 		self.frameSV.set( '1' )
 		self.traceSV.set( self.metadata.getTopLevel( 'defaultTraceName' ) )
 		self.newTraceSV.set( '' )
@@ -492,16 +506,21 @@ class markingGUI(Tk):
 		self.controlFrame = Frame(self.mainFrame)
 
 		# display our currently selected filename
-		self.participantFrame = Frame(self.controlFrame, pady=5)
+		self.participantFrame = Frame(self.controlFrame, pady=7)
 
 		# navigate between all available files in this directory
-		self.navFileFrame = Frame(self.controlFrame, pady=5)
+		self.navFileFrame = Frame(self.controlFrame, pady=7)
 		self.navFileLeftButton = Button(self.navFileFrame, text='<', command=self.navFileFramePanLeft)
 		self.navFileJumpToMenu = OptionMenu(self.navFileFrame, self.currentFileSV, *self.metadata.files, command=self.navFileFrameJumpTo)
 		self.navFileRightButton= Button(self.navFileFrame, text='>', command=self.navFileFramePanRight)
 
+		# preprocess all of our dicom frames as PNGs
+		self.preprocessFrame = Frame(self.controlFrame, pady=7)
+		self.preprocessButton= Button(self.preprocessFrame, text='Preprocess DICOM', command=self.preprocessDicom)
+		self.preprocessLabel = Label(self.preprocessFrame, textvariable=self.preprocessSV)
+
 		# navigate between dicom frames
-		self.navDicomFrame = Frame(self.controlFrame, pady=5)
+		self.navDicomFrame = Frame(self.controlFrame, pady=7)
 		self.loadDicomButton = Button(self.navDicomFrame, text='Show DICOM', command=self.loadDicom)
 		self.loadDicomLabel = Label(self.navDicomFrame, textvariable=self.loadDicomSV, pady=0)
 		self.navDicomInnerFrame = Frame(self.navDicomFrame)
@@ -509,11 +528,11 @@ class markingGUI(Tk):
 		self.navDicomEntryText = Entry(self.navDicomInnerFrame, width=5, textvariable=self.frameSV)
 		self.navDicomEntryButton = Button(self.navDicomInnerFrame, text='Go', command=self.navDicomFrameEntry)
 		self.navDicomRightButton= Button(self.navDicomInnerFrame, text='>', command=self.navDicomFramePanRight)
-		self.navDicomLabel = Label(self.navDicomFrame, text="Choose a frame:")
+		self.navDicomHeader = Header(self.navDicomFrame, text="Choose a frame:")
 
 		# navigate between tracings
-		self.navTraceFrame = Frame(self.controlFrame, pady=5)
-		self.navTraceLabel = Label(self.navTraceFrame, text='Choose a trace:')
+		self.navTraceFrame = Frame(self.controlFrame, pady=7)
+		self.navTraceHeader = Header(self.navTraceFrame, text='Choose a trace:')
 		self.navTraceNewFrame = Frame(self.navTraceFrame)
 		self.navTraceNewTraceEntry = Entry(self.navTraceNewFrame, width=10, textvariable=self.newTraceSV)
 		self.navTraceNewTraceButton = Button(self.navTraceNewFrame, text='New', command=self.addNewTrace)
@@ -525,7 +544,7 @@ class markingGUI(Tk):
 		self.navTraceColorButton = Button(self.navTraceButtonFrame, text='Recolor', command=self.changeTraceColor)
 		self.navTraceSelectButton= Button(self.navTraceButtonFrame, text='Select', command=self.selectAllTrace)
 
-		self.zoomResetButton = Button(self.controlFrame, text='Reset image', command=self.resetCanvas, pady=5 )
+		self.zoomResetButton = Button(self.controlFrame, text='Reset image', command=self.resetCanvas, pady=7 )
 
 		# ==============
 		# ultrasound frame:	to hold our image
@@ -539,18 +558,21 @@ class markingGUI(Tk):
 		self.controlFrame.grid( row=0, sticky=N )
 
 		self.participantFrame.grid( row=0, column=0 )
-		Label(self.participantFrame, text='Current participant:').grid( row=0, column=0 )
-		Label(self.participantFrame, text=self.metadata.getTopLevel('participant'), bg='lightgrey').grid( row=1, column=0 )
+		Header(self.participantFrame, text='Current participant:').grid( row=0, column=0 )
+		Label(self.participantFrame, text=self.metadata.getTopLevel('participant')).grid( row=1, column=0 )
 
 		self.navFileFrame.grid( row=1 )
-		Label(self.navFileFrame, text="Choose a file:").grid( row=0, column=0, columnspan=3 )
+		Header(self.navFileFrame, text="Choose a file:").grid( row=0, column=0, columnspan=3 )
 		self.navFileLeftButton.grid( row=1, column=0 )
 		self.navFileJumpToMenu.grid( row=1, column=1 )
 		self.navFileRightButton.grid(row=1, column=2 )
 
-		self.navDicomFrame.grid( row=2 )
+		self.preprocessFrame.grid( row=2 )
+		self.preprocessButton.grid(row=0 )
 
-		self.zoomResetButton.grid( row=3 )
+		self.navDicomFrame.grid( row=3 )
+
+		self.zoomResetButton.grid( row=4 )
 		self.zframe.canvas.grid()
 
 		#self.ultrasoundFrame.grid( row=0, column=1 )
@@ -569,6 +591,7 @@ class markingGUI(Tk):
 		self.bind('<Control-r>', lambda a: self.changeTraceColor() )
 		self.bind('<Option-Left>', lambda a: self.navFileFramePanLeft() )
 		self.bind('<Option-Right>', lambda a: self.navFileFramePanRight() )
+
 		self.zframe.canvas.bind('<Button-1>', self.clickInCanvas )
 		self.zframe.canvas.bind('<ButtonRelease-1>', self.unclickInCanvas )
 		self.zframe.canvas.bind('<Motion>', self.mouseMoveInCanvas )
@@ -599,7 +622,7 @@ class markingGUI(Tk):
 			return None
 
 	def clickInCanvas(self, event):
-		if self.dicom != None:
+		if self.dicomIsLoaded:
 
 			self.click = (event.x, event.y)
 			self.isDragging = False
@@ -626,7 +649,7 @@ class markingGUI(Tk):
 					if self.currentSelectedCrosshairs != set():
 						for sch in self.currentSelectedCrosshairs:
 							sch.unselect()
-					ch = Crosshairs( self, self.click[0], self.click[1] )
+					ch = self.addCrosshairs( *self.click )
 					self.undoQueue.append( {'type':'add', 'ch':ch })
 					self.redoQueue = []
 
@@ -661,7 +684,7 @@ class markingGUI(Tk):
 				self.dragClick = self.click
 
 	def unclickInCanvas(self, event):
-		if self.dicom != None:
+		if self.dicomIsLoaded:
 			if self.isDragging:
 				dx = (event.x - self.click[0])
 				dy = (event.y - self.click[1])
@@ -670,16 +693,17 @@ class markingGUI(Tk):
 				self.writeCrosshairsToTraces()
 			self.isDragging = False
 			self.isClicked = False
+			self.writeCrosshairsToTraces()
 
 	def mouseMoveInCanvas(self, event):
-		if self.dicom != None:
+		if self.dicomIsLoaded:
 
 			if self.isDragging:
 				thisClick = (event.x, event.y)
 				# move all currently selected crosshairs
 				for sch in self.currentSelectedCrosshairs:
 					# keep their relative distance constant
-					center = sch.getCenter()
+					center = ( sch.x, sch.y ) # canvas coordinates not true coordinates
 					newX = event.x + center[0] - self.dragClick[0]
 					newY = event.y + center[1] - self.dragClick[1]
 					sch.dragTo( (newX,newY) )
@@ -693,7 +717,7 @@ class markingGUI(Tk):
 				dy = abs(thisClick[1] - lastClick[1]) / self.zframe.imgscale
 				if dx > _CROSSHAIR_DRAG_BUFFER or dy > _CROSSHAIR_DRAG_BUFFER:
 					self.click = thisClick
-					ch = Crosshairs( self, self.click[0], self.click[1] )
+					ch = self.addCrosshairs( *self.click )
 					self.undoQueue.append({ 'type':'add', 'ch':ch })
 					self.redoQueue = []
 
@@ -735,7 +759,7 @@ class markingGUI(Tk):
 					ch.dragTo( action['dx'], action['dy'] )
 				self.redoQueue.append({ 'type':'move', 'chs':action['chs'], 'dx':-action['dx'], 'dy':-action['dy'] })
 			elif action['type'] == 'clear': # note this limits ability to undo `adds` and `deletes` later in the queue
-				self.resetCanvas()
+				self.resetCanvas() # need this since we're restoring from absoluteXY
 				self.restoreFromBackup( action['backup'] )
 				self.readTracesToCrosshairs()
 				self.redoQueue.append({ 'type':'restore', 'backup':action['backup'], 'trace':action['trace'] })
@@ -753,6 +777,7 @@ class markingGUI(Tk):
 			for sch in self.currentSelectedCrosshairs:
 				sch.unselect()
 			self.currentSelectedCrosshairs = set()
+			self.writeCrosshairsToTraces()
 
 	def redo(self, event):
 		if len(self.redoQueue):
@@ -788,6 +813,7 @@ class markingGUI(Tk):
 			for sch in self.currentSelectedCrosshairs:
 				sch.unselect()
 			self.currentSelectedCrosshairs = set()
+			self.writeCrosshairsToTraces()
 
 	def renameTrace(self, _newTraceName=None, _oldTraceName=None):
 
@@ -856,7 +882,7 @@ class markingGUI(Tk):
 	def changeTraceColor(self, _color=None):
 
 		# since this command is bound to a key, don't want to execute if there's no dicom
-		if self.dicom != None:
+		if self.dicomIsLoaded:
 
 			# grab a new color if we weren't explicitly passed one
 			# and also save our old color (for generating undoQueue stuff)
@@ -871,6 +897,10 @@ class markingGUI(Tk):
 			trace = self.traceSV.get()
 			for ch in self.currentCrosshairs[ trace ]:
 				ch.recolor( newColor )
+
+			# if we're changing our default, change the default value
+			if trace == self.metadata.getTopLevel( 'defaultTraceName' ):
+				self.metadata.setTopLevel( 'defaultTraceColor', newColor )
 
 			# if this was triggered by a button click, add it to the undoQueue
 			if _color == None:
@@ -924,13 +954,26 @@ class markingGUI(Tk):
 				label=newTraceName,
 				command=lambda t=newTraceName: self.changeTrace(t) )
 
+	def addCrosshairs(self, x, y, _zframe=None, transform=True):
+		zframe = self.zframe if _zframe==None else _zframe
+		color  = self.metadata.getTraceLevel( key='color' )
+
+		ch = Crosshairs( zframe, x, y, color, transform )
+
+		trace = self.traceSV.get()
+		if trace not in self.currentCrosshairs:
+			self.currentCrosshairs[ trace ] = []
+		self.currentCrosshairs[ trace ].append( ch )
+
+		return ch
+
 	def writeCrosshairsToTraces(self):
 		trace = self.traceSV.get()
 		traces = self.metadata.getFileLevel( 'traces' )
 		traces[ trace ][ str(self.frame) ] = []
 		for ch in self.currentCrosshairs[trace]:
 			if ch.isVisible:
-				x,y = ch.getAbsoluteCenter()
+				x,y = ch.getTrueCoords()
 				traces[ trace ][ str(self.frame) ].append({ 'x':x, 'y':y })
 		self.metadata.setFileLevel( 'traces', traces )
 
@@ -940,33 +983,21 @@ class markingGUI(Tk):
 			self.changeTrace( trace )
 			try:
 				for traceItem in traces[ trace ][ str(self.frame) ]:
-					Crosshairs( self, traceItem['x'], traceItem['y'], transform=False, save=False )
+					self.addCrosshairs( traceItem['x'], traceItem['y'], transform=False )
 			except KeyError:
 				pass
 		self.changeTrace( self.metadata.getTopLevel( 'defaultTraceName' ) )
 
-	def resetCanvas(self):
-		#if self.zframe.zoom < 0:
-		#	for z in len(range( -self.frame.zoom )):
+	def resetCanvas(self, cfu=True):
+
+		# creates a new canvas object and we redraw everything to it
 		self.zframe.resetCanvas( self.ultrasoundFrame )
 		self.zframe.canvas.bind('<Button-1>', self.clickInCanvas )
 		self.zframe.canvas.bind('<ButtonRelease-1>', self.unclickInCanvas )
 		self.zframe.canvas.bind('<Motion>', self.mouseMoveInCanvas )
-		self.zframe.zoom = 0
-		self.changeFramesUpdate()
 
-
-	def zoom(self, event):
-		if event.delta > 0:
-			self.zoomIn(event)
-		else:
-			self.zoomOut(event)
-
-	def zoomIn(self, event):
-		print( 'zoom in' )
-
-	def zoomOut(self, event):
-		print( 'zoom out' )
+ 		# we want to go here only after a button press
+		if cfu: self.changeFramesUpdate()
 
 	def loadAudio(self, codec):
 		audiofile = self.metadata.getFileLevel( codec )
@@ -999,6 +1030,7 @@ class markingGUI(Tk):
 
 		# reset other variables
 		self.textgrid = None
+		self.dicomIsLoaded = False
 		self.dicom = None
 		self.frame = 1
 		self.frames= 1
@@ -1022,14 +1054,14 @@ class markingGUI(Tk):
 		self.loadDicomButton.grid()
 		self.loadDicomLabel.grid_remove()
 
-		self.navDicomLabel.grid_remove()
+		self.navDicomHeader.grid_remove()
 		self.navDicomLeftButton.grid_remove()
 		self.navDicomEntryText.grid_remove()
 		self.navDicomEntryButton.grid_remove()
 		self.navDicomRightButton.grid_remove()
 
 		self.navTraceFrame.grid_remove()
-		self.navTraceLabel.grid_remove()
+		self.navTraceHeader.grid_remove()
 		self.navTraceNewFrame.grid_remove()
 		self.navTraceNewTraceEntry.grid_remove()
 		self.navTraceNewTraceButton.grid_remove()
@@ -1064,13 +1096,19 @@ class markingGUI(Tk):
 		# check if we have a dicom file to bring into memory
 		if self.metadata.getFileLevel( '.dicom' ) == None:
 			self.loadDicomButton['state'] = DISABLED
+			self.preprocessButton['state']= DISABLED
 		else:
 			self.loadDicomButton['state'] = NORMAL
+			if self.metadata.getFileLevel( 'processed' ) != None:
+				self.preprocessButton['state'] = DISABLED
+				self.preprocessLabel.grid_remove()
+			else:
+				self.preprocessButton['state'] = NORMAL
 
 	def navFileFramePanLeft(self):
-		"""
+		'''
 		controls self.navFileLeftButton for panning between available files
-		"""
+		'''
 
 		if self.metadata.getFileLevel( '_prev' ) != None:
 			# change the index of the current file
@@ -1079,9 +1117,9 @@ class markingGUI(Tk):
 			self.changeFilesUpdate()
 
 	def navFileFramePanRight(self):
-		"""
+		'''
 		controls self.navFileRightButton for panning between available files
-		"""
+		'''
 
 		if self.metadata.getFileLevel( '_next' ) != None:
 			# change the index of the current file
@@ -1104,15 +1142,16 @@ class markingGUI(Tk):
 		self.undoQueue = []
 		self.redoQueue = []
 
+		#self.resetCanvas( False )
 		self.dicomImage = self.getDicomImage( self.frame )
 		self.zframe.imgscale = 1.0
-		self.zframe.delta = 1.3
-		self.zframe.zoom = 0
+		self.zoom = 0
 		self.zframe.setImage( self.dicomImage )
 		#self.currentImageID = self.zframe.canvas.create_image( (400,300), image=self.dicomImage )
 
 		# use our "traces" from our metadata to populate crosshairs for a given frame
 		self.readTracesToCrosshairs()
+		#self.resetCanvas()
 
 		# check if we can pan left
 		if self.frame == 1:
@@ -1129,12 +1168,12 @@ class markingGUI(Tk):
 		self.frameSV.set( str(self.frame) )
 
 	def navDicomFramePanLeft(self):
-		if self.dicom != None and self.frame > 1:
+		if self.dicomIsLoaded and self.frame > 1:
 			self.frame -= 1
 			self.changeFramesUpdate()
 
 	def navDicomFramePanRight(self):
-		if self.dicom != None and self.frame < self.frames:
+		if self.dicomIsLoaded and self.frame < self.frames:
 			self.frame += 1
 			self.changeFramesUpdate()
 
@@ -1156,104 +1195,150 @@ class markingGUI(Tk):
 			pass
 
 	def getDicomImage(self, frame):
-		if _LOAD_ALL_DICOM_SLIDES:
-			return self.dicomImages[frame]
+
+		preprocessedImage = self.metadata.getPreprocessedDicom()
+
+		if preprocessedImage != None:
+			return Image.open( preprocessedImage )
 		else:
+			# explicitly load it each time
 			if len(self.dicom.pixel_array.shape) == 3: # greyscale
 				arr = self.dicom.pixel_array.astype(np.float64)[ (frame-1),:,: ]
 				return Image.fromarray(arr)
-			elif len(self.dicom.pixel_array.shape) == 4: # RGB sampled ????
-				arr = self.dicom.pixel_array.astype(np.float64)[ 0,(frame-1),:,: ]
-				"""print( self.dicom.pixel_array.shape )
-				print( arr.shape)
-				arr = arr.swapaxes(0,2)
-				print( arr.shape)
-				arr = arr.swapaxes(0,1)"""
-				print( arr.shape)
-				return ImageTk.PhotoImage( Image.fromarray(arr))#, mode="RGB") )
+			elif len(self.dicom.pixel_array.shape) == 4: # RGB sampled
+				arr = self.dicom.pixel_array.astype(np.float64)[ :,(frame-1),:,: ]
+				arr = arr.reshape([arr.shape[1], arr.shape[2], arr.shape[0]])
+				return Image.fromarray(arr, mode='RGB')
 
 	def loadDicom(self):
-		"""
+		'''
 		brings a dicom file into memory if it exists
-		"""
+		'''
 
 		# don't execute if dicom already loaded correctly
-		if self.dicom == None:
+		if self.dicomIsLoaded == False:
 
-			dicomfile = self.metadata.getFileLevel( '.dicom' )
+			processed = self.metadata.getFileLevel( 'processed' )
+			if processed == None:
+				# we don't want to load this if we've already preprocessed
+				dicomfile = self.metadata.getFileLevel( '.dicom' )
+				try:
+					# load the dicom using a library
+					self.dicom = dicom.read_file( dicomfile )
+					# get the total number of frames (RGB if present is first dimension)
+					shape = self.dicom.pixel_array.shape
+					self.frames = shape[0] if len(shape)==3 else shape[1]
+				except dicom.errors.InvalidDicomError:
+					self.loadDicomSV.set('Error loading DICOM file.')
+					self.loadDicomLabel.grid()
+					return False
+			else:
+				# only important thing to grab is the # of available frames
+				self.frames = len(processed)
 
-			try:
-				# load the dicom using a library
-				self.dicom = dicom.read_file( dicomfile )
-				self.frames = self.dicom.pixel_array.shape[0]
+			# pack our widgets that require loaded dicom
 
-				if _LOAD_ALL_DICOM_SLIDES:
-					self.dicomImages = [None] # have a dummy object so our frame index isn't off by 1
-					for f in range(self.frames):
-						# output progress
-						self.loadDicomSV.set( ('Loading frame ' + str(f+1) + '...') )
-						# flush
-						self.update_idletasks()
-						# convert the data to a numpy array, only keeping the frame-relevant pixel data
-						arr = self.dicom.pixel_array.astype(np.float64)[f,:,:]
-						# save a reference to it to avoid python garbage collection
-						dicomImage = ImageTk.PhotoImage( Image.fromarray(arr) )
-						self.dicomImages.append( dicomImage )
+			self.ultrasoundFrame.grid( row=0, column=1 )
+			self.zframe.grid()
 
-				# pack our widgets that require loaded dicom
+			self.navDicomHeader.grid( row=0 )
 
-				self.ultrasoundFrame.grid( row=0, column=1 )
-				self.zframe.grid()
+			self.navDicomInnerFrame.grid( row=1 )
+			self.navDicomLeftButton.grid( row=0, column=0 )
+			self.navDicomEntryText.grid( row=0, column=1 )
+			self.navDicomEntryButton.grid( row=0, column=2 )
+			self.navDicomRightButton.grid( row=0, column=3 )
 
-				self.navDicomLabel.grid( row=0 )
+			self.loadDicomLabel.grid( row=2 )
 
-				self.navDicomInnerFrame.grid( row=1 )
-				self.navDicomLeftButton.grid( row=0, column=0 )
-				self.navDicomEntryText.grid( row=0, column=1 )
-				self.navDicomEntryButton.grid( row=0, column=2 )
-				self.navDicomRightButton.grid( row=0, column=3 )
+			self.navTraceFrame.grid( row=4 )
+			self.navTraceHeader.grid( row=0 )
+			self.navTraceNewFrame.grid( row=1 )
+			self.navTraceNewTraceEntry.grid(  row=0, column=0 )
+			self.navTraceNewTraceButton.grid( row=0, column=1 )
+			self.navTraceMenuFrame.grid( row=2 )
+			self.navTraceMenu.grid( row=0, column=0 )
+			self.navTraceRenameButton.grid( row=0, column=1 )
+			self.navTraceButtonFrame.grid( row=3 )
+			self.navTraceClearButton.grid( row=0, column=0 )
+			self.navTraceColorButton.grid( row=0, column=1 )
+			self.navTraceSelectButton.grid(row=0, column=2 )
 
-				self.loadDicomLabel.grid( row=2 )
+			self.zoomResetButton.grid( row=5 )
 
-				self.navTraceFrame.grid( row=3 )
-				self.navTraceLabel.grid( row=0 )
-				self.navTraceNewFrame.grid( row=1 )
-				self.navTraceNewTraceEntry.grid(  row=0, column=0 )
-				self.navTraceNewTraceButton.grid( row=0, column=1 )
-				self.navTraceMenuFrame.grid( row=2 )
-				self.navTraceMenu.grid( row=0, column=0 )
-				self.navTraceRenameButton.grid( row=0, column=1 )
-				self.navTraceButtonFrame.grid( row=3 )
-				self.navTraceClearButton.grid( row=0, column=0 )
-				self.navTraceColorButton.grid( row=0, column=1 )
-				self.navTraceSelectButton.grid(row=0, column=2 )
+			# populate our traces list
+			for key in self.metadata.getFileLevel( 'traces' ):
+				self.addNewTrace( key )
+			self.changeTrace( self.metadata.getTopLevel( 'defaultTraceName' ) )
 
-				self.zoomResetButton.grid( row=4 )
+			# reset frame count
+			self.frame = 1
 
-				# populate our traces list
-				for key in self.metadata.getFileLevel( 'traces' ):
-					self.addNewTrace( key )
-				self.changeTrace( self.metadata.getTopLevel( 'defaultTraceName' ) )
+			# update status objects
+			self.dicomIsLoaded = True
+			self.loadDicomButton.grid_remove()
+			self.loadDicomSV.set('Loaded %d frames.' % self.frames)
 
-				# reset frame count
-				self.frame = 1
-
-				# update status objects
-				self.loadDicomButton.grid_remove()
-				self.loadDicomSV.set('Loaded %d frames.' % self.frames)
-
-				# populate everything else
-				self.changeFramesUpdate()
-
-			except dicom.errors.InvalidDicomError:
-				self.loadDicomSV.set('Error loading DICOM file.')
-				self.loadDicomLabel.grid()
+			# populate everything else
+			self.changeFramesUpdate()
 
 	def restoreFromBackup(self, backup):
 		self.metadata = Metadata( self, self.metadata.path, backup )
 
 	def getRandomHexColor(self):
 		return '#%06x' % random.randint(0, 0xFFFFFF)
+
+	def preprocessDicom(self):
+
+		self.preprocessLabel.grid( row=1 )
+		self.preprocessSV.set( 'Reading DICOM data' )
+		self.update_idletasks()
+
+		if self.dicomIsLoaded == False:
+			try:
+				dicomfile = self.metadata.getFileLevel( '.dicom' )
+				self.dicom = dicom.read_file( dicomfile )
+
+			except dicom.errors.InvalidDicomError:
+				self.preprocessSV.set( 'Unable to read DICOM file: %s' % dicomfile )
+				return False
+
+		pixels = self.dicom.pixel_array
+
+		if len(pixels.shape) == 3:		# greyscale
+			RGB = False
+			frames, rows, columns = pixels.shape
+
+		elif len(pixels.shape) == 4:	# RGB-encoded
+			RGB = True
+			rgb, frames, rows, columns = pixels.shape
+			pixels = pixels.reshape([ frames, rows, columns, rgb ])
+
+		processedData = {}
+
+		# grab one frame at a time and write it to a special directory
+		for f in range( frames ):
+
+			self.preprocessSV.set( 'Processing frame %d of %d' % (f+1, frames) )
+			self.update_idletasks()
+
+			arr = pixels[ f,:,:,: ] if RGB else pixels[ f,:,: ]
+			img = Image.fromarray( arr )
+
+			outputpath = os.path.join( self.metadata.getTopLevel('path'), (self.metadata.getFileLevel('name')+'_dicom_to_png') )
+			if os.path.exists( outputpath ) == False:
+				os.mkdir( outputpath )
+			outputfilename = '%s_frame_%04d.png' % ( self.metadata.getFileLevel('name'), f )
+			outputfilepath = os.path.join( outputpath, outputfilename )
+			img.save( outputfilepath, format='PNG' )
+
+			processedData[ str(f) ] = outputfilepath
+
+		self.preprocessSV.set( 'Processed %d frames' % frames )
+		self.preprocessButton['state'] = DISABLED
+		self.metadata.setFileLevel( 'processed', processedData )
+
+		self.loadDicom()
 
 
 
@@ -1314,7 +1399,7 @@ if __name__ == "__main__":
 		app.mainloop()
 
 
-"""	def old__init__(self):
+'''	def old__init__(self):
 		self.setDefaults()
 
 		self.className="mark points: %s" % self.filebase
@@ -1960,4 +2045,4 @@ if __name__ == "__main__":
 					self.loadPoints(measure)
 				self.dots[measure] = None
 				#print(self.references, self.points, self.lines, self.dots, measure)
-"""
+'''
