@@ -3,7 +3,11 @@
 
 from textgrid import TextGrid, IntervalTier, PointTier
 from tkinter import *
-from PIL import Image, ImageTk # pip install pillow
+from PIL import Image, ImageTk # sudo -H pip3 install pillow
+
+import cairosvg # sudo -H pip3 install cairosvg && brew install cairo
+import pygame 	# sudo -H pip3 install pygame
+import wav2vec  # sudo -H pip3 install wav2vec
 
 import numpy as np
 
@@ -13,7 +17,6 @@ import dicom
 import json
 import math
 import os
-import pygame # for playing music
 import random
 import shutil
 
@@ -22,11 +25,19 @@ _CROSSHAIR_DRAG_BUFFER = 20
 _CROSSHAIR_SELECT_RADIUS = 12
 
 class AutoScrollbar(Scrollbar):
+	'''
+	Wrapper for a Tk Scrollbar() object that automatically hides itself
+	'''
 	def set(self, lo, hi):
 		if float(lo) > 0.0 or float(hi) >= 1.0:
 			Scrollbar.set(self, lo, hi)
 
 class ZoomFrame(Frame):
+	'''
+	Wrapper for a Tk Frame() object that includes zooming and panning functionality.
+	This code is inspired by the answer from https://stackoverflow.com/users/7550928/foo-bar
+	at https://stackoverflow.com/questions/41656176/tkinter-canvas-zoom-move-pan
+	'''
 	def __init__(self, master, delta, ):
 		Frame.__init__(self, master)
 		self.resetCanvas(master)
@@ -35,10 +46,11 @@ class ZoomFrame(Frame):
 		self.maxZoom = 5
 
 	def resetCanvas(self, master):
-		vScrollbar = AutoScrollbar( self, orient='vertical', command=self.scrollY )
-		vScrollbar.grid(row=0, column=1, sticky='ns')
+		#vScrollbar = AutoScrollbar( self, orient='vertical', command=self.scrollY )
+		#vScrollbar.grid(row=0, column=1, sticky='ns')
+		#yscrollcommand=vScrollbar.set,
 
-		self.canvas = Canvas( master, yscrollcommand=vScrollbar.set, bg='grey', width=800, height=600 )
+		self.canvas = Canvas( master,  bg='grey', width=800, height=600 )
 		self.canvas.grid(row=0, column=0, sticky='news')
 		self.canvas.update() # do i need
 
@@ -133,6 +145,9 @@ class ZoomFrame(Frame):
 
 class Header(Label):
 	def __init__(self, master, text):
+		'''
+		Wrapper for Tk Label() object with a specified font
+		'''
 		Label.__init__(self, master, text=text, font='TkDefaultFont 12 bold')
 
 class Crosshairs(object):
@@ -253,7 +268,7 @@ class Crosshairs(object):
 				self.zframe.canvas.itemconfig( self.vline, fill=color )
 			return oldColor # return so that undo/redo can grab it
 
-class Metadata(object):
+class MetadataManager(object):
 	def __init__(self, parent, path, backupmdfile=None):
 		'''
 		opens a metadata file (or creates one if it doesn't exist), recursively searches a directory
@@ -292,7 +307,10 @@ class Metadata(object):
 				'path': str(self.path),
 				'participant': str(os.path.basename( os.path.normpath(self.path) )),
 				'defaultTraceName': 'tongue',
-				'defaultTraceColor': 'red',
+				'traces': {
+					'tongue': {
+						'color': 'red',
+						'files': {} } },
 				'files': {} }
 
 			# we want each object to have entries for everything here
@@ -304,7 +322,7 @@ class Metadata(object):
 				for f in fs:
 					# exclude some filetypes explicitly here
 					fNoExt, fExt = os.path.splitext( f ) # e.g. 00.dicom -> 00, .dicom
-					if fExt not in { '.json', '.png' }:  # don't watch to catch our meta-files
+					if fExt not in { '.json', '.png', '.DS_Store' }:  # don't watch to catch our meta-files
 						if fNoExt not in files:
 							files[fNoExt] = { key:None for key in fileKeys }
 						files[fNoExt][fExt] = os.path.join( path, f )
@@ -328,8 +346,6 @@ class Metadata(object):
 					files[_prev]['_next'] = key
 				files[key]['_prev'] = _prev
 				_prev = key
-				if 'traces' not in files[key]:
-					files[key]['traces'] = { self.data['defaultTraceName'] : { 'color':self.data['defaultTraceColor'] } }
 				files[key]['name'] = key
 
 			# sort files and write to JSON
@@ -339,11 +355,17 @@ class Metadata(object):
 		self.files = self.getFilenames()
 
 	def write(self, _mdfile=None):
+		'''
+		Write metadata out to file
+		'''
 		mdfile = self.mdfile if _mdfile==None else _mdfile
 		with open( mdfile, 'w' ) as f:
 			json.dump( self.data, f, indent=3 )
 
 	def writeBackup(self, _backupfile=None):
+		'''
+		Write metadata backups to a "/tmp" directory
+		'''
 
 		# automatically generate backup filenames
 		if _backupfile == None:
@@ -366,10 +388,15 @@ class Metadata(object):
 			return _backupfile
 
 	def getFilenames( self ):
+		'''
+		Returns a list of all the files discovered from the initial directory traversal
+		'''
 		return [ f['name'] for f in self.data['files'] ]
 
-	def getPreprocessedDicom( self, _fileid=None, _frame=None ):
-
+	def getPreprocessedDicom( self, _frame=None ):
+		'''
+		Gets preprocessed (.dicom->.png) picture data for a given frame
+		'''
 		frame = self.parent.frame if _frame==None else _frame
 		processed = self.getFileLevel( 'processed' )
 		try:
@@ -378,18 +405,25 @@ class Metadata(object):
 			return None
 
 	def getTopLevel( self, key ):
+		'''
+		Get directory-level metadata
+		'''
 		if key in self.data.keys():
 			return self.data[key]
 		else:
 			return None
 
 	def setTopLevel( self, key, value ):
-
+		'''
+		Set directory-level metadata
+		'''
 		self.data[ key ] = value
 		self.write()
 
 	def getFileLevel( self, key, _fileid=None ):
-
+		'''
+		Get file-level metadata
+		'''
 		fileid = self.parent.currentFID if _fileid==None else _fileid
 		mddict = self.data[ 'files' ][ fileid ]
 
@@ -401,41 +435,415 @@ class Metadata(object):
 			return None
 
 	def setFileLevel( self, key, value, _fileid=None ):
-
+		'''
+		Set file-level metadata
+		'''
 		fileid = self.parent.currentFID if _fileid==None else _fileid
 		self.data[ 'files' ][ fileid ][ key ] = value
 		self.write()
 
-	def getTraceLevel( self, key=None, _fileid=None, _trace=None ):
+	def getTraceLevel( self ):
+		'''#, _key=None, _fileid=None, _trace=None
+		Get trace-level metadata
+		'''
+		trace    = self.parent.TraceManager.get()
+		files    = self.data['traces'][ trace ]['files']
+		filename = self.data['files'][self.parent.currentFID][ 'name' ]
+		key      = self.parent.frame
 
+		try:
+			return { 'color':self.data['traces'][ trace ]['color'], 'byFrame':files[ filename ] }
+		except KeyError:
+			return { 'color':None, 'byFrame':{} }
+
+	def setTraceLevel( self, _key=None, value=None, _fileid=None, _trace=None ):
+		'''
+		Set trace-level metadata
+		'''
+		trace  = self.parent.TraceManager.get() if _trace==None else _trace
 		fileid = self.parent.currentFID if _fileid==None else _fileid
-		trace = self.parent.traceSV.get() if _trace==None else _trace
-		key = str(self.parent.frame) if key==None else key
-		mddict = self.data[ 'files' ][ fileid ][ 'traces' ][ trace ]
+		key    = self.parent.frame if _key==None else _key
 
-		if key == 'all':
-			return mddict # not mddict.keys()
-		elif key == 'color':
-			return mddict[ key ]
-		elif key in mddict:
-			return mddict[ key ]
+		if trace in self.data['traces']:
+			if fileid == None:
+				if key in self.data['traces'][ trace ]:
+					self.data['traces'][ trace ][ key ] = value # e.g. for color
+					self.write()
+			else:
+				filename = self.data['files'][ fileid ][ 'name' ]
+				print(self.data['traces'], trace, fileid, filename, key)
+				if filename not in self.data['traces'][ trace ]:
+					self.data['traces'][ trace ]['files'][ filename ] = {}
+				self.data['traces'][ trace ]['files'][ filename ][ key ] = value
+				self.write()
+
+class TextGridManager(object):
+	'''
+	Manages all the widgets related to TextGrid files, including the tier name
+	and the text content of that tier at a given frame
+	'''
+	def __init__(self, master):
+		'''
+		Keep a reference to the master object for binding the widgets we create
+		'''
+		self.master  = master
+
+	def load(self, filename):
+		'''
+		Try to load a TextGrid file based on information stored in the metadata
+		'''
+		# default Label in case there are errors below
+		self.TkWidgets = [{ 'label':Label(self.master, text="Unable to load TextGrid file") }]
+		# the main object will pass this filename=None if it can't find an appropriate .TextGrid file
+		if filename:
+			try:
+				# try to load up our TextGrid using the textgrid lib
+				self.TextGrid = TextGrid.fromFile( filename )
+				# reset default Label to actually be useful
+				self.TkWidgets = [{ 'label':Label(self.master, text="TextGrid tiers:") }]
+				# iterate the tiers
+				self.frameTierName = self.getFrameTierName()
+				for tier in self.TextGrid.getNames():
+					if tier != self.frameTierName:
+						# make some widgets for each tier
+						tierWidgets = self.makeTierWidgets( tier )
+						self.TkWidgets.append( tierWidgets )
+			except:
+				pass
+		# grid the widgets whether we loaded successfully or not
+		self.grid()
+
+	def getFrameTierName(self):
+		for name in [ 'frames', 'all frames', 'dicom frames', 'ultrasound frames' ]:
+			if name in self.TextGrid.getNames():
+				return name
+		raise NameError( 'Unable to find alignment tier' )
+
+	def makeTierWidgets(self, tier):
+		'''
+		Each tier should have two Label widgets: `label` (the tier name), and `text`
+		(the text content ["mark"] at the current frame)
+		'''
+		return { 'label':Label(self.master, text=(' - '+tier+':'), wraplength=200, justify=LEFT),
+				 'text' :Label(self.master, text='', wraplength=550, justify=LEFT) }
+
+	def update(self, frameNumber):
+		'''
+		Wrapper for updating the `text` Label widgets at a given frame number
+		'''
+		time = self.getTime(frameNumber)
+		# update each of our tiers
+		for t in range(len( self.TextGrid.getNames() )):
+			tier = self.TextGrid.getNames()[t]
+			if tier != self.frameTierName:
+				# handy-dandy wrappers from the textgrid lib
+				interval = self.TextGrid.getFirst(tier).intervalContaining(time)
+				# need a +1 here because our default label actually sits at index 0
+				self.setTierText(t+1, interval.mark if (interval!=None) else "")
+
+	def getTime(self, frameNumber):
+		'''
+		Relies upon the existence of a dedicated tier mapping between the time in the
+		recording and the dicom frame at that time.  The name of this mapping tier is
+		set in self.load() (default='all frames')
+		'''
+		if self.TextGrid.getFirst(self.frameTierName):
+			# NOTE: sometimes don't actually want first tier matching this name
+			# so we should be careful about the exact contents of the passed TextGrid file
+			points = self.TextGrid.getFirst(self.frameTierName)
+			if frameNumber < len(points):
+				return points[frameNumber].time
+		# if we don't match all conditions, return a time value that will match no intervals
+		return -1
+
+	def setTierText(self, t, text):
+		'''
+		Wrapper for setting the text content of the `text` label
+		'''
+		self.TkWidgets[t]['text']['text'] = text
+
+	def grid(self):
+		'''
+		Wrapper for gridding all of our Tk widgets.  This funciton assumes that the tiers (as
+		specified in the actual TextGrid files) are in some sort of reasonable order, with the
+		default label being drawn on top.
+		'''
+		for t in range(len(self.TkWidgets)):
+			tierWidgets = self.TkWidgets[t]
+			tierWidgets['label'].grid(row=t, column=0, sticky=W)
+			if 'text' in tierWidgets:
+				tierWidgets['text' ].grid(row=t, column=1, sticky=W)
+
+class TraceManager(object):
+	def __init__(self, master, metadata, zframe):
+		self.master = master
+		self.metadata = metadata
+		self.zframe = zframe
+		self.available = metadata.getTopLevel( 'traces' )
+		self.crosshairs = {}
+		self.selected = set()
+
+		self.traceSV = StringVar()
+		self.traceSV.set( '' )
+
+		lbframe = Frame(master)
+		self.scrollbar = Scrollbar(lbframe)
+		self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12)
+		self.scrollbar.config(command=self.listbox.yview)
+		for trace in self.available:
+			self.listbox.insert(END, trace)
+		for i, item in enumerate(self.listbox.get(0, END)):
+			if item==self.metadata.getTopLevel( 'defaultTraceName' ):
+				self.listbox.selection_clear(0, END)
+				self.listbox.select_set( i )
+
+		self.TkWidgets = [
+			self.getWidget( Header(master, text="Choose a trace"), row=5, column=0, columnspan=4 ),
+			self.getWidget( lbframe, row=10, column=0, rowspan=50 ),
+			self.getWidget( Button(master, text='Set as default', command=self.setDefault), row=10, column=2, columnspan=2 ),
+			self.getWidget( Button(master, text='Select all', command=self.selectAll), row=11, column=2, columnspan=2 ),
+			self.getWidget( Button(master, text='Copy', command=self.copy), row=12, column=2 ),
+			self.getWidget( Button(master, text='Paste', command=self.paste), row=12, column=3 ),
+			self.getWidget( Button(master, text='Recolor', command=self.recolor), row=13, column=2, columnspan=2 ),
+			self.getWidget( Button(master, text='Clear', command=self.clear), row=15, column=2, columnspan=2 ),
+			self.getWidget( Entry(master, width=12, textvariable=self.traceSV), row=100, column=0, sticky=W ),
+			self.getWidget( Button(master, text='New', command=self.new), row=100, column=2 ),
+			self.getWidget( Button(master, text='Rename', command=self.rename), row=100, column=3 ) ]
+
+	def get(self):
+		return self.listbox.get(self.listbox.curselection())
+	def getSelected(self):
+		return self.selected
+	def select(self, ch):
+		ch.select()
+		self.selected.add(ch)
+	def unselect(self, ch):
+		ch.unselect()
+		self.selected.remove(ch)
+	def unselectAll(self):
+		for ch in self.selected:
+			ch.unselect()
+		self.selected = set()
+	def getNearby(self, click):
+
+		print(self.crosshairs)
+		# get nearby crosshairs from this trace
+		nearby = self.getCrosshairsInSelectRadius(click)
+		if nearby != None:
+			return nearby
+
+		# otherwise
 		else:
-			return None
+			# ... check our other traces to see if they contain any nearby guys
+			for trace in self.available.keys():
+				nearby = self.getCrosshairsInSelectRadius(click)
+				# if we got something
+				if nearby != None:
+					# switch to that trace and exit the loop
+					for i, item in enumerate(self.listbox.get(0, END)):
+						if item==trace:
+							self.listbox.selection_clear(0, END)
+							self.listbox.select_set( i )
+					return nearby
 
-	def setTraceLevel( self, key=None, value=None, _fileid=None, _trace=None ):
+		return None
+	def reset(self):
+		for trace in self.crosshairs:
+			for ch in self.crosshairs[ trace ]:
+				ch.undraw()
+		self.crosshairs = {}
+		self.selected = set()
 
-		fileid = self.parent.currentFID if _fileid==None else _fileid
-		trace = self.parent.traceSV.get() if _trace==None else _trace
-		key = str(self.parent.frame) if key==None else key
-		mddict = self.data[ 'files' ][ fileid ][ 'traces' ]
+	def getCrosshairsInSelectRadius(self, click):
 
-		if trace not in mddict:
-			mddict[ trace ] = {}
-		self.data[ 'files' ][ fileid ][ 'traces' ][ trace ][ key ] = value
+		trace = self.get()
 
-		self.write()
+		# see if we clicked near any existing crosshairs
+		possibleSelections = {}
+		if trace in self.crosshairs:
+			for ch in self.crosshairs[ trace ]:
+				d = ch.getDistance(click)
+				if d < _CROSSHAIR_SELECT_RADIUS:
+					if d in possibleSelections:
+						possibleSelections[d].append( ch )
+					else:
+						possibleSelections[d] = [ ch ]
 
-class markingGUI(Tk):
+		# if we did ...
+		if possibleSelections != {}:
+			# ... get the closest one ...
+			dMin = sorted(possibleSelections.keys())[0]
+			# ... in case of a tie, select a random one
+			ch = random.choice( possibleSelections[dMin] )
+			return ch
+
+		return None
+
+	def getAll(self):
+		return [ key for key in self.available.keys() ]
+	def draw(self, x, y, _trace=None, transform=True):
+		trace = self.get() if _trace==None else _trace
+		color  = self.available[ trace ]['color']
+		ch = Crosshairs( self.zframe, x, y, color, transform )
+		if trace not in self.crosshairs:
+			self.crosshairs[ trace ] = []
+		self.crosshairs[ trace ].append( ch )
+		return ch
+
+	def read(self, frame):
+		for trace in self.available:
+			try:
+				print('yurt=>',self.metadata.getTraceLevel()[ 'byFrame' ])
+				for item in self.metadata.getTraceLevel()[ 'byFrame' ][ str(frame) ]:
+					ch = self.draw( item['x'], item['y'], _trace=trace, transform=False )
+					if trace not in self.crosshairs:
+						self.crosshairs[ trace ] = []
+					self.crosshairs[ trace ].append( ch )
+			except KeyError:
+				pass
+	def write(self):
+		trace = self.get()
+		traces = []
+		print('write')
+
+		if trace in self.crosshairs:
+			print('in here')
+			for ch in self.crosshairs[ trace ]:
+				print('looping')
+				if ch.isVisible:
+					print('visible')
+					x,y = ch.getTrueCoords()
+					data = { 'x':x, 'y':y }
+					if data not in traces:
+						traces.append(data)
+		print('traces->',traces)
+		self.metadata.setTraceLevel( value=traces )
+
+	def setDefault(self):
+		self.metadata.setTopLevel( 'defaultTraceName', self.get() )
+	def selectAll(self):
+		if self.get() in self.crosshairs:
+			for ch in self.crosshairs[self.get()]:
+				self.select(ch)
+		pass
+		'''		if self.traceSV.get() in self.currentCrosshairs:
+					for ch in self.currentCrosshairs[ self.traceSV.get() ]:
+						ch.select()
+						self.currentSelectedCrosshairs.add( ch )'''
+
+	def copy(self):
+		pass
+	def paste(self):
+		pass
+	def recolor(self):
+			# grab a new color and save our old color (for generating undoQueue stuff)
+			newColor = self.getRandomHexColor()# if _color==None else _color
+			oldColor = self.metadata.getTraceLevel( 'color' )
+
+			self.available[ self.get() ]['color'] = newColor
+			self.metadata.setTopLevel( 'traces', self.available )
+
+			# recolor everything that's currently drawn to this trace
+			#trace = self.traceSV.get()
+			#for ch in self.currentCrosshairs[ trace ]:
+				#ch.recolor( newColor )
+
+			# if this was triggered by a button click, add it to the undoQueue
+			#if _color == None:
+				#self.undoQueue.append({ 'type':'recolor', 'trace':trace, 'color':oldColor })
+				#self.redoQueue = []
+
+			return oldColor
+	def clear(self):
+				# assume this was an accident ... so we want to backup the old metadata
+				# (also used for restoring on `undo`)
+				backupfile = self.metadata.writeBackup()
+
+				# now we remove all the traces and save
+				trace = self.get()
+				if trace in self.crosshairs:
+					for ch in self.crosshairs[ trace ]:
+						self.remove( ch, False )
+					self.write()
+
+					# add to undoQueue if we did any work
+					'''if len( self.crosshairs[ trace ] ):
+						self.undoQueue.append({ 'type':'clear', 'backup':backupfile, 'trace':trace })
+						self.redoQueue = []'''
+
+				return backupfile
+	def remove(self, ch, write=True):
+		ch.undraw()
+		if write:
+			self.write()
+
+	def new(self):
+		name = self.traceSV.get()[:12]
+
+		# don't want to add traces we already have or empty strings
+		if name not in self.available and len(name) > 0:
+
+			# choose a random color
+			color = self.getRandomHexColor()
+
+			# save the new trace name and color to metadata & update vars
+			self.available[ name ] = { 'color':color, 'files':{} }
+			self.metadata.setTopLevel( 'traces', self.available )
+			self.traceSV.set('')
+
+			# update our listbox
+			self.listbox.insert(END, name)
+			self.listbox.selection_clear(0, END)
+			self.listbox.select_set( len(self.available)-1 )
+
+	def rename(self):
+		newName = self.traceSV.get()[:12]
+
+		# don't overwrite anything
+		if newName not in self.available and len(newName) > 0:
+
+			# get data from the old name and change the dictionary key in the metadata
+			data = self.available.pop(self.get())
+			self.available[ newName ] = data
+			self.metadata.setTopLevel( 'traces', self.available )
+			if self.get()==self.metadata.getTopLevel( 'defaultTraceName' ):
+				self.metadata.setTopLevel( 'defaultTraceName', newName )
+			self.traceSV.set('')
+
+			# update our listbox
+			index = self.listbox.curselection()
+			self.listbox.delete(index)
+			self.listbox.insert(index, newName)
+			self.listbox.selection_clear(0, END)
+			self.listbox.select_set(index)
+
+	def getRandomHexColor(self):
+		return '#%06x' % random.randint(0, 0xFFFFFF)
+
+	def getWidget(self, widget, row=0, column=0, rowspan=1, columnspan=1, sticky=() ):
+		return {
+			'widget' : widget,
+			'row'	 : row,
+			'rowspan': rowspan,
+			'column' : column,
+			'columnspan':columnspan,
+			'sticky' : sticky }
+
+	def grid(self):
+		for item in self.TkWidgets:
+			item['widget'].grid(
+				row=item['row'], column=item['column'], rowspan=item['rowspan'],
+				columnspan=item['columnspan'], sticky=item['sticky'] )
+		self.listbox.pack(side=LEFT, fill=Y)
+		self.scrollbar.pack(side=RIGHT, fill=Y)
+
+	def grid_remove(self):
+		for item in self.TkWidgets:
+			item['widget'].grid_remove()
+		self.listbox.packforget()
+		self.scrollbar.packforget()
+
+class App(Tk):
 	def __init__(self):
 
 		# need this first
@@ -446,7 +854,7 @@ class markingGUI(Tk):
 		parser.add_argument('path', help='path (unique to a participant) where subdirectories contain raw data')
 		args = parser.parse_args()
 
-		self.metadata = Metadata( self, args.path )
+		self.metadata = MetadataManager( self, args.path )
 
 		self.mixer = pygame.mixer
 		self.mixer.init()
@@ -456,7 +864,6 @@ class markingGUI(Tk):
 
 		# populate everything
 		self.changeFilesUpdate()
-
 	def setDefaults(self):
 
 		self.currentFID = 0 				# file index w/in list of sorted files
@@ -467,35 +874,30 @@ class markingGUI(Tk):
 		self.zoomFactor = 0					# make sure we don't zoom in/out too far
 		self.isClicked = False
 		self.isDragging = False
-		self.currentCrosshairs = {}
-		self.currentSelectedCrosshairs = set()
 		self.undoQueue = []
 		self.redoQueue = []
-		self.availableTracesList = [ self.metadata.getTopLevel( 'defaultTraceName' ) ]
 
 		# declare string variables
 		self.currentFileSV = StringVar(self)
 		self.preprocessSV = StringVar(self)
 		self.loadDicomSV = StringVar(self)
 		self.frameSV = StringVar(self)
-		self.traceSV = StringVar(self)
-		self.newTraceSV = StringVar(self)
 
 		# initialize string variables
 		self.currentFileSV.set( self.metadata.files[ self.currentFID ] )
 		self.preprocessSV.set( 'Warning: slow' )
 		self.frameSV.set( '1' )
-		self.traceSV.set( self.metadata.getTopLevel( 'defaultTraceName' ) )
-		self.newTraceSV.set( '' )
-
 	def setupTk(self):
-		#self.geometry('1000x800')
+		self.geometry( '1150x800+1400+480' )
 
 		# ==============
 		# playback frame:	to hold all of our soundfile/TextGrid functionality
 		# ==============
-		self.playbackFrame = Frame(self, bg='blue')
-		self.playButton = Button(self.playbackFrame, text="Play/Pause", command=self.toggleAudio, state=DISABLED)
+		self.audioFrame = Frame(self)
+		self.TextGridFrame = Frame(self.audioFrame)
+		self.TextGridManager = TextGridManager(self.TextGridFrame)
+		self.playbackFrame = Frame(self.audioFrame)
+		self.playButton = Button(self.audioFrame, text="Play/Pause", command=self.toggleAudio, state=DISABLED)
 
 		# non playback stuff
 		self.mainFrame = Frame(self)
@@ -532,17 +934,6 @@ class markingGUI(Tk):
 
 		# navigate between tracings
 		self.navTraceFrame = Frame(self.controlFrame, pady=7)
-		self.navTraceHeader = Header(self.navTraceFrame, text='Choose a trace:')
-		self.navTraceNewFrame = Frame(self.navTraceFrame)
-		self.navTraceNewTraceEntry = Entry(self.navTraceNewFrame, width=10, textvariable=self.newTraceSV)
-		self.navTraceNewTraceButton = Button(self.navTraceNewFrame, text='New', command=self.addNewTrace)
-		self.navTraceMenuFrame = Frame(self.navTraceFrame)
-		self.navTraceMenu = OptionMenu(self.navTraceMenuFrame, self.traceSV, *self.availableTracesList, command=self.changeTrace)
-		self.navTraceRenameButton = Button(self.navTraceMenuFrame, text='Rename', command=self.renameTrace)
-		self.navTraceButtonFrame = Frame(self.navTraceFrame)
-		self.navTraceClearButton = Button(self.navTraceButtonFrame, text='Clear', command=self.clearTraces)
-		self.navTraceColorButton = Button(self.navTraceButtonFrame, text='Recolor', command=self.changeTraceColor)
-		self.navTraceSelectButton= Button(self.navTraceButtonFrame, text='Select', command=self.selectAllTrace)
 
 		self.zoomResetButton = Button(self.controlFrame, text='Reset image', command=self.resetCanvas, pady=7 )
 
@@ -577,7 +968,9 @@ class markingGUI(Tk):
 
 		#self.ultrasoundFrame.grid( row=0, column=1 )
 
-		self.playbackFrame.grid( row=1, column=0, columnspan=2 )
+		self.audioFrame.grid( row=1, column=0, columnspan=2 )
+		self.TextGridFrame.grid( row=0, column=0, sticky=W )
+		self.playbackFrame.grid( row=1, column=0 )
 		self.playButton.grid()
 
 		self.bind('<Left>', lambda a: self.navDicomFramePanLeft() )
@@ -588,7 +981,7 @@ class markingGUI(Tk):
 		self.bind('<Control-z>', self.undo )
 		self.bind('<Control-y>', self.redo )
 		self.bind('<Control-d>', lambda a: self.loadDicom() )
-		self.bind('<Control-r>', lambda a: self.changeTraceColor() )
+		self.bind('<Control-r>', lambda a: self.TraceManager.recolor() )
 		self.bind('<Option-Left>', lambda a: self.navFileFramePanLeft() )
 		self.bind('<Option-Right>', lambda a: self.navFileFramePanRight() )
 
@@ -596,7 +989,9 @@ class markingGUI(Tk):
 		self.zframe.canvas.bind('<ButtonRelease-1>', self.unclickInCanvas )
 		self.zframe.canvas.bind('<Motion>', self.mouseMoveInCanvas )
 
-	def getCrosshairsInSelectRadius(self, click, trace):
+		self.TraceManager = TraceManager(self.navTraceFrame, self.metadata, self.zframe)
+
+	def ____getCrosshairsInSelectRadius(self, click, trace):
 
 		# see if we clicked near any existing crosshairs
 		possibleSelections = {}
@@ -620,7 +1015,6 @@ class markingGUI(Tk):
 		# otherwise
 		else:
 			return None
-
 	def clickInCanvas(self, event):
 		if self.dicomIsLoaded:
 
@@ -628,40 +1022,28 @@ class markingGUI(Tk):
 			self.isDragging = False
 
 			# get nearby crosshairs from this trace
-			nearby = self.getCrosshairsInSelectRadius( self.click, self.traceSV.get() )
+			nearby = self.TraceManager.getNearby( self.click )
 
 			# if we didn't click near anything ...
 			if nearby == None:
 
-				# ... check our other traces to see if they contain any nearby guys
-				for trace in self.availableTracesList:
-					nearby = self.getCrosshairsInSelectRadius( self.click, trace )
-					# if we got something
-					if nearby != None:
-						# switch to that trace and exit the loop
-						self.changeTrace( trace )
-						break
+				# unselect crosshairs
+				self.isClicked = True
+				self.TraceManager.unselectAll()
+				ch = self.TraceManager.draw( *self.click )
 
-				# if still nothing, place a new crosshairs
-				if nearby == None:
-					# unselect crosshairs
-					self.isClicked = True
-					if self.currentSelectedCrosshairs != set():
-						for sch in self.currentSelectedCrosshairs:
-							sch.unselect()
-					ch = self.addCrosshairs( *self.click )
-					self.undoQueue.append( {'type':'add', 'ch':ch })
-					self.redoQueue = []
+				self.undoQueue.append( {'type':'add', 'ch':ch })
+				self.redoQueue = []
 
-					return
+				return
 
 			# only get here if we got a nearby guy somehow
 
 			# if holding option key, unselect the guy we clicked on
 			if event.state == 16:
 				nearby.unselect()
-				if nearby in self.currentSelectedCrosshairs:
-					self.currentSelectedCrosshairs.remove( nearby )
+				if nearby in self.TraceManager.getSelected():
+					self.TraceManager.getSelected().remove( nearby )
 
 			# otherwise, add it to our selection
 			else:
@@ -670,38 +1052,33 @@ class markingGUI(Tk):
 				if event.state != 1 and nearby.isSelected == False:
 
 					# if not, clear current selection
-					if self.currentSelectedCrosshairs != set():
-						for sch in self.currentSelectedCrosshairs:
-							sch.unselect()
-					self.currentSelectedCrosshairs = set()
+					self.TraceManager.unselectAll()
 
 				# add this guy to our current selection
 				nearby.select()
-				self.currentSelectedCrosshairs.add( nearby )
+				self.TraceManager.select( nearby )
 
 				# set dragging variables
 				self.isDragging = True
 				self.dragClick = self.click
-
 	def unclickInCanvas(self, event):
 		if self.dicomIsLoaded:
 			if self.isDragging:
 				dx = (event.x - self.click[0])
 				dy = (event.y - self.click[1])
-				self.undoQueue.append({ 'type':'move', 'chs':[ ch for ch in self.currentSelectedCrosshairs ], 'dx':-dx, 'dy':-dy })
+				self.undoQueue.append({ 'type':'move', 'chs':[ ch for ch in self.TraceManager.getSelected() ], 'dx':-dx, 'dy':-dy })
 				self.redoQueue = []
 				self.writeCrosshairsToTraces()
 			self.isDragging = False
 			self.isClicked = False
 			self.writeCrosshairsToTraces()
-
 	def mouseMoveInCanvas(self, event):
 		if self.dicomIsLoaded:
 
 			if self.isDragging:
 				thisClick = (event.x, event.y)
 				# move all currently selected crosshairs
-				for sch in self.currentSelectedCrosshairs:
+				for sch in self.TraceManager.getSelected():
 					# keep their relative distance constant
 					center = ( sch.x, sch.y ) # canvas coordinates not true coordinates
 					newX = event.x + center[0] - self.dragClick[0]
@@ -717,30 +1094,19 @@ class markingGUI(Tk):
 				dy = abs(thisClick[1] - lastClick[1]) / self.zframe.imgscale
 				if dx > _CROSSHAIR_DRAG_BUFFER or dy > _CROSSHAIR_DRAG_BUFFER:
 					self.click = thisClick
-					ch = self.addCrosshairs( *self.click )
+					ch = self.TraceManager.draw( *self.click )
 					self.undoQueue.append({ 'type':'add', 'ch':ch })
 					self.redoQueue = []
-
-	def removeCrosshairs(self, ch, write=True):
-		ch.undraw()
-		if write:
-			self.writeCrosshairsToTraces()
-
 	def onEscape(self, event):
 		self.isDragging = False
 		self.isClicked = False
-		if self.currentSelectedCrosshairs != set():
-			for sch in self.currentSelectedCrosshairs:
-				sch.unselect()
-		self.currentSelectedCrosshairs = set()
-
+		self.TraceManager.unselectAll()
 	def onBackspace(self, event):
-		for sch in self.currentSelectedCrosshairs:
-			self.removeCrosshairs( sch )
+		for sch in self.TraceManager.getSelected():
+			self.TraceManager.remove( sch )
 			self.undoQueue.append({ 'type':'delete', 'ch':sch })
 			self.redoQueue = []
-		self.currentSelectedCrosshairs = set()
-
+		self.TraceManager.unselectAll()
 	def undo(self, event):
 		if len(self.undoQueue):
 
@@ -774,11 +1140,8 @@ class markingGUI(Tk):
 				print (action)
 				raise NotImplementedError
 
-			for sch in self.currentSelectedCrosshairs:
-				sch.unselect()
-			self.currentSelectedCrosshairs = set()
+			self.TraceManager.unselectAll()
 			self.writeCrosshairsToTraces()
-
 	def redo(self, event):
 		if len(self.redoQueue):
 
@@ -810,12 +1173,10 @@ class markingGUI(Tk):
 			else:
 				print (action)
 				raise NotImplementedError
-			for sch in self.currentSelectedCrosshairs:
-				sch.unselect()
-			self.currentSelectedCrosshairs = set()
-			self.writeCrosshairsToTraces()
 
-	def renameTrace(self, _newTraceName=None, _oldTraceName=None):
+			self.TraceManager.unselectAll()
+			self.writeCrosshairsToTraces()
+	def ____renameTrace(self, _newTraceName=None, _oldTraceName=None):
 
 		# get our attempted old/new trace names
 		newTraceName = self.newTraceSV.get() if _newTraceName==None else _newTraceName
@@ -858,7 +1219,6 @@ class markingGUI(Tk):
 			menu.delete(0, END)
 			for tracename in self.availableTracesList:
 				menu.add_command( label=tracename, command=lambda t=tracename: self.changeTrace(t) )
-
 	def clearTraces(self, _backupfile=None):
 
 		# assume this was an accident ... so we want to backup the old metadata
@@ -878,8 +1238,7 @@ class markingGUI(Tk):
 				self.redoQueue = []
 
 		return backupfile
-
-	def changeTraceColor(self, _color=None):
+	def ____changeTraceColor(self, _color=None):
 
 		# since this command is bound to a key, don't want to execute if there's no dicom
 		if self.dicomIsLoaded:
@@ -887,11 +1246,11 @@ class markingGUI(Tk):
 			# grab a new color if we weren't explicitly passed one
 			# and also save our old color (for generating undoQueue stuff)
 			newColor = self.getRandomHexColor() if _color==None else _color
-			oldColor = self.metadata.getTraceLevel( 'color' )
+			oldColor = self.metadata.getTraceLevel()['color']
 
 			# write it out to all our files (incl. this one)
 			for fileid in range(len( self.metadata.files )):
-				self.metadata.setTraceLevel( key='color', value=newColor, _fileid=fileid )
+				self.metadata.setTraceLevel( _key='color', value=newColor, _fileid=fileid )
 
 			# recolor everything that's currently drawn to this trace
 			trace = self.traceSV.get()
@@ -908,22 +1267,19 @@ class markingGUI(Tk):
 				self.redoQueue = []
 
 			return oldColor
-
 	def selectAllTrace(self):
 		if self.traceSV.get() in self.currentCrosshairs:
 			for ch in self.currentCrosshairs[ self.traceSV.get() ]:
-				ch.select()
-				self.currentSelectedCrosshairs.add( ch )
-
-	def changeTrace(self, event):
+				self.TraceManager.select()
+	def ____changeTrace(self, event):
 		if event != self.traceSV.get():
 			self.traceSV.set( event )
 			self.newTraceSV.set( '' )
+
 			for sch in self.currentSelectedCrosshairs:
 				sch.unselect()
 			self.currentSelectedCrosshairs = set()
-
-	def addNewTrace(self, _newTraceName=None):
+	def ____addNewTrace(self, _newTraceName=None):
 
 		# check if we're manually passing a name or whether this was from pressing the button (=None)
 		newTraceName = self.newTraceSV.get() if _newTraceName==None else _newTraceName
@@ -953,10 +1309,9 @@ class markingGUI(Tk):
 			self.navTraceMenu.children['menu'].add_command(
 				label=newTraceName,
 				command=lambda t=newTraceName: self.changeTrace(t) )
-
-	def addCrosshairs(self, x, y, _zframe=None, transform=True):
+	def ____addCrosshairs(self, x, y, _zframe=None, transform=True):
 		zframe = self.zframe if _zframe==None else _zframe
-		color  = self.metadata.getTraceLevel( key='color' )
+		color  = self.metadata.getTraceLevel['color']
 
 		ch = Crosshairs( zframe, x, y, color, transform )
 
@@ -966,28 +1321,10 @@ class markingGUI(Tk):
 		self.currentCrosshairs[ trace ].append( ch )
 
 		return ch
-
 	def writeCrosshairsToTraces(self):
-		trace = self.traceSV.get()
-		traces = self.metadata.getFileLevel( 'traces' )
-		traces[ trace ][ str(self.frame) ] = []
-		for ch in self.currentCrosshairs[trace]:
-			if ch.isVisible:
-				x,y = ch.getTrueCoords()
-				traces[ trace ][ str(self.frame) ].append({ 'x':x, 'y':y })
-		self.metadata.setFileLevel( 'traces', traces )
-
+		self.TraceManager.write()
 	def readTracesToCrosshairs(self):
-		traces = self.metadata.getFileLevel( 'traces' )
-		for trace in traces:
-			self.changeTrace( trace )
-			try:
-				for traceItem in traces[ trace ][ str(self.frame) ]:
-					self.addCrosshairs( traceItem['x'], traceItem['y'], transform=False )
-			except KeyError:
-				pass
-		self.changeTrace( self.metadata.getTopLevel( 'defaultTraceName' ) )
-
+		self.TraceManager.read( self.frame )
 	def resetCanvas(self, cfu=True):
 
 		# creates a new canvas object and we redraw everything to it
@@ -998,7 +1335,6 @@ class markingGUI(Tk):
 
  		# we want to go here only after a button press
 		if cfu: self.changeFramesUpdate()
-
 	def loadAudio(self, codec):
 		audiofile = self.metadata.getFileLevel( codec )
 		if audiofile != None:
@@ -1009,7 +1345,6 @@ class markingGUI(Tk):
 				return True
 			except:
 				print('unable to load file %s' % audiofile)
-
 	def toggleAudio(self, event=None):
 		if self.currentAudio != None:
 			if self.isPaused:
@@ -1021,7 +1356,6 @@ class markingGUI(Tk):
 			else:
 				self.mixer.music.play()
 				self.isPaused = False
-
 	def changeFilesUpdate(self):
 
 		# update the StringVars tracking the current file
@@ -1029,17 +1363,12 @@ class markingGUI(Tk):
 		self.loadDicomSV.set( '' )
 
 		# reset other variables
-		self.textgrid = None
 		self.dicomIsLoaded = False
 		self.dicom = None
 		self.frame = 1
 		self.frames= 1
 		self.currentImageID = None
-		for trace in self.currentCrosshairs.keys():
-			for ch in self.currentCrosshairs[ trace ]:
-				ch.undraw()
-		self.currentCrosshairs = {}
-		self.currentSelectedCrosshairs = set()
+		self.TraceManager.reset()
 		self.undoQueue = []
 		self.redoQueue = []
 
@@ -1061,17 +1390,6 @@ class markingGUI(Tk):
 		self.navDicomRightButton.grid_remove()
 
 		self.navTraceFrame.grid_remove()
-		self.navTraceHeader.grid_remove()
-		self.navTraceNewFrame.grid_remove()
-		self.navTraceNewTraceEntry.grid_remove()
-		self.navTraceNewTraceButton.grid_remove()
-		self.navTraceMenuFrame.grid_remove()
-		self.navTraceMenu.grid_remove()
-		self.navTraceRenameButton.grid_remove()
-		self.navTraceButtonFrame.grid_remove()
-		self.navTraceClearButton.grid_remove()
-		self.navTraceColorButton.grid_remove()
-		self.navTraceSelectButton.grid_remove()
 		self.zoomResetButton.grid_remove()
 		self.ultrasoundFrame.grid_remove()
 		self.zframe.grid_remove()
@@ -1090,8 +1408,7 @@ class markingGUI(Tk):
 
 		# bring our current TextGrid into memory if it exists
 		tgfile = self.metadata.getFileLevel( '.TextGrid' )
-		if tgfile != None:
-			self.textgrid = TextGrid( tgfile, self.currentFileSV.get() )
+		self.TextGridManager.load( tgfile )
 
 		# check if we have a dicom file to bring into memory
 		if self.metadata.getFileLevel( '.dicom' ) == None:
@@ -1102,9 +1419,9 @@ class markingGUI(Tk):
 			if self.metadata.getFileLevel( 'processed' ) != None:
 				self.preprocessButton['state'] = DISABLED
 				self.preprocessLabel.grid_remove()
+				self.loadDicom()
 			else:
 				self.preprocessButton['state'] = NORMAL
-
 	def navFileFramePanLeft(self):
 		'''
 		controls self.navFileLeftButton for panning between available files
@@ -1115,7 +1432,6 @@ class markingGUI(Tk):
 			self.currentFID -= 1
 			# update
 			self.changeFilesUpdate()
-
 	def navFileFramePanRight(self):
 		'''
 		controls self.navFileRightButton for panning between available files
@@ -1126,19 +1442,13 @@ class markingGUI(Tk):
 			self.currentFID += 1
 			# update
 			self.changeFilesUpdate()
-
 	def navFileFrameJumpTo(self, choice):
 		self.currentFID = self.metadata.files.index( choice )
 		self.changeFilesUpdate()
-
 	def changeFramesUpdate(self):
 
 		# each frame should have its own crosshair objects
-		for trace in self.currentCrosshairs.keys():
-			for ch in self.currentCrosshairs[ trace ]:
-				ch.undraw()
-		self.currentCrosshairs = {}
-		self.currentSelectedCrosshairs = set()
+		self.TraceManager.reset()
 		self.undoQueue = []
 		self.redoQueue = []
 
@@ -1166,6 +1476,7 @@ class markingGUI(Tk):
 			self.navDicomRightButton['state'] = NORMAL
 
 		self.frameSV.set( str(self.frame) )
+		self.TextGridManager.update( self.frame )
 
 	def navDicomFramePanLeft(self):
 		if self.dicomIsLoaded and self.frame > 1:
@@ -1252,24 +1563,9 @@ class markingGUI(Tk):
 			self.loadDicomLabel.grid( row=2 )
 
 			self.navTraceFrame.grid( row=4 )
-			self.navTraceHeader.grid( row=0 )
-			self.navTraceNewFrame.grid( row=1 )
-			self.navTraceNewTraceEntry.grid(  row=0, column=0 )
-			self.navTraceNewTraceButton.grid( row=0, column=1 )
-			self.navTraceMenuFrame.grid( row=2 )
-			self.navTraceMenu.grid( row=0, column=0 )
-			self.navTraceRenameButton.grid( row=0, column=1 )
-			self.navTraceButtonFrame.grid( row=3 )
-			self.navTraceClearButton.grid( row=0, column=0 )
-			self.navTraceColorButton.grid( row=0, column=1 )
-			self.navTraceSelectButton.grid(row=0, column=2 )
+			self.TraceManager.grid()
 
 			self.zoomResetButton.grid( row=5 )
-
-			# populate our traces list
-			for key in self.metadata.getFileLevel( 'traces' ):
-				self.addNewTrace( key )
-			self.changeTrace( self.metadata.getTopLevel( 'defaultTraceName' ) )
 
 			# reset frame count
 			self.frame = 1
@@ -1283,10 +1579,7 @@ class markingGUI(Tk):
 			self.changeFramesUpdate()
 
 	def restoreFromBackup(self, backup):
-		self.metadata = Metadata( self, self.metadata.path, backup )
-
-	def getRandomHexColor(self):
-		return '#%06x' % random.randint(0, 0xFFFFFF)
+		self.metadata = MetadataManager( self, self.metadata.path, backup )
 
 	def preprocessDicom(self):
 
@@ -1388,15 +1681,7 @@ class markingGUI(Tk):
 
 
 if __name__ == "__main__":
-	if False:
-		root = Tk()
-		path = './test/kik-EN/IM_0001.dicom'
-		app = ZoomFrame( root )
-		root.geometry( '800x600+1700+480' )
-		app.mainloop()
-	else:
-		app = markingGUI()
-		app.mainloop()
+	App().mainloop()
 
 
 '''	def old__init__(self):
