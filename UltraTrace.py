@@ -36,7 +36,8 @@ class ZoomFrame(Frame):
 	'''
 	Wrapper for a Tk Frame() object that includes zooming and panning functionality.
 	This code is inspired by the answer from https://stackoverflow.com/users/7550928/foo-bar
-	at https://stackoverflow.com/questions/41656176/tkinter-canvas-zoom-move-pan
+	at https://stackoverflow.com/questions/41656176/tkinter-canvas-zoom-move-pan ...
+	Could probably be cleaned up and slimmed down
 	'''
 	def __init__(self, master, delta, ):
 		Frame.__init__(self, master)
