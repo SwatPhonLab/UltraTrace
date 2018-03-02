@@ -482,14 +482,15 @@ class MetadataManager(object):
 		except KeyError:
 			return {}
 
-	def getCurrentTraceCurrentFrame( self ):
+	def getTraceCurrentFrame( self, trace ):
 		'''
-		Returns a list of the crosshairs for the current trace, current file,
+		Returns a list of the crosshairs for the given trace at the current file
 		and current frame
 		'''
-		allFrames = self.getCurrentTraceAllFrames()
+		filename = self.getCurrentFilename()
+		frame    = str(self.parent.frame)
 		try:
-			return allFrames[ str(self.parent.frame) ]
+			return self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ frame ]
 		except KeyError:
 			return []
 
@@ -729,8 +730,8 @@ class TraceManager(object):
 		for trace in self.available:
 			try:
 				#print('yurt=>',self.metadata.getTraceLevel()[ 'byFrame' ])
-				print(self.metadata.getCurrentTraceCurrentFrame())
-				for item in self.metadata.getCurrentTraceCurrentFrame():
+				print(self.metadata.getTraceCurrentFrame(trace))
+				for item in self.metadata.getTraceCurrentFrame(trace):
 					ch = self.draw( item['x'], item['y'], _trace=trace, transform=False )
 					if trace not in self.crosshairs:
 						self.crosshairs[ trace ] = []
