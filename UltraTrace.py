@@ -107,31 +107,26 @@ class ZoomFrame(Frame):
 				self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
 
 	def wheel(self, event):
-
+		print('wheel event', event.delta)
 		if self.image != None:
 			x = self.canvas.canvasx(event.x)
 			y = self.canvas.canvasy(event.y)
-			bbox = self.canvas.bbox(self.container)  # get image area
-			if bbox[0] < x < bbox[2] and bbox[1] < y < bbox[3]: pass  # Ok! Inside the image
-			else: return  # zoom only inside image area
 			scale = 1.0
+
 			# Respond to Linux (event.num) or Windows (event.delta) wheel event
-			if event.num == 5 or event.delta < 0:  # scroll down
+			if event.num == 5 or event.delta < 0:  # zoom in
 				if self.zoom < self.maxZoom:
 					self.zoom += 1
-					i = min(self.width, self.height)
-					if int(i * self.imgscale) > 30:
-						self.imgscale /= self.delta
-						scale        /= self.delta
-					self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
-			if event.num == 4 or event.delta > 0:  # scroll up
+					self.imgscale /= self.delta
+					scale         /= self.delta
+
+			if event.num == 4 or event.delta > 0:  # zoom out
 				if self.zoom > self.maxZoom * -1:
 					self.zoom -= 1
-					i = min(self.canvas.winfo_width(), self.canvas.winfo_height())
-					if i > self.imgscale:
-						self.imgscale *= self.delta
-						scale        *= self.delta
-					self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
+					self.imgscale *= self.delta
+					scale         *= self.delta
+
+			self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
 			self.showImage()
 
 	def scrollY(self, *args, **kwargs):
@@ -196,14 +191,23 @@ class Crosshairs(object):
 		The values are calculated relative to the top left corner of the canvas at 1x zoom.  We need to
 		make sure to call this every time we change the position of a Crosshairs.
 		'''
-		containerX, containerY = self.zframe.canvas.coords( self.zframe.container )[:2]
-		absoluteX = (self.x-containerX) / self.zframe.imgscale
-		absoluteY = (self.y-containerY) / self.zframe.imgscale
-		self.trueX, self.trueY = absoluteX, absoluteY
+		self.trueX, self.trueY = self.transformCoordsToTrue(self.x,self.y)
 
 	def getTrueCoords(self):
 		''' called when we're saving to file '''
 		return self.trueX, self.trueY
+
+	def transformCoordsToTrue(self, x, y):
+		containerX, containerY = self.zframe.canvas.coords( self.zframe.container )[:2]
+		x = (x-containerX) / self.zframe.imgscale
+		y = (y-containerY) / self.zframe.imgscale
+		return x, y
+
+	def transformTrueToCoords(self, x, y):
+		containerX, containerY = self.zframe.canvas.coords( self.zframe.container )[:2]
+		x = x*self.zframe.imgscale + containerX
+		y = y*self.zframe.imgscale + containerY
+		return x, y
 
 	def transformCoords(self, x, y):
 		''' transforms coordinates by the canvas offsets '''
@@ -217,9 +221,10 @@ class Crosshairs(object):
 
 	def getDistance(self, click):
 		''' calculates the distance from centerpoint to a click event '''
-		click  = self.transformCoords(*click)
-		dx = abs( self.x - click[0] )
-		dy = abs( self.y - click[1] )
+		click = self.transformCoords(*click)
+		click = self.transformCoordsToTrue(*click)
+		dx = abs( self.trueX - click[0] )
+		dy = abs( self.trueY - click[1] )
 		return math.sqrt( dx**2 + dy**2 ) if self.isVisible else float('inf') # invisible points infinitely far away
 
 	def select(self):
@@ -250,15 +255,17 @@ class Crosshairs(object):
 			self.zframe.canvas.itemconfigure( self.vline, state='normal' )
 			self.isVisible = True
 
-	def dragTo(self, point):
+	def dragTo(self, click):
 		''' move the centerpoint to a given point (calculated in main class) '''
 		if self.isVisible:
 
-			self.x, self.y = point
+			self.trueX += (click[0] - self.x) / self.zframe.imgscale
+			self.trueY += (click[1] - self.y) / self.zframe.imgscale
+			self.x, self.y = self.transformTrueToCoords(self.trueX, self.trueY)
+
 			self.len = self.transformLength( self.defaultLength )
 			self.zframe.canvas.coords( self.hline, self.x-self.len, self.y, self.x+self.len, self.y )
 			self.zframe.canvas.coords( self.vline, self.x, self.y-self.len, self.x, self.y+self.len )
-			self.resetTrueCoords() # update our `true` coordinates for write-out
 
 	def recolor(self, color):
 		''' change the fill color of the Crosshairs '''
@@ -448,40 +455,40 @@ class MetadataManager(object):
 		self.data[ 'files' ][ fileid ][ key ] = value
 		self.write()
 
-	def getTraceLevel( self ):
-		'''#, _key=None, _fileid=None, _trace=None
-		Get trace-level metadata
-		'''
-		trace    = self.parent.TraceManager.get()
-		files    = self.data['traces'][ trace ]['files']
-		filename = self.data['files'][self.parent.currentFID][ 'name' ]
-		key      = self.parent.frame
+	def getCurrentFilename( self ):
+		return self.data[ 'files' ][ self.parent.currentFID ][ 'name' ]
 
+	def getCurrentTraceColor( self ):
+		trace = self.parent.TraceManager.get()
+		if trace==None:
+			return None
+		return self.data[ 'traces' ][ trace ][ 'color' ]
+
+	def getCurrentTraceAllFrames( self ):
+		trace = self.parent.TraceManager.get()
+		filename = self.getCurrentFilename()
 		try:
-			return { 'color':self.data['traces'][ trace ]['color'], 'byFrame':files[ filename ] }
+			return self.data[ 'traces' ][ trace ][ 'files' ][ filename ]
 		except KeyError:
-			return { 'color':None, 'byFrame':{} }
+			return {}
 
-	def setTraceLevel( self, _key=None, value=None, _fileid=None, _trace=None ):
-		'''
-		Set trace-level metadata
-		'''
-		trace  = self.parent.TraceManager.get() if _trace==None else _trace
-		fileid = self.parent.currentFID if _fileid==None else _fileid
-		key    = self.parent.frame if _key==None else _key
+	def getCurrentTraceCurrentFrame( self ):
+		allFrames = self.getCurrentTraceAllFrames()
+		try:
+			return allFrames[ str(self.parent.frame) ]
+		except KeyError:
+			return []
 
-		if trace in self.data['traces']:
-			if fileid == None:
-				if key in self.data['traces'][ trace ]:
-					self.data['traces'][ trace ][ key ] = value # e.g. for color
-					self.write()
-			else:
-				filename = self.data['files'][ fileid ][ 'name' ]
-				print(self.data['traces'], trace, fileid, filename, key)
-				if filename not in self.data['traces'][ trace ]:
-					self.data['traces'][ trace ]['files'][ filename ] = {}
-				self.data['traces'][ trace ]['files'][ filename ][ key ] = value
-				self.write()
+	def setCurrentTraceCurrentFrame( self, traces ):
+		trace = self.parent.TraceManager.get()
+		filename = self.getCurrentFilename()
+		frame = self.parent.frame
+		if trace not in self.data[ 'traces' ]:
+			self.data[ 'traces' ][ trace ] = { 'files':{}, 'color':None }
+		if filename not in self.data[ 'traces' ][ trace ][ 'files' ]:
+			self.data[ 'traces' ][ trace ][ 'files' ][ filename ] = {}
+		self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ str(frame) ] = traces
+		self.write()
 
 class TextGridManager(object):
 	'''
@@ -665,7 +672,6 @@ class TraceManager(object):
 				ch.undraw()
 		self.crosshairs = {}
 		self.selected = set()
-
 	def getCrosshairsInSelectRadius(self, click):
 
 		trace = self.get()
@@ -690,7 +696,6 @@ class TraceManager(object):
 			return ch
 
 		return None
-
 	def getAll(self):
 		return [ key for key in self.available.keys() ]
 	def draw(self, x, y, _trace=None, transform=True):
@@ -701,12 +706,13 @@ class TraceManager(object):
 			self.crosshairs[ trace ] = []
 		self.crosshairs[ trace ].append( ch )
 		return ch
-
 	def read(self, frame):
+		print('available:',self.available)
 		for trace in self.available:
 			try:
-				print('yurt=>',self.metadata.getTraceLevel()[ 'byFrame' ])
-				for item in self.metadata.getTraceLevel()[ 'byFrame' ][ str(frame) ]:
+				#print('yurt=>',self.metadata.getTraceLevel()[ 'byFrame' ])
+				print(self.metadata.getCurrentTraceCurrentFrame())
+				for item in self.metadata.getCurrentTraceCurrentFrame():
 					ch = self.draw( item['x'], item['y'], _trace=trace, transform=False )
 					if trace not in self.crosshairs:
 						self.crosshairs[ trace ] = []
@@ -716,21 +722,21 @@ class TraceManager(object):
 	def write(self):
 		trace = self.get()
 		traces = []
-		print('write')
+		#print('write')
 
 		if trace in self.crosshairs:
-			print('in here')
+			#print('in here')
 			for ch in self.crosshairs[ trace ]:
-				print('looping')
+				#print('looping')
 				if ch.isVisible:
-					print('visible')
+					#print('visible')
 					x,y = ch.getTrueCoords()
 					data = { 'x':x, 'y':y }
 					if data not in traces:
 						traces.append(data)
-		print('traces->',traces)
-		self.metadata.setTraceLevel( value=traces )
-
+		#print('traces->',traces)
+		print ('write:',traces)
+		self.metadata.setCurrentTraceCurrentFrame( traces )
 	def setDefault(self):
 		self.metadata.setTopLevel( 'defaultTraceName', self.get() )
 	def selectAll(self):
@@ -742,7 +748,6 @@ class TraceManager(object):
 					for ch in self.currentCrosshairs[ self.traceSV.get() ]:
 						ch.select()
 						self.currentSelectedCrosshairs.add( ch )'''
-
 	def copy(self):
 		pass
 	def paste(self):
@@ -750,7 +755,7 @@ class TraceManager(object):
 	def recolor(self):
 			# grab a new color and save our old color (for generating undoQueue stuff)
 			newColor = self.getRandomHexColor()# if _color==None else _color
-			oldColor = self.metadata.getTraceLevel( 'color' )
+			oldColor = self.metadata.getCurrentTraceColor()
 
 			self.available[ self.get() ]['color'] = newColor
 			self.metadata.setTopLevel( 'traces', self.available )
@@ -767,28 +772,30 @@ class TraceManager(object):
 
 			return oldColor
 	def clear(self):
-				# assume this was an accident ... so we want to backup the old metadata
-				# (also used for restoring on `undo`)
-				backupfile = self.metadata.writeBackup()
+		# assume this was an accident ... so we want to backup the old metadata
+		# (also used for restoring on `undo`)
+		backupfile = self.metadata.writeBackup()
 
-				# now we remove all the traces and save
-				trace = self.get()
-				if trace in self.crosshairs:
-					for ch in self.crosshairs[ trace ]:
-						self.remove( ch, False )
-					self.write()
+		print('before clear:',self.crosshairs)
+		# now we remove all the traces and save
+		trace = self.get()
+		if trace in self.crosshairs:
+			for ch in self.crosshairs[ trace ]:
+				self.remove( ch, False )
+			self.crosshairs[ trace ] = []
+			self.write()
 
-					# add to undoQueue if we did any work
-					'''if len( self.crosshairs[ trace ] ):
-						self.undoQueue.append({ 'type':'clear', 'backup':backupfile, 'trace':trace })
-						self.redoQueue = []'''
+			# add to undoQueue if we did any work
+			'''if len( self.crosshairs[ trace ] ):
+				self.undoQueue.append({ 'type':'clear', 'backup':backupfile, 'trace':trace })
+				self.redoQueue = []'''
 
-				return backupfile
+		print(' after clear:',self.crosshairs)
+		return backupfile
 	def remove(self, ch, write=True):
 		ch.undraw()
 		if write:
 			self.write()
-
 	def new(self):
 		name = self.traceSV.get()[:12]
 
@@ -807,7 +814,6 @@ class TraceManager(object):
 			self.listbox.insert(END, name)
 			self.listbox.selection_clear(0, END)
 			self.listbox.select_set( len(self.available)-1 )
-
 	def rename(self):
 		newName = self.traceSV.get()[:12]
 
@@ -828,10 +834,8 @@ class TraceManager(object):
 			self.listbox.insert(index, newName)
 			self.listbox.selection_clear(0, END)
 			self.listbox.select_set(index)
-
 	def getRandomHexColor(self):
 		return '#%06x' % random.randint(0, 0xFFFFFF)
-
 	def getWidget(self, widget, row=0, column=0, rowspan=1, columnspan=1, sticky=() ):
 		return {
 			'widget' : widget,
@@ -840,7 +844,6 @@ class TraceManager(object):
 			'column' : column,
 			'columnspan':columnspan,
 			'sticky' : sticky }
-
 	def grid(self):
 		for item in self.TkWidgets:
 			item['widget'].grid(
@@ -848,7 +851,6 @@ class TraceManager(object):
 				columnspan=item['columnspan'], sticky=item['sticky'] )
 		self.listbox.pack(side=LEFT, fill=Y)
 		self.scrollbar.pack(side=RIGHT, fill=Y)
-
 	def grid_remove(self):
 		for item in self.TkWidgets:
 			item['widget'].grid_remove()
@@ -1258,7 +1260,7 @@ class App(Tk):
 			# grab a new color if we weren't explicitly passed one
 			# and also save our old color (for generating undoQueue stuff)
 			newColor = self.getRandomHexColor() if _color==None else _color
-			oldColor = self.metadata.getTraceLevel()['color']
+			oldColor = self.metadata.getCurrentTraceColor()
 
 			# write it out to all our files (incl. this one)
 			for fileid in range(len( self.metadata.files )):
@@ -1323,7 +1325,7 @@ class App(Tk):
 				command=lambda t=newTraceName: self.changeTrace(t) )
 	def ____addCrosshairs(self, x, y, _zframe=None, transform=True):
 		zframe = self.zframe if _zframe==None else _zframe
-		color  = self.metadata.getTraceLevel['color']
+		color  = self.metadata.getCurrentTraceColor()
 
 		ch = Crosshairs( zframe, x, y, color, transform )
 
