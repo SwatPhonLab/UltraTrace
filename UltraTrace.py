@@ -3,6 +3,7 @@
 
 from textgrid import TextGrid, IntervalTier, PointTier
 from tkinter import *
+from tkinter import filedialog
 from PIL import Image, ImageTk # sudo -H pip3 install pillow
 
 import cairosvg # sudo -H pip3 install cairosvg && brew install cairo
@@ -280,6 +281,10 @@ class MetadataManager(object):
 			each of a set of required extensions
 		'''
 
+		if path == None:
+			parent.update()
+			path = filedialog.askdirectory(initialdir=os.getcwd(), title="Choose a directory")
+
 		if os.path.exists( path ) == False:
 			print( "Error locating path: %s" % path )
 			exit(-1)
@@ -488,6 +493,7 @@ class TextGridManager(object):
 		Keep a reference to the master object for binding the widgets we create
 		'''
 		self.master  = master
+		self.TextGrid = None
 
 	def load(self, filename):
 		'''
@@ -532,15 +538,17 @@ class TextGridManager(object):
 		'''
 		Wrapper for updating the `text` Label widgets at a given frame number
 		'''
-		time = self.getTime(frameNumber)
-		# update each of our tiers
-		for t in range(len( self.TextGrid.getNames() )):
-			tier = self.TextGrid.getNames()[t]
-			if tier != self.frameTierName:
-				# handy-dandy wrappers from the textgrid lib
-				interval = self.TextGrid.getFirst(tier).intervalContaining(time)
-				# need a +1 here because our default label actually sits at index 0
-				self.setTierText(t+1, interval.mark if (interval!=None) else "")
+		# check that we've loaded a TextGrid
+		if self.TextGrid != None:
+			time = self.getTime(frameNumber)
+			# update each of our tiers
+			for t in range(len( self.TextGrid.getNames() )):
+				tier = self.TextGrid.getNames()[t]
+				if tier != self.frameTierName:
+					# handy-dandy wrappers from the textgrid lib
+					interval = self.TextGrid.getFirst(tier).intervalContaining(time)
+					# need a +1 here because our default label actually sits at index 0
+					self.setTierText(t+1, interval.mark if (interval!=None) else "")
 
 	def getTime(self, frameNumber):
 		'''
@@ -548,12 +556,14 @@ class TextGridManager(object):
 		recording and the dicom frame at that time.  The name of this mapping tier is
 		set in self.load() (default='all frames')
 		'''
-		if self.TextGrid.getFirst(self.frameTierName):
-			# NOTE: sometimes don't actually want first tier matching this name
-			# so we should be careful about the exact contents of the passed TextGrid file
-			points = self.TextGrid.getFirst(self.frameTierName)
-			if frameNumber < len(points):
-				return points[frameNumber].time
+		# check that we've loaded a TextGrid
+		if self.TextGrid != None:
+			if self.TextGrid.getFirst(self.frameTierName):
+				# NOTE: sometimes don't actually want first tier matching this name
+				# so we should be careful about the exact contents of the passed TextGrid file
+				points = self.TextGrid.getFirst(self.frameTierName)
+				if frameNumber < len(points):
+					return points[frameNumber].time
 		# if we don't match all conditions, return a time value that will match no intervals
 		return -1
 
@@ -581,6 +591,7 @@ class TraceManager(object):
 		self.metadata = metadata
 		self.zframe = zframe
 		self.available = metadata.getTopLevel( 'traces' )
+		self.available = [] if self.available==None else self.available
 		self.crosshairs = {}
 		self.selected = set()
 
@@ -852,7 +863,7 @@ class App(Tk):
 
 		# require a $PATH and parse it
 		parser = argparse.ArgumentParser()
-		parser.add_argument('path', help='path (unique to a participant) where subdirectories contain raw data')
+		parser.add_argument('path', help='path (unique to a participant) where subdirectories contain raw data', default=None, nargs='?')
 		args = parser.parse_args()
 
 		self.metadata = MetadataManager( self, args.path )
