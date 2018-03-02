@@ -456,15 +456,25 @@ class MetadataManager(object):
 		self.write()
 
 	def getCurrentFilename( self ):
+		'''
+		Helper function for interacting with traces
+		'''
 		return self.data[ 'files' ][ self.parent.currentFID ][ 'name' ]
 
 	def getCurrentTraceColor( self ):
+		'''
+		Returns color of the currently selected trace
+		'''
 		trace = self.parent.TraceManager.get()
 		if trace==None:
 			return None
 		return self.data[ 'traces' ][ trace ][ 'color' ]
 
 	def getCurrentTraceAllFrames( self ):
+		'''
+		Returns a dictionary of with key->value give by frame->[crosshairs]
+		for the current trace and file
+		'''
 		trace = self.parent.TraceManager.get()
 		filename = self.getCurrentFilename()
 		try:
@@ -473,13 +483,21 @@ class MetadataManager(object):
 			return {}
 
 	def getCurrentTraceCurrentFrame( self ):
+		'''
+		Returns a list of the crosshairs for the current trace, current file,
+		and current frame
+		'''
 		allFrames = self.getCurrentTraceAllFrames()
 		try:
 			return allFrames[ str(self.parent.frame) ]
 		except KeyError:
 			return []
 
-	def setCurrentTraceCurrentFrame( self, traces ):
+	def setCurrentTraceCurrentFrame( self, crosshairs ):
+		'''
+		Writes an array of the current crosshairs to the metadata dictionary at
+		the current trace, current file, and current frame
+		'''
 		trace = self.parent.TraceManager.get()
 		filename = self.getCurrentFilename()
 		frame = self.parent.frame
@@ -487,7 +505,7 @@ class MetadataManager(object):
 			self.data[ 'traces' ][ trace ] = { 'files':{}, 'color':None }
 		if filename not in self.data[ 'traces' ][ trace ][ 'files' ]:
 			self.data[ 'traces' ][ trace ][ 'files' ][ filename ] = {}
-		self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ str(frame) ] = traces
+		self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ str(frame) ] = crosshairs
 		self.write()
 
 class TextGridManager(object):
