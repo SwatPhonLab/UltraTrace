@@ -465,7 +465,7 @@ class MetadataManager(object):
 		'''
 		Returns color of the currently selected trace
 		'''
-		trace = self.parent.TraceManager.get()
+		trace = self.parent.TraceManager.getCurrentTraceName()
 		if trace==None:
 			return None
 		return self.data[ 'traces' ][ trace ][ 'color' ]
@@ -475,7 +475,7 @@ class MetadataManager(object):
 		Returns a dictionary of with key->value give by frame->[crosshairs]
 		for the current trace and file
 		'''
-		trace = self.parent.TraceManager.get()
+		trace = self.parent.TraceManager.getCurrentTraceName()
 		filename = self.getCurrentFilename()
 		try:
 			return self.data[ 'traces' ][ trace ][ 'files' ][ filename ]
@@ -499,7 +499,7 @@ class MetadataManager(object):
 		Writes an array of the current crosshairs to the metadata dictionary at
 		the current trace, current file, and current frame
 		'''
-		trace = self.parent.TraceManager.get()
+		trace = self.parent.TraceManager.getCurrentTraceName()
 		filename = self.getCurrentFilename()
 		frame = self.parent.frame
 		if trace not in self.data[ 'traces' ]:
@@ -638,7 +638,7 @@ class TraceManager(object):
 		self.TkWidgets = [
 			self.getWidget( Header(master, text="Choose a trace"), row=5, column=0, columnspan=4 ),
 			self.getWidget( lbframe, row=10, column=0, rowspan=50 ),
-			self.getWidget( Button(master, text='Set as default', command=self.setDefault), row=10, column=2, columnspan=2 ),
+			self.getWidget( Button(master, text='Set as default', command=self.setDefaultTraceName), row=10, column=2, columnspan=2 ),
 			self.getWidget( Button(master, text='Select all', command=self.selectAll), row=11, column=2, columnspan=2 ),
 			self.getWidget( Button(master, text='Copy', command=self.copy), row=12, column=2 ),
 			self.getWidget( Button(master, text='Paste', command=self.paste), row=12, column=3 ),
@@ -648,7 +648,7 @@ class TraceManager(object):
 			self.getWidget( Button(master, text='New', command=self.new), row=100, column=2 ),
 			self.getWidget( Button(master, text='Rename', command=self.rename), row=100, column=3 ) ]
 
-	def get(self):
+	def getCurrentTraceName(self):
 		return self.listbox.get(self.listbox.curselection())
 	def getSelected(self):
 		return self.selected
@@ -666,15 +666,16 @@ class TraceManager(object):
 
 		print(self.crosshairs)
 		# get nearby crosshairs from this trace
-		nearby = self.getCrosshairsInSelectRadius(click)
+		trace  = self.getCurrentTraceName()
+		nearby = self.getCrosshairsInSelectRadius(click, trace)
 		if nearby != None:
 			return nearby
 
 		# otherwise
 		else:
 			# ... check our other traces to see if they contain any nearby guys
-			for trace in self.available.keys():
-				nearby = self.getCrosshairsInSelectRadius(click)
+			for trace in self.available:
+				nearby = self.getCrosshairsInSelectRadius(click, trace)
 				# if we got something
 				if nearby != None:
 					# switch to that trace and exit the loop
@@ -691,9 +692,7 @@ class TraceManager(object):
 				ch.undraw()
 		self.crosshairs = {}
 		self.selected = set()
-	def getCrosshairsInSelectRadius(self, click):
-
-		trace = self.get()
+	def getCrosshairsInSelectRadius(self, click, trace):
 
 		# see if we clicked near any existing crosshairs
 		possibleSelections = {}
@@ -718,7 +717,7 @@ class TraceManager(object):
 	def getAll(self):
 		return [ key for key in self.available.keys() ]
 	def draw(self, x, y, _trace=None, transform=True):
-		trace = self.get() if _trace==None else _trace
+		trace = self.getCurrentTraceName() if _trace==None else _trace
 		color  = self.available[ trace ]['color']
 		ch = Crosshairs( self.zframe, x, y, color, transform )
 		if trace not in self.crosshairs:
@@ -739,28 +738,22 @@ class TraceManager(object):
 			except KeyError:
 				pass
 	def write(self):
-		trace = self.get()
+		trace = self.getCurrentTraceName()
 		traces = []
-		#print('write')
 
 		if trace in self.crosshairs:
-			#print('in here')
 			for ch in self.crosshairs[ trace ]:
-				#print('looping')
 				if ch.isVisible:
-					#print('visible')
 					x,y = ch.getTrueCoords()
 					data = { 'x':x, 'y':y }
 					if data not in traces:
 						traces.append(data)
-		#print('traces->',traces)
-		print ('write:',traces)
 		self.metadata.setCurrentTraceCurrentFrame( traces )
-	def setDefault(self):
-		self.metadata.setTopLevel( 'defaultTraceName', self.get() )
+	def setDefaultTraceName(self):
+		self.metadata.setTopLevel( 'defaultTraceName', self.getCurrentTraceName() )
 	def selectAll(self):
-		if self.get() in self.crosshairs:
-			for ch in self.crosshairs[self.get()]:
+		if self.getCurrentTraceName() in self.crosshairs:
+			for ch in self.crosshairs[self.getCurrentTraceName()]:
 				self.select(ch)
 		pass
 		'''		if self.traceSV.get() in self.currentCrosshairs:
@@ -776,7 +769,7 @@ class TraceManager(object):
 			newColor = self.getRandomHexColor()# if _color==None else _color
 			oldColor = self.metadata.getCurrentTraceColor()
 
-			self.available[ self.get() ]['color'] = newColor
+			self.available[ self.getCurrentTraceName() ]['color'] = newColor
 			self.metadata.setTopLevel( 'traces', self.available )
 
 			# recolor everything that's currently drawn to this trace
@@ -797,7 +790,7 @@ class TraceManager(object):
 
 		print('before clear:',self.crosshairs)
 		# now we remove all the traces and save
-		trace = self.get()
+		trace = self.getCurrentTraceName()
 		if trace in self.crosshairs:
 			for ch in self.crosshairs[ trace ]:
 				self.remove( ch, False )
@@ -834,16 +827,16 @@ class TraceManager(object):
 			self.listbox.selection_clear(0, END)
 			self.listbox.select_set( len(self.available)-1 )
 	def rename(self):
-		newName = self.traceSV.get()[:12]
+		newName = self.traceSV.getCurrentTraceName()[:12]
 
 		# don't overwrite anything
 		if newName not in self.available and len(newName) > 0:
 
 			# get data from the old name and change the dictionary key in the metadata
-			data = self.available.pop(self.get())
+			data = self.available.pop(self.getCurrentTraceName())
 			self.available[ newName ] = data
 			self.metadata.setTopLevel( 'traces', self.available )
-			if self.get()==self.metadata.getTopLevel( 'defaultTraceName' ):
+			if self.getCurrentTraceName()==self.metadata.getTopLevel( 'defaultTraceName' ):
 				self.metadata.setTopLevel( 'defaultTraceName', newName )
 			self.traceSV.set('')
 
@@ -1024,30 +1017,6 @@ class App(Tk):
 
 		self.TraceManager = TraceManager(self.navTraceFrame, self.metadata, self.zframe)
 
-	def ____getCrosshairsInSelectRadius(self, click, trace):
-
-		# see if we clicked near any existing crosshairs
-		possibleSelections = {}
-		if trace in self.currentCrosshairs:
-			for ch in self.currentCrosshairs[ trace ]:
-				d = ch.getDistance(click)
-				if d < _CROSSHAIR_SELECT_RADIUS:
-					if d in possibleSelections:
-						possibleSelections[d].append( ch )
-					else:
-						possibleSelections[d] = [ ch ]
-
-		# if we did ...
-		if possibleSelections != {}:
-			# ... get the closest one ...
-			dMin = sorted(possibleSelections.keys())[0]
-			# ... in case of a tie, select a random one
-			ch = random.choice( possibleSelections[dMin] )
-			return ch
-
-		# otherwise
-		else:
-			return None
 	def clickInCanvas(self, event):
 		if self.dicomIsLoaded:
 
@@ -1209,50 +1178,7 @@ class App(Tk):
 
 			self.TraceManager.unselectAll()
 			self.writeCrosshairsToTraces()
-	def ____renameTrace(self, _newTraceName=None, _oldTraceName=None):
-
-		# get our attempted old/new trace names
-		newTraceName = self.newTraceSV.get() if _newTraceName==None else _newTraceName
-		oldTraceName = self.traceSV.get() if _oldTraceName==None else _oldTraceName
-
-		# reject if we already have a trace w/ this name for this file, we get an empty string, or we get no change
-		if newTraceName not in self.availableTracesList and len(newTraceName) and newTraceName != oldTraceName:
-
-			# if we're changing our default, change the default value
-			if oldTraceName == self.metadata.getTopLevel( 'defaultTraceName' ):
-				self.metadata.setTopLevel( 'defaultTraceName', newTraceName )
-
-			# try to save the new trace name to all the files
-			for fileid in range(len( self.metadata.files )):
-				traces = self.metadata.getFileLevel( 'traces', _fileid=fileid )
-
-				# check if we need to do any work
-				# (should always be true, but just in case of manual editing of mdfiles)
-				if oldTraceName in traces:
-
-					# if the NEW trace name does not already exist for this file
-					# (b/c we don't want to overwrite our own work)
-					if newTraceName not in traces:
-						# then do our rename and save
-						traces[ newTraceName ] = traces.pop( oldTraceName )
-						self.metadata.setFileLevel( 'traces', traces, _fileid=fileid )
-
-			# if this was triggered by a button click, add it to the undoQueue
-			if _newTraceName == None and _oldTraceName==None:
-				self.undoQueue.append({ 'type':'rename', 'old':oldTraceName, 'new':newTraceName })
-				self.redoQueue = []
-
-			# update our current lists/variables
-			self.changeTrace( newTraceName )
-			self.availableTracesList.remove( oldTraceName )
-			self.availableTracesList.append( newTraceName )
-
-			# reset our dropdown menu
-			menu = self.navTraceMenu.children['menu']
-			menu.delete(0, END)
-			for tracename in self.availableTracesList:
-				menu.add_command( label=tracename, command=lambda t=tracename: self.changeTrace(t) )
-	def clearTraces(self, _backupfile=None):
+	def ___clearTraces(self, _backupfile=None):
 
 		# assume this was an accident ... so we want to backup the old metadata
 		# (also used for restoring on `undo`)
@@ -1271,89 +1197,10 @@ class App(Tk):
 				self.redoQueue = []
 
 		return backupfile
-	def ____changeTraceColor(self, _color=None):
-
-		# since this command is bound to a key, don't want to execute if there's no dicom
-		if self.dicomIsLoaded:
-
-			# grab a new color if we weren't explicitly passed one
-			# and also save our old color (for generating undoQueue stuff)
-			newColor = self.getRandomHexColor() if _color==None else _color
-			oldColor = self.metadata.getCurrentTraceColor()
-
-			# write it out to all our files (incl. this one)
-			for fileid in range(len( self.metadata.files )):
-				self.metadata.setTraceLevel( _key='color', value=newColor, _fileid=fileid )
-
-			# recolor everything that's currently drawn to this trace
-			trace = self.traceSV.get()
-			for ch in self.currentCrosshairs[ trace ]:
-				ch.recolor( newColor )
-
-			# if we're changing our default, change the default value
-			if trace == self.metadata.getTopLevel( 'defaultTraceName' ):
-				self.metadata.setTopLevel( 'defaultTraceColor', newColor )
-
-			# if this was triggered by a button click, add it to the undoQueue
-			if _color == None:
-				self.undoQueue.append({ 'type':'recolor', 'trace':trace, 'color':oldColor })
-				self.redoQueue = []
-
-			return oldColor
-	def selectAllTrace(self):
+	def ___selectAllTrace(self):
 		if self.traceSV.get() in self.currentCrosshairs:
 			for ch in self.currentCrosshairs[ self.traceSV.get() ]:
 				self.TraceManager.select()
-	def ____changeTrace(self, event):
-		if event != self.traceSV.get():
-			self.traceSV.set( event )
-			self.newTraceSV.set( '' )
-
-			for sch in self.currentSelectedCrosshairs:
-				sch.unselect()
-			self.currentSelectedCrosshairs = set()
-	def ____addNewTrace(self, _newTraceName=None):
-
-		# check if we're manually passing a name or whether this was from pressing the button (=None)
-		newTraceName = self.newTraceSV.get() if _newTraceName==None else _newTraceName
-
-		# don't want to add traces we already have or empty strings
-		if newTraceName not in self.availableTracesList and len(newTraceName) > 0:
-
-			# if this was from the button
-			if _newTraceName == None:
-
-				# choose a random color
-				color = self.getRandomHexColor()
-
-				# save the new trace name and color to all files
-				for fileid in range(len( self.metadata.files )):
-					traces = self.metadata.getFileLevel( 'traces', _fileid=fileid )
-					traces[ newTraceName ] = { 'color':color }
-					self.metadata.setFileLevel( 'traces', traces, _fileid=fileid )
-
-				# switch to our newly added trace
-				self.changeTrace( newTraceName )
-
-			# keep track of what we've added so far
-			self.availableTracesList.append( newTraceName )
-
-			# and add it to the dropdown menu
-			self.navTraceMenu.children['menu'].add_command(
-				label=newTraceName,
-				command=lambda t=newTraceName: self.changeTrace(t) )
-	def ____addCrosshairs(self, x, y, _zframe=None, transform=True):
-		zframe = self.zframe if _zframe==None else _zframe
-		color  = self.metadata.getCurrentTraceColor()
-
-		ch = Crosshairs( zframe, x, y, color, transform )
-
-		trace = self.traceSV.get()
-		if trace not in self.currentCrosshairs:
-			self.currentCrosshairs[ trace ] = []
-		self.currentCrosshairs[ trace ].append( ch )
-
-		return ch
 	def writeCrosshairsToTraces(self):
 		self.TraceManager.write()
 	def readTracesToCrosshairs(self):
