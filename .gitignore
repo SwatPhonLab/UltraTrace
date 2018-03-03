@@ -1,5 +1,6 @@
 # don't track our data
 test
+data
 
 # or annoying system files
 .DS_Store
