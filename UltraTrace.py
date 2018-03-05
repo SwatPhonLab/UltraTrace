@@ -10,7 +10,11 @@ import argparse, datetime, json, \
 # monkeypatch the warnings module
 warnings.showwarning = lambda msg, *args : print( 'WARNING:\t%s' % msg )
 
-# dependencies
+# critical dependencies
+from magic import Magic # sudo -H pip3 install -U python-warnings
+getMIMEType = Magic(mime=True).from_file
+
+# non-critical dependencies
 try:
 	import cairosvg # sudo -H pip3 install cairosvg && brew install cairo
 	import wav2vec  # sudo -H pip3 install wav2vec
@@ -42,14 +46,6 @@ try:
 except (ImportError):
 	warnings.warn('TextGrid library failed to load')
 	_TEXTGRID_LIBS_INSTALLED = False
-
-try:
-	from magic import Magic # sudo -H pip3 install -U python-warnings
-	getMIMEType = Magic(mime=True).from_file
-	_MIME_LIBS_INSTALLED = True
-except (ImportError):
-	warnings.warn('MIME checker library failed to load')
-	_MIME_LIBS_INSTALLED = False
 
 # some globals
 _CROSSHAIR_DRAG_BUFFER = 20
