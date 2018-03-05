@@ -545,26 +545,27 @@ class TextGridManager(object):
 		'''
 		Try to load a TextGrid file based on information stored in the metadata
 		'''
-		# default Label in case there are errors below
-		self.TkWidgets = [{ 'label':Label(self.master, text="Unable to load TextGrid file") }]
-		# the main object will pass this filename=None if it can't find an appropriate .TextGrid file
-		if filename:
-			try:
-				# try to load up our TextGrid using the textgrid lib
-				self.TextGrid = TextGrid.fromFile( filename )
-				# reset default Label to actually be useful
-				self.TkWidgets = [{ 'label':Label(self.master, text="TextGrid tiers:") }]
-				# iterate the tiers
-				self.frameTierName = self.getFrameTierName()
-				for tier in self.TextGrid.getNames():
-					if tier != self.frameTierName:
-						# make some widgets for each tier
-						tierWidgets = self.makeTierWidgets( tier )
-						self.TkWidgets.append( tierWidgets )
-			except:
-				pass
-		# grid the widgets whether we loaded successfully or not
-		self.grid()
+		if _TEXTGRID_LIBS_INSTALLED:
+			# default Label in case there are errors below
+			self.TkWidgets = [{ 'label':Label(self.master, text="Unable to load TextGrid file") }]
+			# the main object will pass this filename=None if it can't find an appropriate .TextGrid file
+			if filename:
+				try:
+					# try to load up our TextGrid using the textgrid lib
+					self.TextGrid = TextGrid.fromFile( filename )
+					# reset default Label to actually be useful
+					self.TkWidgets = [{ 'label':Label(self.master, text="TextGrid tiers:") }]
+					# iterate the tiers
+					self.frameTierName = self.getFrameTierName()
+					for tier in self.TextGrid.getNames():
+						if tier != self.frameTierName:
+							# make some widgets for each tier
+							tierWidgets = self.makeTierWidgets( tier )
+							self.TkWidgets.append( tierWidgets )
+				except:
+					pass
+			# grid the widgets whether we loaded successfully or not
+			self.grid()
 
 	def getFrameTierName(self):
 		for name in [ 'frames', 'all frames', 'dicom frames', 'ultrasound frames' ]:
@@ -929,6 +930,75 @@ class PlaybackManager(object):
 	def grid(self):
 		self.playButton.grid()
 
+class DicomManager(object):
+	'''
+	Not actually implemented yet
+	'''
+	def __init__(self, parent):
+		self.parent = parent
+		self.isLoaded = False
+		if _DICOM_LIB_INSTALLED:
+			pass
+
+	def load(self):
+		'''
+		brings a dicom file into memory if it exists
+		'''
+
+		# don't execute if dicom already loaded correctly
+		if not( self.isLoaded ):
+
+			processed = self.parent.metadata.getFileLevel( 'processed' )
+			if processed == None:
+				# we don't want to load this if we've already preprocessed
+				dicomfile = self.parent.metadata.getFileLevel( '.dicom' )
+				try:
+					# load the dicom using a library
+					self.dicom = dicom.read_file( dicomfile )
+					# get the total number of frames (RGB if present is first dimension)
+					shape = self.dicom.pixel_array.shape
+					self.parent.frames = shape[0] if len(shape)==3 else shape[1]
+				except dicom.errors.InvalidDicomError:
+					self.loadDicomSV.set('Error loading DICOM file.')
+					self.loadDicomLabel.grid()
+					return False
+			else:
+				# only important thing to grab is the # of available frames
+				self.parent.frames = len(processed)
+
+			# pack our widgets that require loaded dicom
+			self.ultrasoundFrame.grid( row=0, column=1 )
+			self.zframe.grid()
+
+			self.navDicomHeader.grid( row=0 )
+
+			self.navDicomInnerFrame.grid( row=1 )
+			self.navDicomLeftButton.grid( row=0, column=0 )
+			self.navDicomEntryText.grid( row=0, column=1 )
+			self.navDicomEntryButton.grid( row=0, column=2 )
+			self.navDicomRightButton.grid( row=0, column=3 )
+
+			self.loadDicomLabel.grid( row=2 )
+
+			self.navTraceFrame.grid( row=4 )
+			self.TraceManager.grid()
+
+			self.zoomResetButton.grid( row=5 )
+
+			# reset frame count
+			self.frame = 1
+
+			# update status objects
+			self.dicomIsLoaded = True
+			self.loadDicomButton.grid_remove()
+			self.loadDicomSV.set('Loaded %d frames.' % self.frames)
+
+			# populate everything else
+			self.changeFramesUpdate()
+
+	def reset(self):
+		self.isLoaded = False
+		self.dicom = None
 
 class App(Tk):
 	def __init__(self):
@@ -1414,57 +1484,58 @@ class App(Tk):
 		brings a dicom file into memory if it exists
 		'''
 
-		# don't execute if dicom already loaded correctly
-		if self.dicomIsLoaded == False:
+		if _DICOM_LIB_INSTALLED:
+			# don't execute if dicom already loaded correctly
+			if self.dicomIsLoaded == False:
 
-			processed = self.metadata.getFileLevel( 'processed' )
-			if processed == None:
-				# we don't want to load this if we've already preprocessed
-				dicomfile = self.metadata.getFileLevel( '.dicom' )
-				try:
-					# load the dicom using a library
-					self.dicom = dicom.read_file( dicomfile )
-					# get the total number of frames (RGB if present is first dimension)
-					shape = self.dicom.pixel_array.shape
-					self.frames = shape[0] if len(shape)==3 else shape[1]
-				except dicom.errors.InvalidDicomError:
-					self.loadDicomSV.set('Error loading DICOM file.')
-					self.loadDicomLabel.grid()
-					return False
-			else:
-				# only important thing to grab is the # of available frames
-				self.frames = len(processed)
+				processed = self.metadata.getFileLevel( 'processed' )
+				if processed == None:
+					# we don't want to load this if we've already preprocessed
+					dicomfile = self.metadata.getFileLevel( '.dicom' )
+					try:
+						# load the dicom using a library
+						self.dicom = dicom.read_file( dicomfile )
+						# get the total number of frames (RGB if present is first dimension)
+						shape = self.dicom.pixel_array.shape
+						self.frames = shape[0] if len(shape)==3 else shape[1]
+					except dicom.errors.InvalidDicomError:
+						self.loadDicomSV.set('Error loading DICOM file.')
+						self.loadDicomLabel.grid()
+						return False
+				else:
+					# only important thing to grab is the # of available frames
+					self.frames = len(processed)
 
-			# pack our widgets that require loaded dicom
+				# pack our widgets that require loaded dicom
 
-			self.ultrasoundFrame.grid( row=0, column=1 )
-			self.zframe.grid()
+				self.ultrasoundFrame.grid( row=0, column=1 )
+				self.zframe.grid()
 
-			self.navDicomHeader.grid( row=0 )
+				self.navDicomHeader.grid( row=0 )
 
-			self.navDicomInnerFrame.grid( row=1 )
-			self.navDicomLeftButton.grid( row=0, column=0 )
-			self.navDicomEntryText.grid( row=0, column=1 )
-			self.navDicomEntryButton.grid( row=0, column=2 )
-			self.navDicomRightButton.grid( row=0, column=3 )
+				self.navDicomInnerFrame.grid( row=1 )
+				self.navDicomLeftButton.grid( row=0, column=0 )
+				self.navDicomEntryText.grid( row=0, column=1 )
+				self.navDicomEntryButton.grid( row=0, column=2 )
+				self.navDicomRightButton.grid( row=0, column=3 )
 
-			self.loadDicomLabel.grid( row=2 )
+				self.loadDicomLabel.grid( row=2 )
 
-			self.navTraceFrame.grid( row=4 )
-			self.TraceManager.grid()
+				self.navTraceFrame.grid( row=4 )
+				self.TraceManager.grid()
 
-			self.zoomResetButton.grid( row=5 )
+				self.zoomResetButton.grid( row=5 )
 
-			# reset frame count
-			self.frame = 1
+				# reset frame count
+				self.frame = 1
 
-			# update status objects
-			self.dicomIsLoaded = True
-			self.loadDicomButton.grid_remove()
-			self.loadDicomSV.set('Loaded %d frames.' % self.frames)
+				# update status objects
+				self.dicomIsLoaded = True
+				self.loadDicomButton.grid_remove()
+				self.loadDicomSV.set('Loaded %d frames.' % self.frames)
 
-			# populate everything else
-			self.changeFramesUpdate()
+				# populate everything else
+				self.changeFramesUpdate()
 
 	def restoreFromBackup(self, backup):
 		self.metadata = MetadataManager( self, self.metadata.path, backup )
