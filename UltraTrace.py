@@ -335,10 +335,10 @@ class MetadataManager(object):
 
 		# or create new stuff
 		else:
+			self.path = os.path.abspath(self.path)
 			print( "creating new datafile: %s" % self.mdfile )
 			self.data = {
-				'path': str(self.path),
-				'participant': str(os.path.basename( os.path.normpath(self.path) )),
+				'path': self.path,
 				'defaultTraceName': 'tongue',
 				'traces': {
 					'tongue': {
