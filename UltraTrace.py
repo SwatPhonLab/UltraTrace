@@ -5,7 +5,10 @@
 from tkinter import *
 from tkinter import filedialog
 import argparse, datetime, json, \
-	math, os, random, shutil
+	math, os, random, shutil, warnings
+
+# monkeypatch the warnings module
+warnings.showwarning = lambda msg, *args : print( 'WARNING:\t%s' % msg )
 
 # dependencies
 try:
@@ -13,7 +16,7 @@ try:
 	import wav2vec  # sudo -H pip3 install wav2vec
 	_WAV_VIS_LIBS_INSTALLED = True
 except (ImportError):
-	print( Warning('Waveform visualization library failed to load') )
+	warnings.warn('Waveform visualization library failed to load')
 	_WAV_VIS_LIBS_INSTALLED = False
 
 try:
@@ -21,7 +24,7 @@ try:
 	assert(pygame.mixer in sys.modules)
 	_AUDIO_LIBS_INSTALLED = True
 except (ImportError, AssertionError):
-	print( Warning('Audio library failed to load') )
+	warnings.warn('Audio library failed to load')
 	_AUDIO_LIBS_INSTALLED = False
 
 try:
@@ -30,15 +33,23 @@ try:
 	from PIL import Image, ImageTk  # sudo -H pip3 install -U pillow
 	_DICOM_LIB_INSTALLED = True
 except (ImportError):
-	print( Warning('Dicom library failed to load') )
+	warnings.warn('Dicom library failed to load')
 	_DICOM_LIB_INSTALLED = False
 
 try:
 	from textgrid import TextGrid, IntervalTier, PointTier # sudo -H pip3 install -U textgrid
 	_TEXTGRID_LIBS_INSTALLED = True
 except (ImportError):
-	print( Warning('TextGrid library failed to load') )
+	warnings.warn('TextGrid library failed to load')
 	_TEXTGRID_LIBS_INSTALLED = False
+
+try:
+	from magic import Magic # sudo -H pip3 install -U python-warnings
+	getMIMEType = Magic(mime=True).from_file
+	_MIME_LIBS_INSTALLED = True
+except (ImportError):
+	warnings.warn('MIME checker library failed to load')
+	_MIME_LIBS_INSTALLED = False
 
 # some globals
 _CROSSHAIR_DRAG_BUFFER = 20
@@ -347,24 +358,35 @@ class MetadataManager(object):
 				'files': {} }
 
 			# we want each object to have entries for everything here
-			fileKeys = { '_prev', '_next', '.dicom', '.flac', '.TextGrid', '.timetag', '.pycom', 'processed' } # and `processed`
+			fileKeys = { '_prev', '_next', 'processed' } # and `processed`
+			MIMEs = {
+				'audio/x-wav'		:	['.wav'],
+				'audio/x-flac'		:	['.flac'],
+				'application/dicom'	:	['.dicom'],
+				'text/plain'		:	['.TextGrid']
+			}
 			files = {}
 
 			# now get the objects in subdirectories
 			for path, dirs, fs in os.walk( self.path ):
 				for f in fs:
-					# exclude some filetypes explicitly here
-					fNoExt, fExt = os.path.splitext( f ) # e.g. 00.dicom -> 00, .dicom
-					if fExt not in { '.json', '.png', '.DS_Store' }:  # don't watch to catch our meta-files
-						if fNoExt not in files:
-							files[fNoExt] = { key:None for key in fileKeys }
-						files[fNoExt][fExt] = os.path.join( path, f )
-					# check for preprocessed dicom files
-					if '_dicom_to_png' in path:
-						name, frame = fNoExt.split( '_frame_' )
+					# exclude some filetypes explicitly here by MIME type
+					filepath = os.path.join( path, f )
+					filename, extension = os.path.splitext( f )
+
+					MIME = getMIMEType(filepath)
+					if MIME in MIMEs:
+						# add `good` files
+						if extension in MIMEs[ MIME ]:
+							if filename not in files:
+								files[filename] = { key:None for key in fileKeys }
+							files[filename][extension] = filepath
+					elif MIME == 'image/png' and '_dicom_to_png' in path:
+						# check for preprocessed dicom files
+						name, frame = filename.split( '_frame_' )
 						if files[name]['processed'] == None:
 							files[name]['processed'] = {}
-						files[name]['processed'][str(int(frame))] = os.path.join( path, f )
+						files[name]['processed'][str(int(frame))] = filepath
 
 			# check that we find at least one file
 			if len(files) == 0:
