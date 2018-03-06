@@ -4,3 +4,7 @@ data
 
 # or annoying system files
 .DS_Store
+*~
+
+# or virtualenv/pipenv files
+Pipfile*

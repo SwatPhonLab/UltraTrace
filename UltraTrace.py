@@ -11,7 +11,7 @@ import argparse, datetime, json, \
 warnings.showwarning = lambda msg, *args : print( 'WARNING:\t%s' % msg )
 
 # critical dependencies
-from magic import Magic # sudo -H pip3 install -U python-warnings
+from magic import Magic # sudo -H pip3 install -U python-magic
 getMIMEType = Magic(mime=True).from_file
 
 # non-critical dependencies
