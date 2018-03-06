@@ -51,14 +51,6 @@ except (ImportError):
 _CROSSHAIR_DRAG_BUFFER = 20
 _CROSSHAIR_SELECT_RADIUS = 12
 
-class AutoScrollbar(Scrollbar):
-	'''
-	Wrapper for a Tk Scrollbar() object that automatically hides itself
-	'''
-	def set(self, lo, hi):
-		if float(lo) > 0.0 or float(hi) >= 1.0:
-			Scrollbar.set(self, lo, hi)
-
 class ZoomFrame(Frame):
 	'''
 	Wrapper for a Tk Frame() object that includes zooming and panning functionality.
@@ -74,9 +66,6 @@ class ZoomFrame(Frame):
 		self.maxZoom = 5
 
 	def resetCanvas(self, master):
-		#vScrollbar = AutoScrollbar( self, orient='vertical', command=self.scrollY )
-		#vScrollbar.grid(row=0, column=1, sticky='ns')
-		#yscrollcommand=vScrollbar.set,
 
 		self.canvas = Canvas( master,  bg='grey', width=800, height=600 )
 		self.canvas.grid(row=0, column=0, sticky='news')
@@ -133,7 +122,6 @@ class ZoomFrame(Frame):
 				self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
 
 	def wheel(self, event):
-		print('wheel event', event.delta)
 		if self.image != None:
 			x = self.canvas.canvasx(event.x)
 			y = self.canvas.canvasy(event.y)
@@ -277,10 +265,9 @@ class Crosshairs(object):
 
 	def draw(self):
 		''' called when we undo a delete '''
-		if self.isVisible == False:
-			self.zframe.canvas.itemconfigure( self.hline, state='normal' )
-			self.zframe.canvas.itemconfigure( self.vline, state='normal' )
-			self.isVisible = True
+		self.zframe.canvas.itemconfigure( self.hline, state='normal' )
+		self.zframe.canvas.itemconfigure( self.vline, state='normal' )
+		self.isVisible = True
 
 	def dragTo(self, click):
 		''' move the centerpoint to a given point (calculated in main class) '''
@@ -297,15 +284,13 @@ class Crosshairs(object):
 	def recolor(self, color):
 		''' change the fill color of the Crosshairs '''
 		if self.isVisible:
-			oldColor = self.unselectedColor
 			self.unselectedColor = color # change this in the background (i.e. don't unselect)
 			if self.isSelected == False:
 				self.zframe.canvas.itemconfig( self.hline, fill=color )
 				self.zframe.canvas.itemconfig( self.vline, fill=color )
-			return oldColor # return so that undo/redo can grab it
 
 class MetadataManager(object):
-	def __init__(self, parent, path, backupmdfile=None):
+	def __init__(self, parent, path):
 		'''
 		opens a metadata file (or creates one if it doesn't exist), recursively searches a directory
 			for acceptable files, writes metadata back into memory, and returns the metadata object
@@ -327,12 +312,6 @@ class MetadataManager(object):
 		self.path = path
 
 		self.mdfile = os.path.join( self.path, 'metadata.json' )
-
-		# if we're trying to restore from a backup, copy its contents to our current mdfile location
-		if backupmdfile != None:
-			backupmdfilepath = os.path.join( self.path, backupmdfile )
-			shutil.copy2( backupmdfilepath, self.mdfile )
-			print( "restoring data from backup at %s" % backupmdfilepath)
 
 		# either load up existing metadata
 		if os.path.exists( self.mdfile ):
@@ -413,31 +392,6 @@ class MetadataManager(object):
 		with open( mdfile, 'w' ) as f:
 			json.dump( self.data, f, indent=3 )
 
-	def writeBackup(self, _backupfile=None):
-		'''
-		Write metadata backups to a "/tmp" directory
-		'''
-
-		# automatically generate backup filenames
-		if _backupfile == None:
-			# put backups in a ./tmp directory (relative to where the program was executed)
-			backupdir = 'tmp'
-			backuppath = os.path.join( self.path, backupdir )
-			if os.path.exists( backuppath ) == False:
-				os.mkdir( backuppath )
-
-			# name backups by appending a timestamp to the filename
-			backupfilename = 'metadata_backup_%s.json' % str(datetime.datetime.now()).replace( ' ', '_' )
-			backupfilepath = os.path.join( backuppath, backupfilename )
-			shutil.copy2( self.mdfile, backupfilepath )
-
-			return os.path.join( backupdir, backupfilename )
-
-		# unless we get explicitly told where to put it
-		else:
-			shutil.copy2( self.mdfile, os.path.join(self.path,_backupfile) )
-			return _backupfile
-
 	def getFilenames( self ):
 		'''
 		Returns a list of all the files discovered from the initial directory traversal
@@ -507,6 +461,10 @@ class MetadataManager(object):
 		if trace==None:
 			return None
 		return self.data[ 'traces' ][ trace ][ 'color' ]
+
+	def setTraceColor( self, trace, color ):
+		self.data[ 'traces' ][ trace ][ 'color' ] = color
+		self.write()
 
 	def getCurrentTraceAllFrames( self ):
 		'''
@@ -651,11 +609,9 @@ class TextGridManager(object):
 				tierWidgets['text' ].grid(row=t, column=1, sticky=W)
 
 class TraceManager(object):
-	def __init__(self, master, metadata, zframe):
-		self.master = master
-		self.metadata = metadata
-		self.zframe = zframe
-		self.available = metadata.getTopLevel( 'traces' )
+	def __init__(self, parent ):#master, metadata, zframe):
+		self.parent = parent
+		self.available = self.parent.metadata.getTopLevel( 'traces' )
 		self.available = [] if self.available==None else self.available
 		self.crosshairs = {}
 		self.selected = set()
@@ -663,32 +619,36 @@ class TraceManager(object):
 		self.traceSV = StringVar()
 		self.traceSV.set( '' )
 
-		lbframe = Frame(master)
+		lbframe = Frame(self.parent.navTraceFrame)
 		self.scrollbar = Scrollbar(lbframe)
 		self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12)
 		self.scrollbar.config(command=self.listbox.yview)
 		for trace in self.available:
 			self.listbox.insert(END, trace)
 		for i, item in enumerate(self.listbox.get(0, END)):
-			if item==self.metadata.getTopLevel( 'defaultTraceName' ):
+			if item==self.parent.metadata.getTopLevel( 'defaultTraceName' ):
 				self.listbox.selection_clear(0, END)
 				self.listbox.select_set( i )
 
 		self.TkWidgets = [
-			self.getWidget( Header(master, text="Choose a trace"), row=5, column=0, columnspan=4 ),
+			self.getWidget( Header(self.parent.navTraceFrame, text="Choose a trace"), row=5, column=0, columnspan=4 ),
 			self.getWidget( lbframe, row=10, column=0, rowspan=50 ),
-			self.getWidget( Button(master, text='Set as default', command=self.setDefaultTraceName), row=10, column=2, columnspan=2 ),
-			self.getWidget( Button(master, text='Select all', command=self.selectAll), row=11, column=2, columnspan=2 ),
-			self.getWidget( Button(master, text='Copy', command=self.copy), row=12, column=2 ),
-			self.getWidget( Button(master, text='Paste', command=self.paste), row=12, column=3 ),
-			self.getWidget( Button(master, text='Recolor', command=self.recolor), row=13, column=2, columnspan=2 ),
-			self.getWidget( Button(master, text='Clear', command=self.clear), row=15, column=2, columnspan=2 ),
-			self.getWidget( Entry(master, width=12, textvariable=self.traceSV), row=100, column=0, sticky=W ),
-			self.getWidget( Button(master, text='New', command=self.new), row=100, column=2 ),
-			self.getWidget( Button(master, text='Rename', command=self.rename), row=100, column=3 ) ]
+			self.getWidget( Button(self.parent.navTraceFrame, text='Set as default', command=self.setDefaultTraceName), row=10, column=2, columnspan=2 ),
+			self.getWidget( Button(self.parent.navTraceFrame, text='Select all', command=self.selectAll), row=11, column=2, columnspan=2 ),
+			self.getWidget( Button(self.parent.navTraceFrame, text='Copy', command=self.copy), row=12, column=2 ),
+			self.getWidget( Button(self.parent.navTraceFrame, text='Paste', command=self.paste), row=12, column=3 ),
+			self.getWidget( Button(self.parent.navTraceFrame, text='Recolor', command=self.recolor), row=13, column=2, columnspan=2 ),
+			self.getWidget( Button(self.parent.navTraceFrame, text='Clear', command=self.clear), row=15, column=2, columnspan=2 ),
+			self.getWidget( Entry(self.parent.navTraceFrame, width=12, textvariable=self.traceSV), row=100, column=0, sticky=W ),
+			self.getWidget( Button(self.parent.navTraceFrame, text='New', command=self.new), row=100, column=2 ),
+			self.getWidget( Button(self.parent.navTraceFrame, text='Rename', command=self.rename), row=100, column=3 ) ]
 
 	def getCurrentTraceName(self):
-		return self.listbox.get(self.listbox.curselection())
+		try:
+			return self.listbox.get(self.listbox.curselection())
+		except _tkinter.TclError:
+			print( 'Can\'t select from empty listbox!' )
+
 	def getSelected(self):
 		return self.selected
 	def select(self, ch):
@@ -757,7 +717,7 @@ class TraceManager(object):
 	def draw(self, x, y, _trace=None, transform=True):
 		trace = self.getCurrentTraceName() if _trace==None else _trace
 		color  = self.available[ trace ]['color']
-		ch = Crosshairs( self.zframe, x, y, color, transform )
+		ch = Crosshairs( self.parent.zframe, x, y, color, transform )
 		if trace not in self.crosshairs:
 			self.crosshairs[ trace ] = []
 		self.crosshairs[ trace ].append( ch )
@@ -765,11 +725,14 @@ class TraceManager(object):
 	def read(self, frame):
 		for trace in self.available:
 			try:
-				for item in self.metadata.getTraceCurrentFrame(trace):
+				newCrosshairs = []
+				for item in self.parent.metadata.getTraceCurrentFrame(trace):
 					ch = self.draw( item['x'], item['y'], _trace=trace, transform=False )
 					if trace not in self.crosshairs:
 						self.crosshairs[ trace ] = []
 					self.crosshairs[ trace ].append( ch )
+					newCrosshairs.append( ch )
+				self.parent.Undoer.push({ 'type':'add', 'chs':newCrosshairs })
 			except KeyError:
 				pass
 	def write(self):
@@ -783,64 +746,58 @@ class TraceManager(object):
 					data = { 'x':x, 'y':y }
 					if data not in traces:
 						traces.append(data)
-		self.metadata.setCurrentTraceCurrentFrame( traces )
+		self.parent.metadata.setCurrentTraceCurrentFrame( traces )
 	def setDefaultTraceName(self):
-		self.metadata.setTopLevel( 'defaultTraceName', self.getCurrentTraceName() )
+		self.parent.metadata.setTopLevel( 'defaultTraceName', self.getCurrentTraceName() )
 	def selectAll(self):
 		if self.getCurrentTraceName() in self.crosshairs:
 			for ch in self.crosshairs[self.getCurrentTraceName()]:
 				self.select(ch)
 		pass
-		'''		if self.traceSV.get() in self.currentCrosshairs:
-					for ch in self.currentCrosshairs[ self.traceSV.get() ]:
-						ch.select()
-						self.currentSelectedCrosshairs.add( ch )'''
 	def copy(self):
 		pass
 	def paste(self):
 		pass
-	def recolor(self):
-			# grab a new color and save our old color (for generating undoQueue stuff)
-			newColor = self.getRandomHexColor()# if _color==None else _color
-			oldColor = self.metadata.getCurrentTraceColor()
+	def recolor(self, trace=None, color=None):
 
-			self.available[ self.getCurrentTraceName() ]['color'] = newColor
-			self.metadata.setTopLevel( 'traces', self.available )
+		trace = self.getCurrentTraceName() if trace==None else trace
 
-			# recolor everything that's currently drawn to this trace
-			#trace = self.traceSV.get()
-			#for ch in self.currentCrosshairs[ trace ]:
-				#ch.recolor( newColor )
+		# grab a new color and save our old color (for generating undoQueue stuff)
+		newColor = self.getRandomHexColor() if color==None else color
+		oldColor = self.parent.metadata.getCurrentTraceColor()
 
-			# if this was triggered by a button click, add it to the undoQueue
-			#if _color == None:
-				#self.undoQueue.append({ 'type':'recolor', 'trace':trace, 'color':oldColor })
-				#self.redoQueue = []
+		self.available[ trace ]['color'] = newColor
+		self.parent.metadata.setTraceColor( trace, newColor )
 
-			return oldColor
+		if trace in self.crosshairs:
+			for ch in self.crosshairs[ trace ]:
+				ch.recolor( newColor )
+
+		if trace==None or color == None:
+			self.parent.Undoer.push({ 'type':'recolor', 'trace':self.getCurrentTraceName(), 'color':oldColor })
+			self.redoQueue = []
+
+		return oldColor
 	def clear(self):
-		# assume this was an accident ... so we want to backup the old metadata
-		# (also used for restoring on `undo`)
-		backupfile = self.metadata.writeBackup()
 
 		# now we remove all the traces and save
+		deleted = []
 		trace = self.getCurrentTraceName()
 		if trace in self.crosshairs:
 			for ch in self.crosshairs[ trace ]:
-				self.remove( ch, False )
-			self.crosshairs[ trace ] = []
+				if ch.isVisible:
+					deleted.append( ch )
+				self.remove( ch, write=False )
+			#self.crosshairs[ trace ] = []
 			self.write()
 
-			# add to undoQueue if we did any work
-			'''if len( self.crosshairs[ trace ] ):
-				self.undoQueue.append({ 'type':'clear', 'backup':backupfile, 'trace':trace })
-				self.redoQueue = []'''
+		self.parent.Undoer.push({ 'type':'delete', 'chs':deleted })
 
-		return backupfile
 	def remove(self, ch, write=True):
 		ch.undraw()
 		if write:
 			self.write()
+		return ch
 	def new(self):
 		name = self.traceSV.get()[:12]
 
@@ -852,25 +809,27 @@ class TraceManager(object):
 
 			# save the new trace name and color to metadata & update vars
 			self.available[ name ] = { 'color':color, 'files':{} }
-			self.metadata.setTopLevel( 'traces', self.available )
+			self.parent.metadata.setTopLevel( 'traces', self.available )
 			self.traceSV.set('')
 
 			# update our listbox
 			self.listbox.insert(END, name)
 			self.listbox.selection_clear(0, END)
 			self.listbox.select_set( len(self.available)-1 )
-	def rename(self):
-		newName = self.traceSV.getCurrentTraceName()[:12]
+	def rename(self, oldName=None, newName=None):
+		fromUndo = (oldName!=None or newName!=None)
+		oldName = self.getCurrentTraceName() if oldName==None else oldName
+		newName = self.traceSV.get()[:12] if newName==None else newName
 
 		# don't overwrite anything
 		if newName not in self.available and len(newName) > 0:
 
 			# get data from the old name and change the dictionary key in the metadata
-			data = self.available.pop(self.getCurrentTraceName())
+			data = self.available.pop( oldName )
 			self.available[ newName ] = data
-			self.metadata.setTopLevel( 'traces', self.available )
-			if self.getCurrentTraceName()==self.metadata.getTopLevel( 'defaultTraceName' ):
-				self.metadata.setTopLevel( 'defaultTraceName', newName )
+			self.parent.metadata.setTopLevel( 'traces', self.available )
+			if oldName==self.parent.metadata.getTopLevel( 'defaultTraceName' ):
+				self.parent.metadata.setTopLevel( 'defaultTraceName', newName )
 			self.traceSV.set('')
 
 			# update our listbox
@@ -879,6 +838,10 @@ class TraceManager(object):
 			self.listbox.insert(index, newName)
 			self.listbox.selection_clear(0, END)
 			self.listbox.select_set(index)
+
+			if not( fromUndo ):
+				self.parent.Undoer.push({ 'type':'rename', 'old':oldName, 'new':newName })
+
 	def getRandomHexColor(self):
 		return '#%06x' % random.randint(0, 0xFFFFFF)
 	def getWidget(self, widget, row=0, column=0, rowspan=1, columnspan=1, sticky=() ):
@@ -986,7 +949,7 @@ class DicomManager(object):
 
 			# pack our widgets that require loaded dicom
 			self.ultrasoundFrame.grid( row=0, column=1 )
-			self.zframe.grid()
+			self.parent.zframe.grid()
 
 			self.navDicomHeader.grid( row=0 )
 
@@ -1018,6 +981,94 @@ class DicomManager(object):
 		self.isLoaded = False
 		self.dicom = None
 
+class Undoer(object):
+	def __init__(self, parent):
+		# reference to our main object containing other functionality managers
+		self.parent = parent
+		# bind Ctrl+z to UNDO and Ctrl+Shift+Z to REDO
+		self.parent.bind('<Control-z>', self.undo )
+		self.parent.bind('<Control-Z>', self.redo )
+		self.reset()
+	def push(self, item):
+		'''
+		add an item to the undo-stack
+		and empty out the redo-stack
+		'''
+		self.uStack.append( item )
+		self.rStack = []
+	def reset(self):
+		''' reset our stacks '''
+		self.uStack = [] # undo
+		self.rStack = [] # redo
+	def undo(self, event):
+		''' perform the undo-ing '''
+
+		if len(self.uStack):
+			item = self.uStack.pop()
+
+			if item['type'] == 'add':
+				chs = item['chs']
+				for ch in chs:
+					self.parent.TraceManager.remove( ch )
+				self.rStack.append({ 'type':'delete', 'chs':chs })
+			elif item['type'] == 'delete':
+				chs = item['chs']
+				for ch in chs:
+					ch.draw()
+				self.rStack.append({ 'type':'add', 'chs':chs })
+			elif item['type'] == 'move':
+				chs = item['chs']
+				coords = item['coords']
+				for i in range(len(chs)):
+					chs[i].dragTo( coords[i] )
+				self.rStack.append({ 'type':'move', 'chs':chs, 'coords':coords })
+			elif item['type'] == 'recolor':
+				oldColor = self.parent.TraceManager.recolor( item['trace'], item['color'] )
+				self.rStack.append({ 'type':'recolor', 'trace':item['trace'], 'color':oldColor })
+			elif item['type'] == 'rename':
+				self.parent.TraceManager.rename( newName=item['old'], oldName=item['new'] ) # this is backwards on purpose
+				self.rStack.append({ 'type':'rename', 'old':item['old'], 'new':item['new'] })
+			else:
+				print (item)
+				raise NotImplementedError
+
+			self.parent.TraceManager.unselectAll()
+			self.parent.TraceManager.write()
+	def redo(self, event):
+		''' perform the redo-ing '''
+
+		if len(self.rStack):
+			item = self.rStack.pop()
+
+			if item['type'] == 'add':
+				chs = item['chs']
+				for ch in chs:
+					self.parent.TraceManager.remove( ch )
+				self.uStack.append({ 'type':'delete', 'chs':chs })
+			elif item['type'] == 'delete':
+				chs = item['chs']
+				for ch in chs:
+					ch.draw()
+				self.uStack.append({ 'type':'add', 'chs':chs })
+			elif item['type'] == 'move':
+				chs = item['chs']
+				coords = item['coords']
+				for i in range(len(chs)):
+					chs[i].dragTo( coords[i] )
+				self.uStack.append({ 'type':'move', 'chs':chs, 'coords':coords })
+			elif item['type'] == 'recolor':
+				oldColor = self.parent.TraceManager.recolor( item['trace'], item['color'] )
+				self.uStack.append({ 'type':'recolor', 'trace':item['trace'], 'color':oldColor })
+			elif item['type'] == 'rename':
+				self.parent.TraceManager.rename( newName=item['new'], oldName=item['old'] )
+				self.uStack.append({ 'type':'rename', 'old':item['old'], 'new':item['new'] })
+			else:
+				print (item)
+				raise NotImplementedError
+
+			self.parent.TraceManager.unselectAll()
+			self.parent.TraceManager.write()
+
 class App(Tk):
 	def __init__(self):
 
@@ -1030,10 +1081,13 @@ class App(Tk):
 		args = parser.parse_args()
 
 		self.metadata = MetadataManager( self, args.path )
-		self.playback = PlaybackManager( self )
 
 		self.setDefaults()
 		self.setupTk()
+
+		self.Undoer = Undoer(self)
+		self.TraceManager = TraceManager(self)
+		self.playback = PlaybackManager( self )
 
 		print( 'wav:\t', _WAV_VIS_LIBS_INSTALLED )
 		print( 'audio:\t', _AUDIO_LIBS_INSTALLED )
@@ -1052,8 +1106,6 @@ class App(Tk):
 		self.zoomFactor = 0					# make sure we don't zoom in/out too far
 		self.isClicked = False
 		self.isDragging = False
-		self.undoQueue = []
-		self.redoQueue = []
 
 		# declare string variables
 		self.currentFileSV = StringVar(self)
@@ -1153,8 +1205,6 @@ class App(Tk):
 		self.bind('<Right>', lambda a: self.navDicomFramePanRight() )
 		self.bind('<BackSpace>', self.onBackspace )
 		self.bind('<Escape>', self.onEscape )
-		self.bind('<Control-z>', self.undo )
-		self.bind('<Control-y>', self.redo )
 		self.bind('<Control-d>', lambda a: self.loadDicom() )
 		self.bind('<Control-r>', lambda a: self.TraceManager.recolor() )
 		self.bind('<Option-Left>', lambda a: self.navFileFramePanLeft() )
@@ -1163,8 +1213,6 @@ class App(Tk):
 		self.zframe.canvas.bind('<Button-1>', self.clickInCanvas )
 		self.zframe.canvas.bind('<ButtonRelease-1>', self.unclickInCanvas )
 		self.zframe.canvas.bind('<Motion>', self.mouseMoveInCanvas )
-
-		self.TraceManager = TraceManager(self.navTraceFrame, self.metadata, self.zframe)
 
 	def clickInCanvas(self, event):
 		if self.dicomIsLoaded:
@@ -1183,8 +1231,7 @@ class App(Tk):
 				self.TraceManager.unselectAll()
 				ch = self.TraceManager.draw( *self.click )
 
-				self.undoQueue.append( {'type':'add', 'ch':ch })
-				self.redoQueue = []
+				self.Undoer.push({ 'type':'add', 'chs':[ch] })
 
 				return
 
@@ -1217,8 +1264,6 @@ class App(Tk):
 			if self.isDragging:
 				dx = (event.x - self.click[0])
 				dy = (event.y - self.click[1])
-				self.undoQueue.append({ 'type':'move', 'chs':[ ch for ch in self.TraceManager.getSelected() ], 'dx':-dx, 'dy':-dy })
-				self.redoQueue = []
 				self.TraceManager.write()
 			self.isDragging = False
 			self.isClicked = False
@@ -1228,15 +1273,19 @@ class App(Tk):
 
 			if self.isDragging:
 				thisClick = (event.x, event.y)
+				selected = list(self.TraceManager.getSelected())
+				coords = []
 				# move all currently selected crosshairs
-				for sch in self.TraceManager.getSelected():
+				for sch in selected:
 					# keep their relative distance constant
 					center = ( sch.x, sch.y ) # canvas coordinates not true coordinates
 					newX = event.x + center[0] - self.dragClick[0]
 					newY = event.y + center[1] - self.dragClick[1]
 					sch.dragTo( (newX,newY) )
+					coords.append( center )
 
 				self.dragClick = thisClick
+				self.Undoer.push({ 'type':'move', 'chs':selected, 'coords':coords })
 
 			elif self.isClicked:
 				lastClick = self.click
@@ -1246,87 +1295,17 @@ class App(Tk):
 				if dx > _CROSSHAIR_DRAG_BUFFER or dy > _CROSSHAIR_DRAG_BUFFER:
 					self.click = thisClick
 					ch = self.TraceManager.draw( *self.click )
-					self.undoQueue.append({ 'type':'add', 'ch':ch })
-					self.redoQueue = []
+					self.Undoer.push({ 'type':'add', 'chs':[ch] })
 	def onEscape(self, event):
 		self.isDragging = False
 		self.isClicked = False
 		self.TraceManager.unselectAll()
 	def onBackspace(self, event):
-		for sch in self.TraceManager.getSelected():
+		selected = self.TraceManager.getSelected()
+		for sch in selected:
 			self.TraceManager.remove( sch )
-			self.undoQueue.append({ 'type':'delete', 'ch':sch })
-			self.redoQueue = []
+		self.Undoer.push({ 'type':'delete', 'chs':selected })
 		self.TraceManager.unselectAll()
-	def undo(self, event):
-		if len(self.undoQueue):
-
-			action = self.undoQueue.pop()
-
-			if action['type'] == 'add':
-				ch = action['ch']
-				self.removeCrosshairs( ch )
-				self.redoQueue.append({ 'type':'delete', 'ch':ch })
-			elif action['type'] == 'delete':
-				ch = action['ch']
-				ch.draw()
-				self.redoQueue.append({ 'type':'add', 'ch':ch })
-			elif action['type'] == 'move':
-				for ch in action['chs']:
-					ch.dragTo( action['dx'], action['dy'] )
-				self.redoQueue.append({ 'type':'move', 'chs':action['chs'], 'dx':-action['dx'], 'dy':-action['dy'] })
-			elif action['type'] == 'clear': # note this limits ability to undo `adds` and `deletes` later in the queue
-				self.resetCanvas() # need this since we're restoring from absoluteXY
-				self.restoreFromBackup( action['backup'] )
-				self.TraceManager.read( self.frame )
-				self.redoQueue.append({ 'type':'restore', 'backup':action['backup'], 'trace':action['trace'] })
-			elif action['type'] == 'recolor':
-				self.changeTrace( action['trace'] )
-				oldColor = self.changeTraceColor( action['color'] )
-				self.redoQueue.append({ 'type':'recolor', 'trace':action['trace'], 'color':oldColor })
-			elif action['type'] == 'rename':
-				self.renameTrace( _newTraceName=action['old'], _oldTraceName=action['new'] ) # this is backwards on purpose
-				self.redoQueue.append({ 'type':'rename', 'old':action['old'], 'new':action['new'] })
-			else:
-				print (action)
-				raise NotImplementedError
-
-			self.TraceManager.unselectAll()
-			self.TraceManager.write()
-	def redo(self, event):
-		if len(self.redoQueue):
-
-			action = self.redoQueue.pop()
-
-			if action['type'] == 'add':
-				ch = action['ch']
-				self.removeCrosshairs( ch )
-				self.undoQueue.append({ 'type':'delete', 'ch':ch })
-			elif action['type'] == 'delete':
-				ch = action['ch']
-				ch.draw()
-				self.undoQueue.append({ 'type':'add', 'ch':ch })
-			elif action['type'] == 'move':
-				for ch in action['chs']:
-					ch.dragTo( action['dx'], action['dy'] )
-				self.undoQueue.append({ 'type':'move', 'chs':action['chs'], 'dx':-action['dx'], 'dy':-action['dy'] })
-			elif action['type'] == 'restore': # note this truncates the redoQueue here
-				self.changeTrace( action['trace'] )
-				backup = self.clearTraces()
-				self.undoQueue.append({ 'type':'clear', 'backup':action['backup'], 'trace':action['trace']})
-			elif action['type'] == 'recolor':
-				self.changeTrace( action['trace'] )
-				oldColor = self.changeTraceColor( action['color'] )
-				self.undoQueue.append({ 'type':'recolor', 'trace':action['trace'], 'color':oldColor })
-			elif action['type'] == 'rename':
-				self.renameTrace( _newTraceName=action['new'], _oldTraceName=action['old'] )
-				self.undoQueue.append({ 'type':'rename', 'old':action['old'], 'new':action['new'] })
-			else:
-				print (action)
-				raise NotImplementedError
-
-			self.TraceManager.unselectAll()
-			self.TraceManager.write()
 	def resetCanvas(self, cfu=True):
 
 		# creates a new canvas object and we redraw everything to it
@@ -1337,6 +1316,7 @@ class App(Tk):
 
  		# we want to go here only after a button press
 		if cfu: self.changeFramesUpdate()
+
 	def changeFilesUpdate(self):
 
 		# update the StringVars tracking the current file
@@ -1350,8 +1330,7 @@ class App(Tk):
 		self.frames= 1
 		self.currentImageID = None
 		self.TraceManager.reset()
-		self.undoQueue = []
-		self.redoQueue = []
+		self.Undoer.reset()
 
 		# check if we have audio to load
 		self.playback.tryLoad()
@@ -1421,12 +1400,12 @@ class App(Tk):
 	def navFileFrameJumpTo(self, choice):
 		self.currentFID = self.metadata.files.index( choice )
 		self.changeFilesUpdate()
+
 	def changeFramesUpdate(self):
 
 		# each frame should have its own crosshair objects
 		self.TraceManager.reset()
-		self.undoQueue = []
-		self.redoQueue = []
+		self.Undoer.reset()
 
 		#self.resetCanvas( False )
 		self.dicomImage = self.getDicomImage( self.frame )
@@ -1453,17 +1432,14 @@ class App(Tk):
 
 		self.frameSV.set( str(self.frame) )
 		self.TextGridManager.update( self.frame )
-
 	def navDicomFramePanLeft(self):
 		if self.dicomIsLoaded and self.frame > 1:
 			self.frame -= 1
 			self.changeFramesUpdate()
-
 	def navDicomFramePanRight(self):
 		if self.dicomIsLoaded and self.frame < self.frames:
 			self.frame += 1
 			self.changeFramesUpdate()
-
 	def navDicomFrameEntry(self):
 		try:
 
@@ -1496,7 +1472,6 @@ class App(Tk):
 				arr = self.dicom.pixel_array.astype(np.float64)[ :,(frame-1),:,: ]
 				arr = arr.reshape([arr.shape[1], arr.shape[2], arr.shape[0]])
 				return Image.fromarray(arr, mode='RGB')
-
 	def loadDicom(self):
 		'''
 		brings a dicom file into memory if it exists
@@ -1554,10 +1529,6 @@ class App(Tk):
 
 				# populate everything else
 				self.changeFramesUpdate()
-
-	def restoreFromBackup(self, backup):
-		self.metadata = MetadataManager( self, self.metadata.path, backup )
-
 	def preprocessDicom(self):
 
 		self.preprocessLabel.grid( row=1 )
@@ -1617,9 +1588,8 @@ if __name__=='__main__':
 	except UnicodeDecodeError:
 		print( 'App encountered a UnicodeDecodeError when attempting to bind a \
 <MouseWheel> event.  This is a known bug with Tcl/Tk 8.5 and can be fixed by \
-changing a file in the Tkinter module in the python3 libraries.  To \
-make this change, copy the file `tkinter__init__.py` in this directory \
-to the library for your standard system installation of python3.  For \
-example, your command might look like this:\n\n\
-\t$ cp ./tkinter__init__.py /Library/Frameworks/Python.frameworks/\
-Versions/3.6/lib/python3.6/tkinter/__init__.py\n' )
+changing a file in the Tkinter module in the python3 libraries.  To make this \
+change, copy the file `tkinter__init__.py` in this directory to the library for \
+your standard system installation of python3.  For example, your command might \
+look like this:\n\n\t$ cp ./tkinter__init__.py /Library/Frameworks/Python.\
+frameworks/Versions/3.6/lib/python3.6/tkinter/__init__.py\n' )
