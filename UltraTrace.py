@@ -378,10 +378,12 @@ class MetadataManager(object):
 				_prev = key
 				files[key]['name'] = key
 
-			# sort files and write to JSON
+			# sort files, set the geometry, and write
 			self.data[ 'files' ] = [ files[key] for key in sorted(files.keys()) ]
+			self.data[ 'geometry' ] = '1150x800+1400+480'
 			self.write()
 
+		self.parent.geometry( self.getTopLevel('geometry') )
 		self.files = self.getFilenames()
 
 	def write(self, _mdfile=None):
@@ -1118,8 +1120,6 @@ class App(Tk):
 		self.preprocessSV.set( 'Warning: slow' )
 		self.frameSV.set( '1' )
 	def setupTk(self):
-		self.geometry( '1150x800+1400+480' )
-
 		# ==============
 		# playback frame:	to hold all of our soundfile/TextGrid functionality
 		# ==============
@@ -1209,10 +1209,15 @@ class App(Tk):
 		self.bind('<Control-r>', lambda a: self.TraceManager.recolor() )
 		self.bind('<Option-Left>', lambda a: self.navFileFramePanLeft() )
 		self.bind('<Option-Right>', lambda a: self.navFileFramePanRight() )
+		self.bind('<Configure>', self.onWindowResize )
 
 		self.zframe.canvas.bind('<Button-1>', self.clickInCanvas )
 		self.zframe.canvas.bind('<ButtonRelease-1>', self.unclickInCanvas )
 		self.zframe.canvas.bind('<Motion>', self.mouseMoveInCanvas )
+
+	def onWindowResize(self, event):
+		geometry = self.geometry()
+		self.metadata.setTopLevel( 'geometry', geometry )
 
 	def clickInCanvas(self, event):
 		if self.dicomIsLoaded:
