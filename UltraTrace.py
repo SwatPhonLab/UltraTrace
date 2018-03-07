@@ -1234,6 +1234,9 @@ class App(Tk):
 		self.zframe.canvas.bind('<ButtonRelease-1>', self.unclickInCanvas )
 		self.zframe.canvas.bind('<Motion>', self.mouseMoveInCanvas )
 
+		self.attributes('-topmost', 1)
+		self.attributes('-topmost', 0)
+		
 	def onWindowResize(self, event):
 		geometry = self.geometry()
 		self.metadata.setTopLevel( 'geometry', geometry )
