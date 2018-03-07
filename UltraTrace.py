@@ -987,10 +987,15 @@ class Undoer(object):
 	def __init__(self, parent):
 		# reference to our main object containing other functionality managers
 		self.parent = parent
+		# initialize our stacks
+		self.reset()
 		# bind Ctrl+z to UNDO and Ctrl+Shift+Z to REDO
 		self.parent.bind('<Control-z>', self.undo )
 		self.parent.bind('<Control-Z>', self.redo )
-		self.reset()
+		# also make some buttons and bind them
+		self.undoButton = Button(self.parent.undoFrame, text='Undo', command=self.undo)
+		self.redoButton = Button(self.parent.undoFrame, text='Redo', command=self.redo)
+		self.updateButtons()
 	def push(self, item):
 		'''
 		add an item to the undo-stack
@@ -998,11 +1003,12 @@ class Undoer(object):
 		'''
 		self.uStack.append( item )
 		self.rStack = []
+		self.updateButtons()
 	def reset(self):
 		''' reset our stacks '''
 		self.uStack = [] # undo
 		self.rStack = [] # redo
-	def undo(self, event):
+	def undo(self, event=None):
 		''' perform the undo-ing '''
 
 		if len(self.uStack):
@@ -1036,7 +1042,10 @@ class Undoer(object):
 
 			self.parent.TraceManager.unselectAll()
 			self.parent.TraceManager.write()
-	def redo(self, event):
+			self.updateButtons()
+		else:
+			print( 'Nothing to undo!' )
+	def redo(self, event=None):
 		''' perform the redo-ing '''
 
 		if len(self.rStack):
@@ -1070,6 +1079,15 @@ class Undoer(object):
 
 			self.parent.TraceManager.unselectAll()
 			self.parent.TraceManager.write()
+			self.updateButtons()
+		else:
+			print( 'Nothing to redo!' )
+	def updateButtons(self):
+		self.undoButton['state'] = NORMAL if len(self.uStack) else DISABLED
+		self.redoButton['state'] = NORMAL if len(self.rStack) else DISABLED
+
+		self.undoButton.grid(row=0, column=0)
+		self.redoButton.grid(row=0, column=1)
 
 class App(Tk):
 	def __init__(self):
@@ -1164,6 +1182,7 @@ class App(Tk):
 		# navigate between tracings
 		self.navTraceFrame = Frame(self.controlFrame, pady=7)
 
+		self.undoFrame = Frame(self.controlFrame, pady=7)
 		self.zoomResetButton = Button(self.controlFrame, text='Reset image', command=self.resetCanvas, pady=7 )
 
 		# ==============
@@ -1191,8 +1210,8 @@ class App(Tk):
 		self.preprocessButton.grid(row=0 )
 
 		self.navDicomFrame.grid( row=3 )
-
-		self.zoomResetButton.grid( row=4 )
+		self.undoFrame.grid( row=5 )
+		self.zoomResetButton.grid( row=7 )
 		self.zframe.canvas.grid()
 
 		#self.ultrasoundFrame.grid( row=0, column=1 )
@@ -1522,7 +1541,7 @@ class App(Tk):
 				self.navTraceFrame.grid( row=4 )
 				self.TraceManager.grid()
 
-				self.zoomResetButton.grid( row=5 )
+				self.zoomResetButton.grid( row=7 )
 
 				# reset frame count
 				self.frame = 1
