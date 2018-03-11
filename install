@@ -4,5 +4,5 @@
 sudo -H pip3 install -U python-magic
 
 # non-critical
-brew install --upgrade cairo sdl sdl_mixer
+#brew install --upgrade cairo sdl sdl_mixer
 sudo -H pip3 install -U cairosvg wav2vec pygame numpy pillow pydicom textgrid
