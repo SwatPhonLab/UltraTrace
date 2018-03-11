@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # core libs
 from tkinter import *
@@ -47,6 +46,7 @@ except (ImportError):
 # some globals
 _CROSSHAIR_DRAG_BUFFER = 20
 _CROSSHAIR_SELECT_RADIUS = 12
+_TEXTGRID_ALIGNMENT_TIER_NAMES = [ 'frames', 'all frames', 'dicom frames', 'ultrasound frames' ]
 
 class ZoomFrame(Frame):
 	'''
@@ -212,12 +212,14 @@ class Crosshairs(object):
 		return self.trueX, self.trueY
 
 	def transformCoordsToTrue(self, x, y):
+		''' canvas coords -> absolute coords '''
 		containerX, containerY = self.zframe.canvas.coords( self.zframe.container )[:2]
 		x = (x-containerX) / self.zframe.imgscale
 		y = (y-containerY) / self.zframe.imgscale
 		return x, y
 
 	def transformTrueToCoords(self, x, y):
+		''' absolute coords -> canvas coords '''
 		containerX, containerY = self.zframe.canvas.coords( self.zframe.container )[:2]
 		x = x*self.zframe.imgscale + containerX
 		y = y*self.zframe.imgscale + containerY
@@ -289,7 +291,7 @@ class Crosshairs(object):
 				self.zframe.canvas.itemconfig( self.vline, fill=color )
 
 class MetadataModule(object):
-	def __init__(self, parent, path):
+	def __init__(self, app, path):
 		'''
 		opens a metadata file (or creates one if it doesn't exist), recursively searches a directory
 			for acceptable files, writes metadata back into memory, and returns the metadata object
@@ -301,7 +303,7 @@ class MetadataModule(object):
 
 		print( ' - initializing module: Data')
 		if path == None:
-			parent.update()
+			app.update()
 			path = filedialog.askdirectory(initialdir=os.getcwd(), title="Choose a directory")
 
 		print( '   - parsing directory: `%s`' % path )
@@ -310,7 +312,7 @@ class MetadataModule(object):
 			print( "   - ERROR: `%s` could not be located" % path )
 			exit(1)
 
-		self.parent = parent
+		self.app = app
 		self.path = path
 
 		self.mdfile = os.path.join( self.path, 'metadata.json' )
@@ -385,7 +387,7 @@ class MetadataModule(object):
 			self.data[ 'geometry' ] = '1150x800+1400+480'
 			self.write()
 
-		self.parent.geometry( self.getTopLevel('geometry') )
+		self.app.geometry( self.getTopLevel('geometry') )
 		self.files = self.getFilenames()
 
 	def write(self, _mdfile=None):
@@ -406,7 +408,7 @@ class MetadataModule(object):
 		'''
 		Gets preprocessed (.dicom->.png) picture data for a given frame
 		'''
-		frame = self.parent.frame if _frame==None else _frame
+		frame = self.app.frame if _frame==None else _frame
 		processed = self.getFileLevel( 'processed' )
 		try:
 			return processed[str(frame-1)]
@@ -433,7 +435,7 @@ class MetadataModule(object):
 		'''
 		Get file-level metadata
 		'''
-		fileid = self.parent.currentFID if _fileid==None else _fileid
+		fileid = self.app.currentFID if _fileid==None else _fileid
 		mddict = self.data[ 'files' ][ fileid ]
 
 		if key == 'all':
@@ -447,7 +449,7 @@ class MetadataModule(object):
 		'''
 		Set file-level metadata
 		'''
-		fileid = self.parent.currentFID if _fileid==None else _fileid
+		fileid = self.app.currentFID if _fileid==None else _fileid
 		self.data[ 'files' ][ fileid ][ key ] = value
 		self.write()
 
@@ -455,18 +457,21 @@ class MetadataModule(object):
 		'''
 		Helper function for interacting with traces
 		'''
-		return self.data[ 'files' ][ self.parent.currentFID ][ 'name' ]
+		return self.data[ 'files' ][ self.app.currentFID ][ 'name' ]
 
 	def getCurrentTraceColor( self ):
 		'''
 		Returns color of the currently selected trace
 		'''
-		trace = self.parent.Trace.getCurrentTraceName()
+		trace = self.app.Trace.getCurrentTraceName()
 		if trace==None:
 			return None
 		return self.data[ 'traces' ][ trace ][ 'color' ]
 
 	def setTraceColor( self, trace, color ):
+		'''
+		Set color for a particular trace name
+		'''
 		self.data[ 'traces' ][ trace ][ 'color' ] = color
 		self.write()
 
@@ -475,7 +480,7 @@ class MetadataModule(object):
 		Returns a dictionary of with key->value give by frame->[crosshairs]
 		for the current trace and file
 		'''
-		trace = self.parent.Trace.getCurrentTraceName()
+		trace = self.app.Trace.getCurrentTraceName()
 		filename = self.getCurrentFilename()
 		try:
 			return self.data[ 'traces' ][ trace ][ 'files' ][ filename ]
@@ -488,7 +493,7 @@ class MetadataModule(object):
 		and current frame
 		'''
 		filename = self.getCurrentFilename()
-		frame    = str(self.parent.frame)
+		frame    = str(self.app.frame)
 		try:
 			return self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ frame ]
 		except KeyError:
@@ -499,9 +504,9 @@ class MetadataModule(object):
 		Writes an array of the current crosshairs to the metadata dictionary at
 		the current trace, current file, and current frame
 		'''
-		trace = self.parent.Trace.getCurrentTraceName()
+		trace = self.app.Trace.getCurrentTraceName()
 		filename = self.getCurrentFilename()
-		frame = self.parent.frame
+		frame = self.app.frame
 		if trace not in self.data[ 'traces' ]:
 			self.data[ 'traces' ][ trace ] = { 'files':{}, 'color':None }
 		if filename not in self.data[ 'traces' ][ trace ][ 'files' ]:
@@ -514,13 +519,13 @@ class TextGridModule(object):
 	Manages all the widgets related to TextGrid files, including the tier name
 	and the text content of that tier at a given frame
 	'''
-	def __init__(self, parent):
+	def __init__(self, app):
 		'''
 		Keep a reference to the master object for binding the widgets we create
 		'''
 		print( ' - initializing module: TextGrid' )
-		self.parent = parent
-		self.frame = Frame(self.parent.BOTTOM)
+		self.app = app
+		self.frame = Frame(self.app.BOTTOM)
 		self.frame.grid( row=0, column=0, sticky=W )
 		self.TextGrid = None
 
@@ -532,7 +537,7 @@ class TextGridModule(object):
 			# default Label in case there are errors below
 			self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
 			# the Data module will pass this filename=None if it can't find an appropriate .TextGrid file
-			filename = self.parent.Data.getFileLevel( '.TextGrid' )
+			filename = self.app.Data.getFileLevel( '.TextGrid' )
 			if filename:
 				try:
 					# try to load up our TextGrid using the textgrid lib
@@ -552,7 +557,10 @@ class TextGridModule(object):
 			self.grid()
 
 	def getFrameTierName(self):
-		for name in [ 'frames', 'all frames', 'dicom frames', 'ultrasound frames' ]:
+		'''
+		Handle some inconsistency in how we're naming our alignment tier
+		'''
+		for name in _TEXTGRID_ALIGNMENT_TIER_NAMES:
 			if name in self.TextGrid.getNames():
 				return name
 		raise NameError( 'Unable to find alignment tier' )
@@ -571,7 +579,7 @@ class TextGridModule(object):
 		'''
 		# check that we've loaded a TextGrid
 		if self.TextGrid != None:
-			time = self.getTime( self.parent.frame )
+			time = self.getTime( self.app.frame )
 			# update each of our tiers
 			for t in range(len( self.TextGrid.getNames() )):
 				tier = self.TextGrid.getNames()[t]
@@ -617,21 +625,35 @@ class TextGridModule(object):
 				tierWidgets['text' ].grid(row=t, column=1, sticky=W)
 
 class TraceModule(object):
-	def __init__(self, parent):
+	'''
+	Module to manage all of the different traces (with unique names/colors) and the
+	Crosshairs objects associated to each one.  In particular, handles creation/modfication
+	of traces and crosshairs.
+	'''
+	def __init__(self, app):
 		print( ' - initializing module: Trace' )
 
-		self.parent = parent
-		self.available = self.parent.Data.getTopLevel( 'traces' )
+		self.app = app
+
+		# array of trace names for this directory
+		self.available = self.app.Data.getTopLevel( 'traces' )
 		self.available = [] if self.available==None else self.available
+
+		# dictionary to hold trace -> [crosshairs] data
 		self.crosshairs = {}
+
+		# set of currently selected crosshairs
 		self.selected = set()
 
+		# declare & init trace string variable
 		self.traceSV = StringVar()
 		self.traceSV.set( '' )
 
-		self.frame = Frame(self.parent.LEFT, pady=7)
+		# frame for (most of) our widgets
+		self.frame = Frame(self.app.LEFT, pady=7)
 		self.frame.grid( row=4 )
 
+		# listbox to contain all of our traces
 		lbframe = Frame(self.frame)
 		self.scrollbar = Scrollbar(lbframe)
 		self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12)
@@ -639,10 +661,14 @@ class TraceModule(object):
 		for trace in self.available:
 			self.listbox.insert(END, trace)
 		for i, item in enumerate(self.listbox.get(0, END)):
-			if item==self.parent.Data.getTopLevel( 'defaultTraceName' ):
+			# select our "default trace"
+			if item==self.app.Data.getTopLevel( 'defaultTraceName' ):
 				self.listbox.selection_clear(0, END)
 				self.listbox.select_set( i )
 
+		# this module is responsible for so many widgets that we need a different
+		# strategy for keeping track of everything that needs constistent grid() /
+		# grid_remove() behavior
 		self.TkWidgets = [
 			self.getWidget( Header(self.frame, text="Choose a trace"), row=5, column=0, columnspan=4 ),
 			self.getWidget( lbframe, row=10, column=0, rowspan=50 ),
@@ -653,38 +679,130 @@ class TraceModule(object):
 			self.getWidget( Button(self.frame, text='Recolor', command=self.recolor), row=13, column=2, columnspan=2 ),
 			self.getWidget( Button(self.frame, text='Clear', command=self.clear), row=15, column=2, columnspan=2 ),
 			self.getWidget( Entry( self.frame, width=12, textvariable=self.traceSV), row=100, column=0, sticky=W ),
-			self.getWidget( Button(self.frame, text='New', command=self.new), row=100, column=2 ),
-			self.getWidget( Button(self.frame, text='Rename', command=self.rename), row=100, column=3 ) ]
+			self.getWidget( Button(self.frame, text='New', command=self.newTrace), row=100, column=2 ),
+			self.getWidget( Button(self.frame, text='Rename', command=self.renameTrace), row=100, column=3 ) ]
 
-		self.parent.bind('<Control-r>', self.recolor )
+		self.app.bind('<Control-r>', self.recolor )
+
+	def update(self):
+		''' on change frames '''
+		self.grid()
+		self.reset() # clear our crosshairs
+		self.read()  # read from file
+	def reset(self):
+		''' on change files '''
+		# undraw all the crosshairs
+		for trace in self.crosshairs:
+			for ch in self.crosshairs[ trace ]:
+				ch.undraw()
+		# and empty out our trackers
+		self.crosshairs = {}
+		self.selected = set()
+
+	def add(self, x, y, _trace=None, transform=True):
+		'''
+		add a crosshair to the zoom frame canvas
+		'''
+
+		trace = self.getCurrentTraceName() if _trace==None else _trace
+		color  = self.available[ trace ]['color']
+		ch = Crosshairs( self.app.Dicom.zframe, x, y, color, transform )
+		if trace not in self.crosshairs:
+			self.crosshairs[ trace ] = []
+		self.crosshairs[ trace ].append( ch )
+		return ch
+	def remove(self, ch, write=True):
+		'''
+		remove a crosshair from the zoom frame canvas ... doesn't actually remove it
+		but instead just makes it "invisible"
+		'''
+
+		ch.undraw()
+		if write:
+			self.write()
+		return ch
+
+	def read(self):
+		'''
+		read a list of crosshair coordinates from the metadata file
+		'''
+
+		frame = self.app.frame
+		for trace in self.available:
+			try:
+				newCrosshairs = []
+				for item in self.app.Data.getTraceCurrentFrame(trace):
+					ch = self.add( item['x'], item['y'], _trace=trace, transform=False )
+					if trace not in self.crosshairs:
+						self.crosshairs[ trace ] = []
+					self.crosshairs[ trace ].append( ch )
+					newCrosshairs.append( ch )
+				self.app.Control.push({ 'type':'add', 'chs':newCrosshairs })
+			except KeyError:
+				pass
+	def write(self):
+		'''
+		write out the coordinates of all of our crosshairs to the metadata file
+		'''
+
+		trace = self.getCurrentTraceName()
+		traces = []
+
+		if trace in self.crosshairs:
+			for ch in self.crosshairs[ trace ]:
+				if ch.isVisible:
+					x,y = ch.getTrueCoords()
+					data = { 'x':x, 'y':y }
+					if data not in traces:
+						traces.append(data)
+		self.app.Data.setCurrentTraceCurrentFrame( traces )
 
 	def getCurrentTraceName(self):
+		'''
+		return string of current trace name
+		'''
+
 		try:
 			return self.listbox.get(self.listbox.curselection())
 		except _tkinter.TclError:
 			print( 'Can\'t select from empty listbox!' )
+	def setDefaultTraceName(self):
+		'''
+		wrapper for changing the default trace
+		'''
+		self.app.Data.setTopLevel( 'defaultTraceName', self.getCurrentTraceName() )
 
-	def update(self):
-		self.grid()
-		self.reset()
-		self.read()
-	def getSelected(self):
-		return self.selected
 	def select(self, ch):
+		''' select a crosshairs '''
 		ch.select()
 		self.selected.add(ch)
+	def selectAll(self):
+		''' select all crosshairs '''
+		if self.getCurrentTraceName() in self.crosshairs:
+			for ch in self.crosshairs[self.getCurrentTraceName()]:
+				self.select(ch)
 	def unselect(self, ch):
+		''' unselect a crosshairs '''
 		ch.unselect()
 		self.selected.remove(ch)
 	def unselectAll(self):
+		''' unselect all crosshairs '''
 		for ch in self.selected:
 			ch.unselect()
 		self.selected = set()
-	def getNearby(self, click):
 
+	def getNearClickAllTraces(self, click):
+		'''
+		takes a click object ( (x,y) tuple ) and returns a list of crosshairs
+		within a globally defined _CROSSHAIR_SELECT_RADIUS
+
+		first searches for crosshairs matching the current trace iterates
+		thru the other traces if it doesnt find anything
+
+		if nothing is found for any trace, returns None
+		'''
 		# get nearby crosshairs from this trace
-		trace  = self.getCurrentTraceName()
-		nearby = self.getCrosshairsInSelectRadius(click, trace)
+		nearby = self.getNearClickOneTrace(click, self.getCurrentTraceName())
 		if nearby != None:
 			return nearby
 
@@ -692,7 +810,7 @@ class TraceModule(object):
 		else:
 			# ... check our other traces to see if they contain any nearby guys
 			for trace in self.available:
-				nearby = self.getCrosshairsInSelectRadius(click, trace)
+				nearby = self.getNearClickOneTrace(click, trace)
 				# if we got something
 				if nearby != None:
 					# switch to that trace and exit the loop
@@ -703,13 +821,11 @@ class TraceModule(object):
 					return nearby
 
 		return None
-	def reset(self):
-		for trace in self.crosshairs:
-			for ch in self.crosshairs[ trace ]:
-				ch.undraw()
-		self.crosshairs = {}
-		self.selected = set()
-	def getCrosshairsInSelectRadius(self, click, trace):
+	def getNearClickOneTrace(self, click, trace):
+		'''
+		takes a click object and a trace and returns a list of crosshairs within
+		_CROSSHAIR_SELECT_RADIUS of that click
+		'''
 
 		# see if we clicked near any existing crosshairs
 		possibleSelections = {}
@@ -731,74 +847,36 @@ class TraceModule(object):
 			return ch
 
 		return None
-	def getAll(self):
-		return [ key for key in self.available.keys() ]
-	def draw(self, x, y, _trace=None, transform=True):
-		trace = self.getCurrentTraceName() if _trace==None else _trace
-		color  = self.available[ trace ]['color']
-		ch = Crosshairs( self.parent.Dicom.zframe, x, y, color, transform )
-		if trace not in self.crosshairs:
-			self.crosshairs[ trace ] = []
-		self.crosshairs[ trace ].append( ch )
-		return ch
-	def read(self):
-		frame = self.parent.frame
-		for trace in self.available:
-			try:
-				newCrosshairs = []
-				for item in self.parent.Data.getTraceCurrentFrame(trace):
-					ch = self.draw( item['x'], item['y'], _trace=trace, transform=False )
-					if trace not in self.crosshairs:
-						self.crosshairs[ trace ] = []
-					self.crosshairs[ trace ].append( ch )
-					newCrosshairs.append( ch )
-				self.parent.Control.push({ 'type':'add', 'chs':newCrosshairs })
-			except KeyError:
-				pass
-	def write(self):
-		trace = self.getCurrentTraceName()
-		traces = []
 
-		if trace in self.crosshairs:
-			for ch in self.crosshairs[ trace ]:
-				if ch.isVisible:
-					x,y = ch.getTrueCoords()
-					data = { 'x':x, 'y':y }
-					if data not in traces:
-						traces.append(data)
-		self.parent.Data.setCurrentTraceCurrentFrame( traces )
-	def setDefaultTraceName(self):
-		self.parent.Data.setTopLevel( 'defaultTraceName', self.getCurrentTraceName() )
-	def selectAll(self):
-		if self.getCurrentTraceName() in self.crosshairs:
-			for ch in self.crosshairs[self.getCurrentTraceName()]:
-				self.select(ch)
-		pass
 	def copy(self):
+		''' TODO '''
 		pass
 	def paste(self):
+		''' TODO '''
 		pass
 	def recolor(self, event=None, trace=None, color=None):
+		''' change the color of a particular trace '''
 
 		trace = self.getCurrentTraceName() if trace==None else trace
 
-		# grab a new color and save our old color (for generating undoQueue stuff)
+		# grab a new color and save our old color (for generating Control data)
 		newColor = self.getRandomHexColor() if color==None else color
-		oldColor = self.parent.Data.getCurrentTraceColor()
+		oldColor = self.app.Data.getCurrentTraceColor()
 
 		self.available[ trace ]['color'] = newColor
-		self.parent.Data.setTraceColor( trace, newColor )
+		self.app.Data.setTraceColor( trace, newColor )
 
 		if trace in self.crosshairs:
 			for ch in self.crosshairs[ trace ]:
 				ch.recolor( newColor )
 
 		if trace==None or color == None:
-			self.parent.Control.push({ 'type':'recolor', 'trace':self.getCurrentTraceName(), 'color':oldColor })
+			self.app.Control.push({ 'type':'recolor', 'trace':self.getCurrentTraceName(), 'color':oldColor })
 			self.redoQueue = []
 
 		return oldColor
 	def clear(self):
+		''' remove all crosshairs for the current trace '''
 
 		# now we remove all the traces and save
 		deleted = []
@@ -808,17 +886,13 @@ class TraceModule(object):
 				if ch.isVisible:
 					deleted.append( ch )
 				self.remove( ch, write=False )
-			#self.crosshairs[ trace ] = []
 			self.write()
 
-		self.parent.Control.push({ 'type':'delete', 'chs':deleted })
+		self.app.Control.push({ 'type':'delete', 'chs':deleted })
+	def newTrace(self):
+		''' add a new trace to our listbox '''
 
-	def remove(self, ch, write=True):
-		ch.undraw()
-		if write:
-			self.write()
-		return ch
-	def new(self):
+		# max length 12 chars (so it displays nicely)
 		name = self.traceSV.get()[:12]
 
 		# don't want to add traces we already have or empty strings
@@ -829,14 +903,16 @@ class TraceModule(object):
 
 			# save the new trace name and color to metadata & update vars
 			self.available[ name ] = { 'color':color, 'files':{} }
-			self.parent.Data.setTopLevel( 'traces', self.available )
+			self.app.Data.setTopLevel( 'traces', self.available )
 			self.traceSV.set('')
 
 			# update our listbox
 			self.listbox.insert(END, name)
 			self.listbox.selection_clear(0, END)
 			self.listbox.select_set( len(self.available)-1 )
-	def rename(self, oldName=None, newName=None):
+	def renameTrace(self, oldName=None, newName=None):
+		''' change a trace name from oldName -> newName '''
+
 		fromUndo = (oldName!=None or newName!=None)
 		oldName = self.getCurrentTraceName() if oldName==None else oldName
 		newName = self.traceSV.get()[:12] if newName==None else newName
@@ -847,9 +923,9 @@ class TraceModule(object):
 			# get data from the old name and change the dictionary key in the metadata
 			data = self.available.pop( oldName )
 			self.available[ newName ] = data
-			self.parent.Data.setTopLevel( 'traces', self.available )
-			if oldName==self.parent.Data.getTopLevel( 'defaultTraceName' ):
-				self.parent.Data.setTopLevel( 'defaultTraceName', newName )
+			self.app.Data.setTopLevel( 'traces', self.available )
+			if oldName==self.app.Data.getTopLevel( 'defaultTraceName' ):
+				self.app.Data.setTopLevel( 'defaultTraceName', newName )
 			self.traceSV.set('')
 
 			# update our listbox
@@ -860,11 +936,13 @@ class TraceModule(object):
 			self.listbox.select_set(index)
 
 			if not( fromUndo ):
-				self.parent.Control.push({ 'type':'rename', 'old':oldName, 'new':newName })
+				self.app.Control.push({ 'type':'rename', 'old':oldName, 'new':newName })
 
 	def getRandomHexColor(self):
+		''' helper for getting a random color '''
 		return '#%06x' % random.randint(0, 0xFFFFFF)
 	def getWidget(self, widget, row=0, column=0, rowspan=1, columnspan=1, sticky=() ):
+		''' helper for managing all of our widgets '''
 		return {
 			'widget' : widget,
 			'row'	 : row,
@@ -872,7 +950,9 @@ class TraceModule(object):
 			'column' : column,
 			'columnspan':columnspan,
 			'sticky' : sticky }
+
 	def grid(self):
+		''' grid all of our widgets '''
 		for item in self.TkWidgets:
 			item['widget'].grid(
 				row=item['row'], column=item['column'], rowspan=item['rowspan'],
@@ -880,29 +960,43 @@ class TraceModule(object):
 		self.listbox.pack(side=LEFT, fill=Y)
 		self.scrollbar.pack(side=RIGHT, fill=Y)
 	def grid_remove(self):
+		''' remove all of our widgets from the grid '''
 		for item in self.TkWidgets:
 			item['widget'].grid_remove()
 		self.listbox.packforget()
 		self.scrollbar.packforget()
 
 class PlaybackModule(object):
-	def __init__(self, parent):
-		self.parent = parent
+	'''
+	Module to handle playback of audio files.
+
+	Note: this module is sparse b/c most of it needs to be rewritten to depend on
+		a more powerful audio manager
+	'''
+	def __init__(self, app):
+		self.app = app
 		self.current = None
 		if _AUDIO_LIBS_INSTALLED:
 			print( ' - initializing module: Audio' )
 			self.mixer = pygame.mixer
 			self.mixer.init()
 			self.isPaused = False
-			self.frame = Frame(self.parent.BOTTOM)
-			self.frame.grid( row=1, column=0 )
+
+			# widget management
+			self.frame = Frame(self.app.BOTTOM)
 			self.playBtn = Button(self.frame, text="Play/Pause", command=self.toggleAudio, state=DISABLED)
-			self.parent.bind('<space>', self.toggleAudio )
+			self.app.bind('<space>', self.toggleAudio )
 
 	def update(self):
+		'''
+		don't change the audio file when we change frames
+		'''
 		pass
 
 	def reset(self):
+		'''
+		try to load an audio file
+		'''
 		if _AUDIO_LIBS_INSTALLED:
 			self.current = None
 			audioFallbacks = [ '.wav', '.flac', '.ogg', '.mp3' ]
@@ -912,7 +1006,10 @@ class PlaybackModule(object):
 					return
 
 	def loadAudio(self, codec):
-		audiofile = self.parent.Data.getFileLevel( codec )
+		'''
+		load an audio file with a specific codec
+		'''
+		audiofile = self.app.Data.getFileLevel( codec )
 		if audiofile != None:
 			try:
 				self.mixer.music.load( audiofile )
@@ -924,6 +1021,9 @@ class PlaybackModule(object):
 				return False
 
 	def toggleAudio(self, event=None):
+		'''
+		play/pause/stop
+		'''
 		if self.current != None:
 			if self.isPaused:
 				self.mixer.music.unpause()
@@ -936,39 +1036,73 @@ class PlaybackModule(object):
 				self.isPaused = False
 
 	def grid(self):
+		''' grid widgets '''
+		self.frame.grid( row=0 )
 		self.playBtn.grid()
+
+	def ungrid(self):
+		''' remove widgets from grid '''
+		self.frame.grid_remove()
+		self.playBtn.grid_remove()
 
 class DicomModule(object):
 	'''
+	This module wraps app interaction with dicom data.  The first time executing a
+	program for which we find relevant dicom files, the user will have to `Load DICOM,`
+	which iterates over each frame of the dicom file and copies it to a folder in PNG
+	format.
+
+	advantages (over loading each frame as a one-off image):
+		- avoid weird inconsistencies in trying to build PIL Images directly from arrays
+		- avoid unnecessary direct interaction with the (usually massive and therefore
+			painfully slow) dicom files
+
+	drawbacks:
+		- VERY slow upfront operation to do the dicom extraction (3m56s on my dev machine)
+		- a tiny amount of extra storage (for comparison, 1045-frame RGB dicom file
+			from a test dataset uses 1.5GB and the corresponding PNG files use )
 	'''
-	def __init__(self, parent):
-		self.parent = parent
+	def __init__(self, app):
+		print( ' - initializing module: Dicom')
+
+		self.app = app
 		self.isLoaded = False
+
 		if _DICOM_LIBS_INSTALLED:
-			print( ' - initializing module: Dicom')
-			self.frame = Frame(self.parent.LEFT, pady=7)
+			# grid load button
+			self.frame = Frame(self.app.LEFT, pady=7)
 			self.frame.grid( row=2 )
 			self.loadBtn = Button(self.frame, text='Load DICOM', command=self.process)
 			self.loadBtn.grid()
-			self.zframe = ZoomFrame(self.parent.RIGHT, 1.3)
-			self.zoomResetBtn = Button(self.parent.LEFT, text='Reset image', command=self.zoomReset, pady=7 )
-			self.parent.bind('<Control-l>', self.load )
+
+			# zoom frame (contains our tracing canvas)
+			self.zframe = ZoomFrame(self.app.RIGHT, 1.3)
+
+			# reset zoom button
+			self.zoomResetBtn = Button(self.app.LEFT, text='Reset image', command=self.zoomReset, pady=7 )
 
 	def zoomReset(self, fromButton=True):
+		'''
+		reset zoom frame canvas and rebind it
+		'''
+		if self.isLoaded:
+			# creates a new canvas object and we redraw everything to it
+			self.zframe.resetCanvas( self.app.RIGHT )
+			self.zframe.canvas.bind('<Button-1>', self.app.onClick )
+			self.zframe.canvas.bind('<ButtonRelease-1>', self.app.onRelease )
+			self.zframe.canvas.bind('<Motion>', self.app.onMotion )
 
-		# creates a new canvas object and we redraw everything to it
-		self.zframe.resetCanvas( self.parent.RIGHT )
-		self.zframe.canvas.bind('<Button-1>', self.parent.onClick )
-		self.zframe.canvas.bind('<ButtonRelease-1>', self.parent.onRelease )
-		self.zframe.canvas.bind('<Motion>', self.parent.onMotion )
-
- 		# we want to go here only after a button press
-		if fromButton: self.parent.framesUpdate()
+	 		# we want to go here only after a button press
+			if fromButton: self.app.framesUpdate()
 
 	def update(self):
-		image = self.parent.Data.getPreprocessedDicom()
-		image = Image.open( image )
-		self.zframe.setImage( image )
+		'''
+		change the image on the zoom frame
+		'''
+		if self.isLoaded:
+			image = self.app.Data.getPreprocessedDicom()
+			image = Image.open( image )
+			self.zframe.setImage( image )
 
 	def load(self, event=None):
 		'''
@@ -978,40 +1112,41 @@ class DicomModule(object):
 			# don't execute if dicom already loaded correctly
 			if self.isLoaded == False:
 
-				processed = self.parent.Data.getFileLevel( 'processed' )
+				processed = self.app.Data.getFileLevel( 'processed' )
 				if processed == None:
 					return self.process()
 				else:
-					self.parent.frames = len(processed)
+					self.app.frames = len(processed)
 
 				# reset variables
-				self.parent.frame = 1
+				self.app.frame = 1
 				self.isLoaded = True
 
 				# update widgets
-				#self.parent.framesUpdate()
 				self.frame.grid_remove()
 				self.loadBtn.grid_remove()
 				self.grid()
 	def process(self):
-
+		'''
+		perform the dicom->PNG operation
+		'''
 		print( 'Reading DICOM data ...', end='\r' )
 
 		if self.isLoaded == False:
 			try:
-				dicomfile = self.parent.Data.getFileLevel( '.dicom' )
+				dicomfile = self.app.Data.getFileLevel( '.dicom' )
 				self.dicom = dicom.read_file( dicomfile )
 
 			except dicom.errors.InvalidDicomError:
 				print( 'Unable to read DICOM file: %s' % dicomfile )
 				return False
 
-		pixels = self.dicom.pixel_array
+		pixels = self.dicom.pixel_array # np.array
 
+		# check encoding, manipulate array if we need to
 		if len(pixels.shape) == 3:		# greyscale
 			RGB = False
 			frames, rows, columns = pixels.shape
-
 		elif len(pixels.shape) == 4:	# RGB-encoded
 			RGB = True
 			if pixels.shape[0] == 3:	# handle RGB-first
@@ -1022,8 +1157,14 @@ class DicomModule(object):
 
 		processedData = {}
 
-		# grab one frame at a time and write it to a special directory
-		# and provide a progress indicator
+		# write to a special directory
+		outputpath = os.path.join(
+			self.app.Data.getTopLevel('path'),
+			self.app.Data.getFileLevel('name')+'_dicom_to_png' )
+		if os.path.exists( outputpath ) == False:
+			os.mkdir( outputpath )
+
+		# grab one frame at a time to write (and provide a progress indicator)
 		printProgressBar(0, frames, prefix = 'Processing:', suffix = 'complete')
 		for f in range( frames ):
 
@@ -1032,66 +1173,85 @@ class DicomModule(object):
 			arr = pixels[ f,:,:,: ] if RGB else pixels[ f,:,: ]
 			img = Image.fromarray( arr )
 
-			outputpath = os.path.join(
-				self.parent.Data.getTopLevel('path'),
-				self.parent.Data.getFileLevel('name')+'_dicom_to_png' )
-			if os.path.exists( outputpath ) == False:
-				os.mkdir( outputpath )
-			outputfilename = '%s_frame_%04d.png' % ( self.parent.Data.getFileLevel('name'), f )
+			outputfilename = '%s_frame_%04d.png' % ( self.app.Data.getFileLevel('name'), f )
 			outputfilepath = os.path.join( outputpath, outputfilename )
 			img.save( outputfilepath, format='PNG' )
 
+			# keep track of all the processing we've finished
 			processedData[ str(f) ] = outputfilepath
 
-		self.parent.Data.setFileLevel( 'processed', processedData )
-		self.parent.forceFocus()
+		self.app.Data.setFileLevel( 'processed', processedData )
+		self.app.lift()
 		self.load()
 
 	def reset(self):
+		'''
+		new files should default to not showing dicom unless it has already been processed
+		'''
+		# hide frame navigation widgets
 		self.grid_remove()
 
 		self.isLoaded = False
 		self.dicom = None
 
-		if self.parent.Data.getFileLevel( '.dicom' ) == None:
+		# update buttons
+		if self.app.Data.getFileLevel( '.dicom' ) == None:
 			self.loadBtn[ 'state' ] = DISABLED
 		else:
 			self.loadBtn[ 'state' ] = NORMAL
-			if self.parent.Data.getFileLevel( 'processed' ) != None:
+			# and check if data is already processed
+			if self.app.Data.getFileLevel( 'processed' ) != None:
 				self.load()
-
-		self.zoomReset()
+				self.zoomReset()
 
 	def grid(self):
-		self.parent.framesHeader.grid(	  row=0 )
-		self.parent.framesLeftBtn.grid(	  row=0, column=0 )
-		self.parent.framesEntryText.grid( row=0, column=1 )
-		self.parent.framesEntryBtn.grid(  row=0, column=2 )
-		self.parent.framesRightBtn.grid(  row=0, column=3 )
+		'''
+		Grid frame navigation, zoom reset, and Control (Undo/Redo) widgets
+		'''
+		self.app.framesHeader.grid(	  row=0 )
+		self.app.framesPrevBtn.grid(	  row=0, column=0 )
+		self.app.framesEntryText.grid( row=0, column=1 )
+		self.app.framesEntryBtn.grid(  row=0, column=2 )
+		self.app.framesNextBtn.grid(  row=0, column=3 )
 		self.zoomResetBtn.grid( row=7 )
-		self.parent.Control.grid()
+		self.app.Control.grid()
 
 	def grid_remove(self):
-		self.parent.framesHeader.grid_remove()
-		self.parent.framesLeftBtn.grid_remove()
-		self.parent.framesEntryText.grid_remove()
-		self.parent.framesEntryBtn.grid_remove()
-		self.parent.framesRightBtn.grid_remove()
+		'''
+		Remove widgets from grid
+		'''
+		self.app.framesHeader.grid_remove()
+		self.app.framesPrevBtn.grid_remove()
+		self.app.framesEntryText.grid_remove()
+		self.app.framesEntryBtn.grid_remove()
+		self.app.framesNextBtn.grid_remove()
 		self.zoomResetBtn.grid_remove()
-		self.parent.Control.grid_remove()
+		self.app.Control.grid_remove()
 
 class ControlModule(object):
-	def __init__(self, parent):
+	'''
+	This class provides a clean interface for managing Undo/Redo functionality.
+	Implementation relies on storing two lists of actions as stacks, one for Undo
+	and one for Redo.  Calling Undo/Redo should pop the corresponding stack and
+	execute the inverse of that action, pushing the inverse action to the other
+	stack (so its inversion can also be executed).
+
+	Note: both stacks get cleared on
+		- change files
+		- change frames
+		- Dicom.resetZoom()
+	'''
+	def __init__(self, app):
 		print( ' - initializing module: Control' )
 		# reference to our main object containing other functionality managers
-		self.parent = parent
+		self.app = app
 		# initialize our stacks
 		self.reset()
 		# bind Ctrl+z to UNDO and Ctrl+Shift+Z to REDO
-		self.parent.bind('<Control-z>', self.undo )
-		self.parent.bind('<Control-Z>', self.redo )
+		self.app.bind('<Control-z>', self.undo )
+		self.app.bind('<Control-Z>', self.redo )
 		# also make some buttons and bind them
-		self.frame = Frame(self.parent.LEFT, pady=7)
+		self.frame = Frame(self.app.LEFT, pady=7)
 		self.frame.grid( row=5 )
 		self.undoBtn = Button(self.frame, text='Undo', command=self.undo)
 		self.redoBtn = Button(self.frame, text='Redo', command=self.redo)
@@ -1109,6 +1269,7 @@ class ControlModule(object):
 		self.uStack = [] # undo
 		self.rStack = [] # redo
 	def update(self):
+		''' changing files and changing frames should have the same effect '''
 		self.reset()
 	def undo(self, event=None):
 		''' perform the undo-ing '''
@@ -1119,7 +1280,7 @@ class ControlModule(object):
 			if item['type'] == 'add':
 				chs = item['chs']
 				for ch in chs:
-					self.parent.Trace.remove( ch )
+					self.app.Trace.remove( ch )
 				self.rStack.append({ 'type':'delete', 'chs':chs })
 			elif item['type'] == 'delete':
 				chs = item['chs']
@@ -1133,17 +1294,17 @@ class ControlModule(object):
 					chs[i].dragTo( coords[i] )
 				self.rStack.append({ 'type':'move', 'chs':chs, 'coords':coords })
 			elif item['type'] == 'recolor':
-				oldColor = self.parent.Trace.recolor( item['trace'], item['color'] )
+				oldColor = self.app.Trace.recolor( item['trace'], item['color'] )
 				self.rStack.append({ 'type':'recolor', 'trace':item['trace'], 'color':oldColor })
 			elif item['type'] == 'rename':
-				self.parent.Trace.rename( newName=item['old'], oldName=item['new'] ) # this is backwards on purpose
+				self.app.Trace.renameTrace( newName=item['old'], oldName=item['new'] ) # this is backwards on purpose
 				self.rStack.append({ 'type':'rename', 'old':item['old'], 'new':item['new'] })
 			else:
 				print (item)
 				raise NotImplementedError
 
-			self.parent.Trace.unselectAll()
-			self.parent.Trace.write()
+			self.app.Trace.unselectAll()
+			self.app.Trace.write()
 			self.updateButtons()
 		else:
 			print( 'Nothing to undo!' )
@@ -1156,7 +1317,7 @@ class ControlModule(object):
 			if item['type'] == 'add':
 				chs = item['chs']
 				for ch in chs:
-					self.parent.Trace.remove( ch )
+					self.app.Trace.remove( ch )
 				self.uStack.append({ 'type':'delete', 'chs':chs })
 			elif item['type'] == 'delete':
 				chs = item['chs']
@@ -1170,35 +1331,59 @@ class ControlModule(object):
 					chs[i].dragTo( coords[i] )
 				self.uStack.append({ 'type':'move', 'chs':chs, 'coords':coords })
 			elif item['type'] == 'recolor':
-				oldColor = self.parent.Trace.recolor( item['trace'], item['color'] )
+				oldColor = self.app.Trace.recolor( item['trace'], item['color'] )
 				self.uStack.append({ 'type':'recolor', 'trace':item['trace'], 'color':oldColor })
 			elif item['type'] == 'rename':
-				self.parent.Trace.rename( newName=item['new'], oldName=item['old'] )
+				self.app.Trace.renameTrace( newName=item['new'], oldName=item['old'] )
 				self.uStack.append({ 'type':'rename', 'old':item['old'], 'new':item['new'] })
 			else:
 				print (item)
 				raise NotImplementedError
 
-			self.parent.Trace.unselectAll()
-			self.parent.Trace.write()
+			self.app.Trace.unselectAll()
+			self.app.Trace.write()
 			self.updateButtons()
 		else:
 			print( 'Nothing to redo!' )
 	def updateButtons(self):
+		'''
+		Don't allow clicking buttons that wrap empty stacks.  However, users will
+		still be able to access that functionality thru key bindings.
+		'''
 		self.undoBtn['state'] = NORMAL if len(self.uStack) else DISABLED
 		self.redoBtn['state'] = NORMAL if len(self.rStack) else DISABLED
 		self.grid()
 	def grid(self):
+		'''
+		Grid button widgets
+		'''
 		self.undoBtn.grid(row=0, column=0)
 		self.redoBtn.grid(row=0, column=1)
 	def grid_remove(self):
+		'''
+		Remove button widgets from grid
+		'''
 		self.undoBtn.grid_remove()
 		self.redoBtn.grid_remove()
 
 class App(Tk):
+	'''
+	This class is neatly wraps all the functionality of our application.  By itself,
+	it's is responsible for handling command line input, navigating between files,
+	navigating between frames, handling of some events, and coordinating other core
+	functionality (which is handled by individual `modules`).
+
+	Note:
+		- when we change files, modules should execute MODULE.reset() methods
+		- when we change frames, modules should execute MODULE.update() methods
+		- modules that are responsible for managing their own widgets should have
+			MODULE.grid() and MODULE.grid_remove() methods to wrap corresponding
+			functionality for their widgets
+	'''
 	def __init__(self):
 
-		print( '\ninitializing UltraTrace' )
+		print()
+		print( 'initializing UltraTrace' )
 
 		# do the normal Tk init stuff
 		super().__init__()
@@ -1212,8 +1397,8 @@ class App(Tk):
 		self.Data = MetadataModule( self, args.path )
 
 		# initialize the main app widgets
-		self.setDefaults()
-		self.setupTk()
+		self.setWidgetDefaults()
+		self.buildWidgetSkeleton()
 
 		# initialize other modules
 		self.Control = ControlModule(self)
@@ -1222,16 +1407,21 @@ class App(Tk):
 		self.Audio = PlaybackModule(self)
 		self.TextGrid = TextGridModule(self)
 
-		print( ' - loading widgets\n' )
+		print( ' - loading widgets' )
 
 		self.filesUpdate()
 
-	def setDefaults(self):
+		print()
 
-		self.currentFID = 0 				# file index w/in list of sorted files
-		self.frame = 0						# current frame of dicom file
-		self.isClicked = False
-		self.isDragging = False
+	def setWidgetDefaults(self):
+		'''
+		Need to set up some defaults here before building Tk widgets (this is specifically
+		true w/r/t the StringVars)
+		'''
+		self.currentFID = 0 	# file index w/in list of sorted files
+		self.frame = 0			# current frame of dicom file
+		self.isClicked = False	# used in handling of canvas click events
+		self.isDragging = False # used in handling of canvas click events
 
 		# declare string variables
 		self.currentFileSV = StringVar(self)
@@ -1240,7 +1430,7 @@ class App(Tk):
 		# initialize string variables
 		self.currentFileSV.set( self.Data.files[ self.currentFID ] )
 		self.frameSV.set( '1' )
-	def setupTk(self):
+	def buildWidgetSkeleton(self):
 		'''
 		Builds the basic skeleton of our app widgets.
 			- items marked with (*) are built directly in this function
@@ -1265,11 +1455,11 @@ class App(Tk):
 		| \____________________________________/ |
 		\________________________________________/
 		'''
+		# main Frame skeleton
 		self.TOP = Frame(self)
 		self.LEFT = Frame(self.TOP)
 		self.RIGHT = Frame(self.TOP)
 		self.BOTTOM = Frame(self)
-
 		self.TOP.grid(    row=0, column=0)
 		self.LEFT.grid(   row=0, sticky=N )
 		self.RIGHT.grid(  row=0, column=1 )
@@ -1277,22 +1467,22 @@ class App(Tk):
 
 		# navigate between all available filenames in this directory
 		self.filesFrame = Frame(self.LEFT, pady=7)
-		self.filesLeftBtn = Button(self.filesFrame, text='<', command=self.filesPrev)
+		self.filesPrevBtn = Button(self.filesFrame, text='<', command=self.filesPrev)
 		self.filesJumpToMenu = OptionMenu(self.filesFrame, self.currentFileSV, *self.Data.files, command=self.filesJumpTo)
-		self.filesRightBtn= Button(self.filesFrame, text='>', command=self.filesNext)
+		self.filesNextBtn= Button(self.filesFrame, text='>', command=self.filesNext)
 		self.filesFrame.grid( row=1 )
-		self.filesLeftBtn.grid( row=1, column=0 )
+		self.filesPrevBtn.grid( row=1, column=0 )
 		self.filesJumpToMenu.grid( row=1, column=1 )
-		self.filesRightBtn.grid(row=1, column=2 )
+		self.filesNextBtn.grid(row=1, column=2 )
 		Header(self.filesFrame, text="Choose a file:").grid( row=0, column=0, columnspan=3 )
 
 		# navigate between frames
 		self.framesFrame = Frame(self.LEFT, pady=7)
 		self.framesSubframe = Frame(self.framesFrame)
-		self.framesLeftBtn = Button(self.framesSubframe, text='<', command=self.framesPrev)
+		self.framesPrevBtn = Button(self.framesSubframe, text='<', command=self.framesPrev)
 		self.framesEntryText = Entry(self.framesSubframe, width=5, textvariable=self.frameSV)
 		self.framesEntryBtn = Button(self.framesSubframe, text='Go', command=self.framesJumpTo)
-		self.framesRightBtn= Button(self.framesSubframe, text='>', command=self.framesNext)
+		self.framesNextBtn= Button(self.framesSubframe, text='>', command=self.framesNext)
 		self.framesHeader = Header(self.framesFrame, text="Choose a frame:")
 		self.framesFrame.grid( row=3 )
 		self.framesSubframe.grid( row=1 )
@@ -1307,21 +1497,30 @@ class App(Tk):
 		self.bind('<Escape>', self.onEscape )
 
 		# force window to front
-		self.forceFocus()
+		self.lift()
 
-	def forceFocus(self):
+	def lift(self):
+		'''
+		Bring window to front (doesn't shift focus to window)
+		'''
 		self.attributes('-topmost', 1)
 		self.attributes('-topmost', 0)
 	def onWindowResize(self, event):
+		'''
+		Handle moving or resizing the app window
+		'''
 		geometry = self.geometry()
 		self.Data.setTopLevel( 'geometry', geometry )
 	def onClick(self, event):
+		'''
+		Handle clicking within the zoomframe canvas
+		'''
 		if self.Dicom.isLoaded:
 			self.click = (event.x, event.y)
 			self.isDragging = False
 
 			# get nearby crosshairs from this trace
-			nearby = self.Trace.getNearby( self.click )
+			nearby = self.Trace.getNearClickAllTraces( self.click )
 
 			# if we didn't click near anything ...
 			if nearby == None:
@@ -1329,26 +1528,25 @@ class App(Tk):
 				# unselect crosshairs
 				self.isClicked = True
 				self.Trace.unselectAll()
-				ch = self.Trace.draw( *self.click )
+				ch = self.Trace.add( *self.click )
 
 				self.Control.push({ 'type':'add', 'chs':[ch] })
 
 				return
 
-			# only get here if we got a nearby guy somehow
+			# NOTE: only get here if we clicked near something
 
 			# if holding option key, unselect the guy we clicked on
 			if event.state == 16:
 				nearby.unselect()
-				if nearby in self.Trace.getSelected():
-					self.Trace.getSelected().remove( nearby )
+				if nearby in self.Trace.selected:
+					self.Trace.selected.remove( nearby )
 
 			# otherwise, add it to our selection
 			else:
 
 				# check if we're holding shift key
 				if event.state != 1 and nearby.isSelected == False:
-
 					# if not, clear current selection
 					self.Trace.unselectAll()
 
@@ -1360,20 +1558,25 @@ class App(Tk):
 				self.isDragging = True
 				self.dragClick = self.click
 	def onRelease(self, event):
+		'''
+		Handle releasing a click within the zoomframe canvas
+		'''
 		if self.Dicom.isLoaded:
 			if self.isDragging:
 				dx = (event.x - self.click[0])
 				dy = (event.y - self.click[1])
-				self.Trace.write()
 			self.isDragging = False
 			self.isClicked = False
 			self.Trace.write()
 	def onMotion(self, event):
+		'''
+		Handle mouse movement within the zoomframe canvas
+		'''
 		if self.Dicom.isLoaded:
 
-			if self.isDragging:
+			if self.isDragging: # dragging selection
 				thisClick = (event.x, event.y)
-				selected = list(self.Trace.getSelected())
+				selected = list(self.Trace.selected)
 				coords = []
 				# move all currently selected crosshairs
 				for sch in selected:
@@ -1387,28 +1590,36 @@ class App(Tk):
 				self.dragClick = thisClick
 				self.Control.push({ 'type':'move', 'chs':selected, 'coords':coords })
 
-			elif self.isClicked:
+			elif self.isClicked: # no selection, mouse clicked
 				lastClick = self.click
 				thisClick = (event.x, event.y)
+				# enforce minimum distance b/w new crosshairs
 				dx = abs(thisClick[0] - lastClick[0]) / self.Dicom.zframe.imgscale
 				dy = abs(thisClick[1] - lastClick[1]) / self.Dicom.zframe.imgscale
 				if dx > _CROSSHAIR_DRAG_BUFFER or dy > _CROSSHAIR_DRAG_BUFFER:
 					self.click = thisClick
-					ch = self.Trace.draw( *self.click )
+					ch = self.Trace.add( *self.click )
 					self.Control.push({ 'type':'add', 'chs':[ch] })
 	def onEscape(self, event):
+		'''
+		Handle <Esc> key : empties the current selection
+		'''
 		self.isDragging = False
 		self.isClicked = False
 		self.Trace.unselectAll()
 	def onBackspace(self, event):
-		selected = self.Trace.getSelected()
-		for sch in selected:
+		'''
+		Handle <Backspace> key : removes current selection
+		'''
+		for sch in self.Trace.selected:
 			self.Trace.remove( sch )
-		self.Control.push({ 'type':'delete', 'chs':selected })
+		self.Control.push({ 'type':'delete', 'chs':self.Trace.selected })
 		self.Trace.unselectAll()
 
 	def filesUpdate(self):
-
+		'''
+		Changes to be executed every time we change files
+		'''
 		# update variables
 		self.currentFileSV.set( self.Data.files[ self.currentFID ] )
 		self.frame = 1
@@ -1422,11 +1633,11 @@ class App(Tk):
 		self.TextGrid.reset()
 
 		# check if we can pan left/right
-		self.filesLeftBtn['state'] = DISABLED if self.Data.getFileLevel('_prev')==None else NORMAL
-		self.filesRightBtn['state'] = DISABLED if self.Data.getFileLevel('_next')==None else NORMAL
+		self.filesPrevBtn['state'] = DISABLED if self.Data.getFileLevel('_prev')==None else NORMAL
+		self.filesNextBtn['state'] = DISABLED if self.Data.getFileLevel('_next')==None else NORMAL
 	def filesPrev(self, event=None):
 		'''
-		controls self.filesLeftBtn for panning between available files
+		controls self.filesPrevBtn for panning between available files
 		'''
 		if self.Data.getFileLevel( '_prev' ) != None:
 			# change the index of the current file
@@ -1435,20 +1646,24 @@ class App(Tk):
 			self.filesUpdate()
 	def filesNext(self, event=None):
 		'''
-		controls self.filesRightBtn for panning between available files
+		controls self.filesNextBtn for panning between available files
 		'''
-
 		if self.Data.getFileLevel( '_next' ) != None:
 			# change the index of the current file
 			self.currentFID += 1
 			# update
 			self.filesUpdate()
 	def filesJumpTo(self, choice):
+		'''
+		jump directly to an available file (from the OptionMenu widget)
+		'''
 		self.currentFID = self.Data.files.index( choice )
 		self.filesUpdate()
 
 	def framesUpdate(self):
-
+		'''
+		Changes to be executed every time we change frames
+		'''
 		# update variables
 		self.frameSV.set( str(self.frame) )
 
@@ -1460,17 +1675,26 @@ class App(Tk):
 		self.TextGrid.update()
 
 		# check if we can pan left/right
-		self.framesLeftBtn['state'] = DISABLED if self.frame==1 else NORMAL
-		self.framesRightBtn['state'] = DISABLED if self.frame==self.frames else NORMAL
+		self.framesPrevBtn['state'] = DISABLED if self.frame==1 else NORMAL
+		self.framesNextBtn['state'] = DISABLED if self.frame==self.frames else NORMAL
 	def framesPrev(self, event=None):
+		'''
+		controls self.framesPrevBtn for panning between frames
+		'''
 		if self.Dicom.isLoaded and self.frame > 1:
 			self.frame -= 1
 			self.framesUpdate()
 	def framesNext(self, event=None):
+		'''
+		controls self.framesNextBtn for panning between frames
+		'''
 		if self.Dicom.isLoaded and self.frame < self.frames:
 			self.frame += 1
 			self.framesUpdate()
 	def framesJumpTo(self):
+		'''
+		jump directly to a frame (from the Entry widget)
+		'''
 		try:
 
 			choice = int( self.frameSV.get() )
