@@ -24,7 +24,7 @@ except (ImportError):
 	_DICOM_LIBS_INSTALLED = False
 try:
 	import pygame 	# sudo -H pip3 install pygame pygame.mixer && brew install sdl sdl_mixer
-	assert(pygame.mixer in sys.modules)
+	assert("pygame.mixer" in sys.modules)
 	_AUDIO_LIBS_INSTALLED = True
 except (ImportError, AssertionError):
 	warnings.warn('Audio library failed to load')
@@ -353,7 +353,10 @@ class MetadataModule(object):
 					filepath = os.path.join( path, f )
 					filename, extension = os.path.splitext( f )
 
-					MIME = getMIMEType(filepath)
+					# allow us to follow symlinks
+					real_filepath = os.path.realpath(filepath)
+					MIME = getMIMEType(real_filepath)
+					print(MIME)
 					if MIME in MIMEs:
 						# add `good` files
 						if extension in MIMEs[ MIME ]:
@@ -1195,6 +1198,7 @@ class DicomModule(object):
 		self.dicom = None
 
 		# update buttons
+		#print(self.app.Data.data['files'])
 		if self.app.Data.getFileLevel( '.dicom' ) == None:
 			self.loadBtn[ 'state' ] = DISABLED
 		else:
