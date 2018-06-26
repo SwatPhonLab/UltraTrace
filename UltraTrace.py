@@ -531,6 +531,8 @@ class TextGridModule(object):
 		self.frame = Frame(self.app.BOTTOM)
 		self.frame.grid( row=0, column=0, sticky=W )
 		self.TextGrid = None
+		self.selectedTier = StringVar()
+		self.selectedTierFrames = []
 
 	def reset(self):
 		'''
@@ -554,6 +556,12 @@ class TextGridModule(object):
 							# make some widgets for each tier
 							tierWidgets = self.makeTierWidgets( tier )
 							self.TkWidgets.append( tierWidgets )
+					#make a row for "all"
+					self.TkWidgets.append({
+					'label':Label(self.frame, text="- all:", wraplength=200, justify=LEFT),
+					'checkbutton':Radiobutton(self.frame, text="", value="all",
+   				 							variable=self.selectedTier, command=self.genFrameList)
+					})
 				except:
 					pass
 			# grid the widgets whether we loaded successfully or not
@@ -573,8 +581,39 @@ class TextGridModule(object):
 		Each tier should have two Label widgets: `label` (the tier name), and `text`
 		(the text content ["mark"] at the current frame)
 		'''
-		return { 'label':Label(self.frame, text=(' - '+tier+':'), wraplength=200, justify=LEFT),
-				 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT) }
+		return { 'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
+				 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
+				 'checkbutton':Radiobutton(self.frame, text="", value=tier,
+				 							variable=self.selectedTier, command=self.genFrameList)}
+
+	def genFrameList(self):
+		'''
+		Makes self.selectedTierFrames a list of frame numbers that are within
+		the non-empty intervals of the selected tier
+		'''
+		self.selectedTierFrames = []
+		if self.selectedTier.get() == 'all':
+			return
+		selected_tier = self.TextGrid.getFirst(self.selectedTier.get())
+		frame_tier = self.TextGrid.getFirst(self.frameTierName)
+
+		for point in frame_tier:
+			mark = selected_tier.intervalContaining(point.time)
+			if mark != None:
+				mark = mark.mark
+				if len(mark) > 0:
+					self.selectedTierFrames.append(point.mark)
+
+		# frame_num = 0
+		# frame_loc = 0.0
+		# for interval in selected_tier:
+		# 	# print(interval)
+		# 	if interval.mark != '':
+		# 		while frame_loc <= interval.maxTime:
+		# 			frame_loc = frame_tier[frame_num+1].time
+		# 			if frame_loc >= interval.minTime:
+		# 				self.selectedTierFrames.append(frame_num)
+		# 			frame_num += 1
 
 	def update(self):
 		'''
@@ -623,9 +662,11 @@ class TextGridModule(object):
 		'''
 		for t in range(len(self.TkWidgets)):
 			tierWidgets = self.TkWidgets[t]
-			tierWidgets['label'].grid(row=t, column=0, sticky=W)
+			tierWidgets['label'].grid(row=t, column=1, sticky=W)
+			if 'checkbutton' in tierWidgets:
+				tierWidgets['checkbutton'].grid(row=t, column=0, sticky=W)
 			if 'text' in tierWidgets:
-				tierWidgets['text' ].grid(row=t, column=1, sticky=W)
+				tierWidgets['text' ].grid(row=t, column=2, sticky=W)
 
 class TraceModule(object):
 	'''
@@ -1687,6 +1728,12 @@ class App(Tk):
 		'''
 		if self.Dicom.isLoaded and self.frame > 1:
 			self.frame -= 1
+			if len(self.TextGrid.selectedTierFrames) != 0:
+				while str(self.frame) not in self.TextGrid.selectedTierFrames:
+					if self.frame <= int(self.TextGrid.selectedTierFrames[0]):
+						self.frame = int(self.TextGrid.selectedTierFrames[0])
+						break
+					self.frame -= 1
 			self.framesUpdate()
 	def framesNext(self, event=None):
 		'''
@@ -1694,6 +1741,12 @@ class App(Tk):
 		'''
 		if self.Dicom.isLoaded and self.frame < self.frames:
 			self.frame += 1
+			if len(self.TextGrid.selectedTierFrames) != 0:
+				while str(self.frame) not in self.TextGrid.selectedTierFrames:
+					if self.frame >= int(self.TextGrid.selectedTierFrames[-1]):
+						self.frame = int(self.TextGrid.selectedTierFrames[-1])
+						break
+					self.frame += 1
 			self.framesUpdate()
 	def framesJumpTo(self):
 		'''
@@ -1746,4 +1799,6 @@ changing a file in the Tkinter module in the python3 std libraries.  To make thi
 change, copy the file `tkinter__init__.py` from this directory to the library for \
 your standard system installation of python3.  For example, your command might \
 look like this:\n\n\t$ cp ./tkinter__init__.py /Library/Frameworks/Python.\
-frameworks/Versions/3.6/lib/python3.6/tkinter/__init__.py\n' )
+frameworks/Versions/3.6/lib/python3.6/tkinter/__init__.py\n \
+or\t$ cp ./tkinter__init__.py /usr/local/Frameworks/Python.framework/Versions/3.\
+6/lib/python3.6/tkinter/__init__.py\nDepending on your python deployment.' )
