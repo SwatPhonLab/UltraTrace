@@ -325,6 +325,9 @@ class MetadataModule(object):
 
 		# or create new stuff
 		else:
+			if "trace.old files exist":
+				"read the files"
+
 			self.path = os.path.abspath(self.path)
 			print( "   - creating new metadata file: `%s`" % self.mdfile )
 			self.data = {
@@ -355,17 +358,26 @@ class MetadataModule(object):
 
 					# allow us to follow symlinks
 					real_filepath = os.path.realpath(filepath)
+
 					MIME = getMIMEType(real_filepath)
-					print(MIME)
+					# print(MIME)
 					if MIME in MIMEs:
 						# add `good` files
 						if extension in MIMEs[ MIME ]:
 							if filename not in files:
 								files[filename] = { key:None for key in fileKeys }
 							files[filename][extension] = filepath
+						elif MIME == 'text/plain' and extension == '.measurement':
+							print('Found old measurement file {}'.format(filename))
+							self.importOldMeasurement(filepath, filename)
 					elif MIME == 'image/png' and '_dicom_to_png' in path:
 						# check for preprocessed dicom files
 						name, frame = filename.split( '_frame_' )
+						#print(files)
+						# if len(files) > 0:
+						# might be able to combine the following; check
+						if name not in files:
+							files[name] = {'processed': None}
 						if files[name]['processed'] == None:
 							files[name]['processed'] = {}
 						files[name]['processed'][str(int(frame))] = filepath
@@ -392,6 +404,22 @@ class MetadataModule(object):
 
 		self.app.geometry( self.getTopLevel('geometry') )
 		self.files = self.getFilenames()
+
+	def importOldMeasurement(self, filepath, filename):
+		# print(filepath)
+		open_file = json.load(open(filepath, 'r'))
+		for key, value in open_file.items():
+			if isinstance(value, dict):
+				if 'type' in value.keys() and 'points' in value.keys():
+					array = value['points']
+
+		filenum, framenum = filename.split('_')
+		print('>>>>>>>', filenum, framenum)
+		new_array = [{"x":point1,"y":point2} for point1, point2 in array]
+		list_of_files = self.data['traces']['tongue']['files']
+		if not filenum in list_of_files:
+			list_of_files[filenum]={}
+		list_of_files[filenum][framenum] = new_array
 
 	def write(self, _mdfile=None):
 		'''
