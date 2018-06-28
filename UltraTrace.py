@@ -573,6 +573,7 @@ class TextGridModule(object):
 			filename = self.app.Data.getFileLevel( '.TextGrid' )
 			if filename:
 				try:
+					self.boundaries = [] #for putting in the interval boundaries
 					# try to load up our TextGrid using the textgrid lib
 					self.TextGrid = TextGrid.fromFile( filename )
 					# reset default Label to actually be useful
@@ -585,11 +586,11 @@ class TextGridModule(object):
 							tierWidgets = self.makeTierWidgets( tier )
 							self.TkWidgets.append( tierWidgets )
 					#make a row for "all"
-					self.TkWidgets.append({
-					'label':Label(self.frame, text="- all:", wraplength=200, justify=LEFT),
-					'checkbutton':Radiobutton(self.frame, text="", value="all",
-   				 							variable=self.selectedTier, command=self.genFrameList)
-					})
+					# self.TkWidgets.append({
+					# 'label':Label(self.frame, text="- all:", wraplength=200, justify=LEFT),
+					# 'checkbutton':Radiobutton(self.frame, text="", value="all",
+   				 	# 						variable=self.selectedTier, command=self.genFrameList)
+					# })
 				except:
 					pass
 			# grid the widgets whether we loaded successfully or not
@@ -606,9 +607,15 @@ class TextGridModule(object):
 
 	def makeTierWidgets(self, tier):
 		'''
-		Each tier should have two Label widgets: `label` (the tier name), and `text`
-		(the text content ["mark"] at the current frame)
+		Each tier should have THREE Label widgets: `label` (the tier name), `text`
+		(the text content ["mark"] at the current frame), and `canvas`
+		(the visualization of the intervals on the tier with their marks)
 		'''
+		self.boundaries.append([])
+		boundaries = self.boundaries[-1]
+		self.canvas_width=700
+		self.canvas_height=60
+
 		self.tier_obj = self.TextGrid.getFirst(tier)
 		# return { 'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
 		# 		 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
@@ -616,22 +623,21 @@ class TextGridModule(object):
 		# 		 							variable=self.selectedTier, command=self.genFrameList)}
 		self.widgets = { 'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
 						 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
-						 'canvas':Canvas(self.frame, width=700, height=60)}
+						 'canvas':Canvas(self.frame, width=self.canvas_width, height=self.canvas_height)}
 		canvas = self.widgets['canvas']
 		# if canvas.winfo_width() != 1:
-		width=700#canvas.winfo_width()
-		height=60#canvas.winfo_height()
 		tg_length=self.TextGrid.maxTime
 
 		intervals = [i for i in self.tier_obj]
 		for interval in intervals:
-			le_loc = interval.minTime/tg_length*width #x-coordinate for left edge of interval
-			re_loc = interval.maxTime/tg_length*width #x-coordinate for right edge of interval
+			le_loc = interval.minTime/tg_length*self.canvas_width #x-coordinate for left edge of interval
+			re_loc = interval.maxTime/tg_length*self.canvas_width #x-coordinate for right edge of interval
+			boundaries.append((le_loc, re_loc))
 			intvl_length = re_loc-le_loc
 			if interval != intervals[-1]:
-				canvas.create_line(re_loc,0,re_loc,height)
+				canvas.create_line(re_loc,0,re_loc,self.canvas_height)
 			if interval.mark != '':
-				canvas.create_text(le_loc+(intvl_length/2), height/2, justify=CENTER,
+				canvas.create_text(le_loc+(intvl_length/2), self.canvas_height/2, justify=CENTER,
 									text=interval.mark, width=intvl_length)
 
 		#makes canvas clickable
@@ -641,21 +647,34 @@ class TextGridModule(object):
 
 	def genFrameList(self, event): #does this need to change?
 		'''
-		Makes self.selectedTierFrames a list of frame numbers that are within
-		the non-empty intervals of the selected tier
+
 		'''
+		# print(type(event.y))
+		boundaries = self.boundaries
+		#find in which interval click happened
+		# dim1 = 0
+		dim1 = int((event.y/self.canvas_height*3)//1) #determines which third of canvas was clicked
+		dim2 = 0
+		while True:
+			if not dim2 < len(boundaries[dim1]):
+				break
+			if event.x >= boundaries[dim1][dim2][0] \
+			 and event.x <=  boundaries[dim1][dim2][1]:
+				break
+			else:
+				dim2 += 1
+
+
+		#return list of frames in said interval
 		self.selectedTierFrames = []
-		if self.selectedTier.get() == 'all':
-			return
-		selected_tier = self.TextGrid.getFirst(self.selectedTier.get())
+		# if self.selectedTier.get() == 'all':
+		# 	return
+		# selected_tier = self.TextGrid.getFirst(self.selectedTier.get())
 		frame_tier = self.TextGrid.getFirst(self.frameTierName)
 
 		for point in frame_tier:
-			mark = selected_tier.intervalContaining(point.time)
-			if mark != None:
-				mark = mark.mark
-				if len(mark) > 0:
-					self.selectedTierFrames.append(point.mark)
+			if self.TextGrid[dim1][dim2].__contains__(point):
+				self.selectedTierFrames.append(point.mark)
 
 		# frame_num = 0
 		# frame_loc = 0.0
