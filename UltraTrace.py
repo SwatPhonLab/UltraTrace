@@ -414,7 +414,7 @@ class MetadataModule(object):
 					array = value['points']
 
 		filenum, framenum = filename.split('_')
-		print('>>>>>>>', filenum, framenum)
+		# print('>>>>>>>', filenum, framenum)
 		new_array = [{"x":point1,"y":point2} for point1, point2 in array]
 		list_of_files = self.data['traces']['tongue']['files']
 		if not filenum in list_of_files:
@@ -609,12 +609,37 @@ class TextGridModule(object):
 		Each tier should have two Label widgets: `label` (the tier name), and `text`
 		(the text content ["mark"] at the current frame)
 		'''
-		return { 'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
-				 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
-				 'checkbutton':Radiobutton(self.frame, text="", value=tier,
-				 							variable=self.selectedTier, command=self.genFrameList)}
+		self.tier_obj = self.TextGrid.getFirst(tier)
+		# return { 'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
+		# 		 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
+		# 		 'checkbutton':Radiobutton(self.frame, text="", value=tier,
+		# 		 							variable=self.selectedTier, command=self.genFrameList)}
+		self.widgets = { 'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
+						 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
+						 'canvas':Canvas(self.frame, width=700, height=60)}
+		canvas = self.widgets['canvas']
+		# if canvas.winfo_width() != 1:
+		width=700#canvas.winfo_width()
+		height=60#canvas.winfo_height()
+		tg_length=self.TextGrid.maxTime
 
-	def genFrameList(self):
+		intervals = [i for i in self.tier_obj]
+		for interval in intervals:
+			le_loc = interval.minTime/tg_length*width #x-coordinate for left edge of interval
+			re_loc = interval.maxTime/tg_length*width #x-coordinate for right edge of interval
+			intvl_length = re_loc-le_loc
+			if interval != intervals[-1]:
+				canvas.create_line(re_loc,0,re_loc,height)
+			if interval.mark != '':
+				canvas.create_text(le_loc+(intvl_length/2), height/2, justify=CENTER,
+									text=interval.mark, width=intvl_length)
+
+		#makes canvas clickable
+		canvas.bind("<Button-1>", self.genFrameList)
+
+		return self.widgets
+
+	def genFrameList(self, event): #does this need to change?
 		'''
 		Makes self.selectedTierFrames a list of frame numbers that are within
 		the non-empty intervals of the selected tier
@@ -690,11 +715,14 @@ class TextGridModule(object):
 		'''
 		for t in range(len(self.TkWidgets)):
 			tierWidgets = self.TkWidgets[t]
-			tierWidgets['label'].grid(row=t, column=1, sticky=W)
+			if 'label' in tierWidgets:
+				tierWidgets['label'].grid(row=t, column=1, sticky=W)
 			if 'checkbutton' in tierWidgets:
 				tierWidgets['checkbutton'].grid(row=t, column=0, sticky=W)
 			if 'text' in tierWidgets:
-				tierWidgets['text' ].grid(row=t, column=2, sticky=W)
+				tierWidgets['text'].grid(row=t, column=2, sticky=W)
+			if 'canvas' in tierWidgets:
+				tierWidgets['canvas'].grid(row=t, column=3, sticky=W)
 
 class TraceModule(object):
 	'''
