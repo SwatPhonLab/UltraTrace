@@ -652,10 +652,20 @@ class TextGridModule(object):
 		# print(type(event.y))
 		boundaries = self.boundaries
 		#find in which interval click happened
-		# dim1 = 0
-		dim1 = int((event.y/self.canvas_height*3)//1) #determines which third of canvas was clicked
+		if str(event.widget)[-1] == 's':
+			dim1 = 0
+		else:
+			#number of the tier is calculated based on all tiers in all frames
+			#therefore need to mod number to generate correct index to self.boundaries
+			numnum = (int(str(event.widget)[-1])%3)-1
+			if numnum < 0:
+				dim1 = 2
+			else:
+				dim1 = numnum
+		print(dim1, event.widget)
 		dim2 = 0
 		while True:
+			print(dim1, dim2)
 			if not dim2 < len(boundaries[dim1]):
 				break
 			if event.x >= boundaries[dim1][dim2][0] \
@@ -663,8 +673,7 @@ class TextGridModule(object):
 				break
 			else:
 				dim2 += 1
-
-
+		# print(dim1, dim2)
 		#return list of frames in said interval
 		self.selectedTierFrames = []
 		# if self.selectedTier.get() == 'all':
@@ -676,16 +685,14 @@ class TextGridModule(object):
 			if self.TextGrid[dim1][dim2].__contains__(point):
 				self.selectedTierFrames.append(point.mark)
 
-		# frame_num = 0
-		# frame_loc = 0.0
-		# for interval in selected_tier:
-		# 	# print(interval)
-		# 	if interval.mark != '':
-		# 		while frame_loc <= interval.maxTime:
-		# 			frame_loc = frame_tier[frame_num+1].time
-		# 			if frame_loc >= interval.minTime:
-		# 				self.selectedTierFrames.append(frame_num)
-		# 			frame_num += 1
+		#automatically updates frame
+		if not str(self.app.frame) in self.selectedTierFrames:
+			if self.app.frame < int(self.selectedTierFrames[0]):
+				self.app.framesNext()
+				self.update()
+			elif self.app.frame > int(self.selectedTierFrames[-1]):
+				self.app.framesPrev()
+				self.update()
 
 	def update(self):
 		'''
