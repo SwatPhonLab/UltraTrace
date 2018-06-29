@@ -636,12 +636,18 @@ class TextGridModule(object):
 			intvl_length = re_loc-le_loc
 			if interval != intervals[-1]:
 				canvas.create_line(re_loc,0,re_loc,self.canvas_height)
-			if interval.mark != '':
-				canvas.create_text(le_loc+(intvl_length/2), self.canvas_height/2, justify=CENTER,
-									text=interval.mark, width=intvl_length)
+			# if interval.mark != '':
+			text = canvas.create_text(le_loc+(intvl_length/2), self.canvas_height/2, justify=CENTER,
+								text=interval.mark, width=intvl_length)
+			#makes tag of text object into list of points within interval
+			for point in self.TextGrid.getFirst(self.frameTierName):
+				if interval.__contains__(point):
+					canvas.addtag_withtag(point.mark, text)
+				# print(canvas.gettags(text))
 
-		#makes canvas clickable
+		#bindings
 		canvas.bind("<Button-1>", self.genFrameList)
+		self.widgets['label'].bind("<Button-1>", self.genFrameList)
 
 		return self.widgets
 
@@ -649,37 +655,51 @@ class TextGridModule(object):
 		'''
 
 		'''
-		# print(type(event.y))
-		boundaries = self.boundaries
-		#find in which interval click happened
-		if str(event.widget)[-1] == 's':
-			dim1 = 0
-		else:
-			#number of the tier is calculated based on all tiers in all frames
-			#therefore need to mod number to generate correct index to self.boundaries
-			numnum = (int(str(event.widget)[-1])%3)-1
-			if numnum < 0:
-				dim1 = 2
+		# print(event.widget.winfo_class())
+		# boundaries = self.boundaries
+		maybe_item = event.widget.find_closest(event.x, event.y)
+		if isinstance(maybe_item[0], int):
+			if maybe_item[0]%2 == 1: #if item found is a boundary
+				#determine on which side of the line the event occurred
+				if event.widget.coords(maybe_item)[0] > event.x:
+					item = maybe_item[0]+1 #righthand boundary drawn before text
+				else: #i.e. event was on line or to the right of it
+					item = maybe_item[0]+3
 			else:
-				dim1 = numnum
-
-		dim2 = 0
-		while True:
-			if not dim2 < len(boundaries[dim1]):
-				break
-			if event.x >= boundaries[dim1][dim2][0] \
-			 and event.x <=  boundaries[dim1][dim2][1]:
-				break
-			else:
-				dim2 += 1
+				item = maybe_item[0]
+			self.selectedTierFrames = [x for x in event.widget.gettags(item)]
+		if 'current' in self.selectedTierFrames:
+			self.selectedTierFrames = self.selectedTierFrames[:-1]
+		# self.selectedTierFrames = [x for x in event.widget.gettags(event.widget.children['text'])]
+		# frame_tier = self.TextGrid.getFirst(self.frameTierName)
+		#
+		# #find indexes of selected interval(s) in self.boundaries
+		# if event.widget.winfo_class() == "Canvas":
+		# 	if str(event.widget)[-1] == 's':
+		# 		dim1 = 0
+		# 	else:
+		# 		#number of the tier is calculated based on all tiers in all frames
+		# 		#therefore need to mod number to generate correct index to self.boundaries
+		# 		numnum = (int(str(event.widget)[-1])%3)-1
+		# 		if numnum < 0:
+		# 			dim1 = 2
+		# 		else:
+		# 			dim1 = numnum
+		#
+		# 	dim2 = 0
+		# 	while True:
+		# 		if not dim2 < len(boundaries[dim1]):
+		# 			break
+		# 		if event.x >= boundaries[dim1][dim2][0] \
+		# 		 and event.x <=  boundaries[dim1][dim2][1]:
+		# 			break
+		# 		else:
+		# 			dim2 += 1
 
 		#return list of frames in said interval
-		self.selectedTierFrames = []
-		frame_tier = self.TextGrid.getFirst(self.frameTierName)
-
-		for point in frame_tier:
-			if self.TextGrid[dim1][dim2].__contains__(point):
-				self.selectedTierFrames.append(point.mark)
+		# for point in frame_tier:
+		# 	if self.TextGrid[dim1][dim2].__contains__(point):
+		# 		self.selectedTierFrames.append(point.mark)
 
 		#automatically updates frame
 		if not str(self.app.frame) in self.selectedTierFrames:
