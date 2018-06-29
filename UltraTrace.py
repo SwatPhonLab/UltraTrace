@@ -662,10 +662,9 @@ class TextGridModule(object):
 				dim1 = 2
 			else:
 				dim1 = numnum
-		print(dim1, event.widget)
+
 		dim2 = 0
 		while True:
-			print(dim1, dim2)
 			if not dim2 < len(boundaries[dim1]):
 				break
 			if event.x >= boundaries[dim1][dim2][0] \
@@ -673,12 +672,9 @@ class TextGridModule(object):
 				break
 			else:
 				dim2 += 1
-		# print(dim1, dim2)
+
 		#return list of frames in said interval
 		self.selectedTierFrames = []
-		# if self.selectedTier.get() == 'all':
-		# 	return
-		# selected_tier = self.TextGrid.getFirst(self.selectedTier.get())
 		frame_tier = self.TextGrid.getFirst(self.frameTierName)
 
 		for point in frame_tier:
