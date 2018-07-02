@@ -573,7 +573,7 @@ class TextGridModule(object):
 			filename = self.app.Data.getFileLevel( '.TextGrid' )
 			if filename:
 				try:
-					self.boundaries = [] #for putting in the interval boundaries
+					# self.boundaries = [] #for putting in the interval boundaries
 					# try to load up our TextGrid using the textgrid lib
 					self.TextGrid = TextGrid.fromFile( filename )
 					# reset default Label to actually be useful
@@ -611,28 +611,39 @@ class TextGridModule(object):
 		(the text content ["mark"] at the current frame), and `canvas`
 		(the visualization of the intervals on the tier with their marks)
 		'''
-		self.boundaries.append([])
-		boundaries = self.boundaries[-1]
+		# self.boundaries.append([])
+		# boundaries = self.boundaries[-1]
+		self.tier_pairs = {}
+
 		self.canvas_width=700
+		label_width=self.canvas_width/7
 		self.canvas_height=60
 
-		self.tier_obj = self.TextGrid.getFirst(tier)
+		tier_obj = self.TextGrid.getFirst(tier)
 		# return { 'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
 		# 		 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
 		# 		 'checkbutton':Radiobutton(self.frame, text="", value=tier,
 		# 		 							variable=self.selectedTier, command=self.genFrameList)}
-		self.widgets = { 'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
-						 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
-						 'canvas':Canvas(self.frame, width=self.canvas_width, height=self.canvas_height)}
+		self.widgets = { #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
+						 'canvas-label':Canvas(self.frame, width=label_width, height=self.canvas_height),
+						 # 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
+						 'canvas':Canvas(self.frame, width=self.canvas_width, height=self.canvas_height,
+						 				 background='gray')}
+
 		canvas = self.widgets['canvas']
-		# if canvas.winfo_width() != 1:
+		label = self.widgets['canvas-label']
 		tg_length=self.TextGrid.maxTime
 
-		intervals = [i for i in self.tier_obj]
+		#builds label functionality
+		label_text = label.create_text(label_width/2,self.canvas_height/2, justify=CENTER,
+										text=tier+': ', width=label_width, activefill='blue')
+
+		#puts numbers of frames contained in intervals into the tags of the text of teach interval
+		intervals = [i for i in tier_obj]
 		for interval in intervals:
 			le_loc = interval.minTime/tg_length*self.canvas_width #x-coordinate for left edge of interval
 			re_loc = interval.maxTime/tg_length*self.canvas_width #x-coordinate for right edge of interval
-			boundaries.append((le_loc, re_loc))
+			# boundaries.append((le_loc, re_loc))
 			intvl_length = re_loc-le_loc
 			if interval != intervals[-1]:
 				canvas.create_line(re_loc,0,re_loc,self.canvas_height)
@@ -643,36 +654,54 @@ class TextGridModule(object):
 			for point in self.TextGrid.getFirst(self.frameTierName):
 				if interval.__contains__(point):
 					canvas.addtag_withtag(point.mark, text)
-				# print(canvas.gettags(text))
+					if interval.mark != '':
+						label.addtag_withtag(point.mark, label_text)
+				# print(canvas.gettags(label_text))
 
 		#bindings
 		canvas.bind("<Button-1>", self.genFrameList)
+		label.bind("<Button-1>", self.genFrameList)
 		# self.widgets['label'].bind("<Button-1>", self.genFrameList)
 
 		return self.widgets
 
 	def genFrameList(self, event):
 		'''
-
+		Reads frames within interval from the tags to the text item of that interval,
+		and highlights text of clicked interval
 		'''
 		# print(event.widget.winfo_class())
 		# boundaries = self.boundaries
 		for widg in self.TkWidgets:
 			if 'canvas' in widg.keys():
 				widg['canvas'].itemconfig(ALL,fill='black')
+				widg['canvas-label'].itemconfig(ALL,fill='black')
+
 		maybe_item = event.widget.find_closest(event.x, event.y)
-		if isinstance(maybe_item[0], int):
-			if maybe_item[0]%2 == 1: #if item found is a boundary
-				#determine on which side of the line the event occurred
-				if event.widget.coords(maybe_item)[0] > event.x:
-					item = maybe_item[0]+1 #righthand boundary drawn before text
-				else: #i.e. event was on line or to the right of it
-					item = maybe_item[0]+3
-			else:
-				item = maybe_item[0]
-				event.widget.itemconfig(item,fill='blue')
-			self.selectedTierFrames = [x for x in event.widget.gettags(item)]
-		if 'current' in self.selectedTierFrames:
+
+		if len(event.widget.find_all()) == 1: #if on tier-label canvas
+			event.widget.itemconfig(maybe_item,fill='blue')
+			self.selectedTierFrames = [x for x in event.widget.gettags(maybe_item)]
+			#make all text intervals blue
+			canvas = self.tier_pairs[event.widget]
+			for el in canvas.find_all():
+				if canvas.type(canvas.find_withtag(el)) == 'text':
+					canvas.itemconfig(el, fill='blue')
+
+		else: #on canvas with intervals
+			if isinstance(maybe_item[0], int):
+				if maybe_item[0]%2 == 1: #if item found is a boundary
+					#determine on which side of the line the event occurred
+					if event.widget.coords(maybe_item)[0] > event.x:
+						item = maybe_item[0]+1 #righthand boundary drawn before text
+					else: #i.e. event was on line or to the right of it
+						item = maybe_item[0]+3
+				else:
+					item = maybe_item[0]
+					event.widget.itemconfig(item,fill='blue')
+				self.selectedTierFrames = [x for x in event.widget.gettags(item)]
+
+		if 'current' in self.selectedTierFrames: #automatically gets appended at the end of tags by tkinter, but we don't want it
 			self.selectedTierFrames = self.selectedTierFrames[:-1]
 		# self.selectedTierFrames = [x for x in event.widget.gettags(event.widget.children['text'])]
 		# frame_tier = self.TextGrid.getFirst(self.frameTierName)
@@ -709,51 +738,51 @@ class TextGridModule(object):
 		if not str(self.app.frame) in self.selectedTierFrames:
 			if self.app.frame < int(self.selectedTierFrames[0]):
 				self.app.framesNext()
-				self.update()
+				# self.update()
 			elif self.app.frame > int(self.selectedTierFrames[-1]):
 				self.app.framesPrev()
-				self.update()
+				# self.update()
 
-	def update(self):
-		'''
-		Wrapper for updating the `text` Label widgets at a given frame number
-		'''
+	# def update(self):
+	# 	'''
+	# 	Wrapper for updating the `text` Label widgets at a given frame number
+	# 	'''
 		# check that we've loaded a TextGrid
-		if self.TextGrid != None:
-			time = self.getTime( self.app.frame )
-			# update each of our tiers
-			for t in range(len( self.TextGrid.getNames() )):
-				tier = self.TextGrid.getNames()[t]
-				if tier != self.frameTierName:
-					# handy-dandy wrappers from the textgrid lib
-					interval = self.TextGrid.getFirst(tier).intervalContaining(time)
-					# need a +1 here because our default label actually sits at index 0
-					self.setTierText(t+1, interval.mark if (interval!=None) else "")
+		# if self.TextGrid != None:
+	# 		time = self.getTime( self.app.frame )
+	# 		# update each of our tiers
+	# 		for t in range(len( self.TextGrid.getNames() )):
+	# 			tier = self.TextGrid.getNames()[t]
+	# 			if tier != self.frameTierName:
+	# 				# handy-dandy wrappers from the textgrid lib
+	# 				interval = self.TextGrid.getFirst(tier).intervalContaining(time)
+	# 				# need a +1 here because our default label actually sits at index 0
+	# 				self.setTierText(t+1, interval.mark if (interval!=None) else "")
 
-	def getTime(self, frameNumber):
-		'''
-		Relies upon the existence of a dedicated tier mapping between the time in the
-		recording and the dicom frame at that time.  The name of this mapping tier is
-		set in self.load() (default='all frames')
-		'''
-		# check that we've loaded a TextGrid
-		if self.TextGrid != None:
-			if self.TextGrid.getFirst(self.frameTierName):
-				# NOTE: sometimes don't actually want first tier matching this name
-				# so we should be careful about the exact contents of the passed TextGrid file
-				points = self.TextGrid.getFirst(self.frameTierName)
-				if frameNumber < len(points):
-					#need a -1 because frameNumers start at 1
-					return points[frameNumber-1].time
-		# if we don't match all conditions, return a time value that will match no intervals
-		return -1
-
-	def setTierText(self, t, text):
-		'''
-		Wrapper for setting the text content of the `text` label
-		'''
-		# print(self.TkWidgets[t])
-		self.TkWidgets[t]['text']['text'] = text
+	# def getTime(self, frameNumber):
+	# 	'''
+	# 	Relies upon the existence of a dedicated tier mapping between the time in the
+	# 	recording and the dicom frame at that time.  The name of this mapping tier is
+	# 	set in self.load() (default='all frames')
+	# 	'''
+	# 	# check that we've loaded a TextGrid
+	# 	if self.TextGrid != None:
+	# 		if self.TextGrid.getFirst(self.frameTierName):
+	# 			# NOTE: sometimes don't actually want first tier matching this name
+	# 			# so we should be careful about the exact contents of the passed TextGrid file
+	# 			points = self.TextGrid.getFirst(self.frameTierName)
+	# 			if frameNumber < len(points):
+	# 				#need a -1 because frameNumers start at 1
+	# 				return points[frameNumber-1].time
+	# 	# if we don't match all conditions, return a time value that will match no intervals
+	# 	return -1
+	#
+	# def setTierText(self, t, text):
+	# 	'''
+	# 	Wrapper for setting the text content of the `text` label
+	# 	'''
+	# 	# print(self.TkWidgets[t])
+	# 	self.TkWidgets[t]['text']['text'] = text
 
 	def grid(self):
 		'''
@@ -764,13 +793,15 @@ class TextGridModule(object):
 		for t in range(len(self.TkWidgets)):
 			tierWidgets = self.TkWidgets[t]
 			if 'label' in tierWidgets:
-				tierWidgets['label'].grid(row=t, column=1, sticky=W)
-			if 'checkbutton' in tierWidgets:
-				tierWidgets['checkbutton'].grid(row=t, column=0, sticky=W)
-			if 'text' in tierWidgets:
-				tierWidgets['text'].grid(row=t, column=2, sticky=W)
+				tierWidgets['label'].grid(row=t, column=0, sticky=W)
+			# if 'checkbutton' in tierWidgets:
+			# 	tierWidgets['checkbutton'].grid(row=t, column=0, sticky=W)
+			# if 'text' in tierWidgets:
+			# 	tierWidgets['text'].grid(row=t, column=2, sticky=W)
 			if 'canvas' in tierWidgets:
-				tierWidgets['canvas'].grid(row=t, column=3, sticky=W)
+				tierWidgets['canvas'].grid(row=t, column=1, sticky=W)
+				tierWidgets['canvas-label'].grid(row=t, column=0, sticky=W)
+				self.tier_pairs[tierWidgets['canvas-label']] = tierWidgets['canvas']
 
 class TraceModule(object):
 	'''
@@ -1821,7 +1852,7 @@ class App(Tk):
 		self.Dicom.update()
 		self.Trace.update()
 		self.Audio.update()
-		self.TextGrid.update()
+		# self.TextGrid.update()
 
 		# check if we can pan left/right
 		self.framesPrevBtn['state'] = DISABLED if self.frame==1 else NORMAL
