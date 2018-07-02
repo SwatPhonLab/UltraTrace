@@ -585,6 +585,7 @@ class TextGridModule(object):
 							# make some widgets for each tier
 							tierWidgets = self.makeTierWidgets( tier )
 							self.TkWidgets.append( tierWidgets )
+					self.makeFrameWidget()
 					#make a row for "all"
 					# self.TkWidgets.append({
 					# 'label':Label(self.frame, text="- all:", wraplength=200, justify=LEFT),
@@ -605,6 +606,30 @@ class TextGridModule(object):
 				return name
 		raise NameError( 'Unable to find alignment tier' )
 
+	def makeFrameWidget(self):
+		frames_canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height)
+		self.TkWidgets.append({'frames':frames_canvas})
+
+		frames_canvas.create_line(0,self.canvas_height/2,self.canvas_width,self.canvas_height/2)
+		tier_len = len(self.TextGrid.getFirst(self.frameTierName))
+		for i in range(1,tier_len+1):
+			x_coord = i/tier_len*self.canvas_width
+			print(i, i/tier_len)
+			frame = frames_canvas.create_line(x_coord, 0, x_coord, self.canvas_height, tags=str(i))
+			if i%10==0:
+				frames_canvas.itemconfig(frame, fill='blue')
+
+		frames_canvas.bind("<Button-1>", self.getClickedFrame)
+
+	def getClickedFrame(self, event):
+		'''
+		Jumps to clicked frame
+		'''
+		item = event.widget.find_closest(event.x, event.y)
+		print(event.widget.gettags(item))
+		self.app.frame = int(event.widget.gettags(item)[0])
+		self.app.framesUpdate()
+
 	def makeTierWidgets(self, tier):
 		'''
 		Each tier should have THREE Label widgets: `label` (the tier name), `text`
@@ -620,15 +645,10 @@ class TextGridModule(object):
 		self.canvas_height=60
 
 		tier_obj = self.TextGrid.getFirst(tier)
-		# return { 'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
-		# 		 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
-		# 		 'checkbutton':Radiobutton(self.frame, text="", value=tier,
-		# 		 							variable=self.selectedTier, command=self.genFrameList)}
 		self.widgets = { #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
 						 'canvas-label':Canvas(self.frame, width=label_width, height=self.canvas_height),
 						 # 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
-						 'canvas':Canvas(self.frame, width=self.canvas_width, height=self.canvas_height,
-						 				 background='gray')}
+						 'canvas':Canvas(self.frame, width=self.canvas_width, height=self.canvas_height)}
 
 		canvas = self.widgets['canvas']
 		label = self.widgets['canvas-label']
@@ -688,7 +708,7 @@ class TextGridModule(object):
 				if canvas.type(canvas.find_withtag(el)) == 'text':
 					canvas.itemconfig(el, fill='blue')
 
-		else: #on canvas with intervals
+		else: #on canvas with intervals/frames
 			if isinstance(maybe_item[0], int):
 				if maybe_item[0]%2 == 1: #if item found is a boundary
 					#determine on which side of the line the event occurred
@@ -794,10 +814,8 @@ class TextGridModule(object):
 			tierWidgets = self.TkWidgets[t]
 			if 'label' in tierWidgets:
 				tierWidgets['label'].grid(row=t, column=0, sticky=W)
-			# if 'checkbutton' in tierWidgets:
-			# 	tierWidgets['checkbutton'].grid(row=t, column=0, sticky=W)
-			# if 'text' in tierWidgets:
-			# 	tierWidgets['text'].grid(row=t, column=2, sticky=W)
+			if 'frames' in tierWidgets:
+				tierWidgets['frames'].grid(row=t, column=1, sticky=W)
 			if 'canvas' in tierWidgets:
 				tierWidgets['canvas'].grid(row=t, column=1, sticky=W)
 				tierWidgets['canvas-label'].grid(row=t, column=0, sticky=W)
