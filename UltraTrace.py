@@ -614,7 +614,6 @@ class TextGridModule(object):
 		tier_len = len(self.TextGrid.getFirst(self.frameTierName))
 		for i in range(1,tier_len+1):
 			x_coord = i/tier_len*self.canvas_width
-			print(i, i/tier_len)
 			frame = frames_canvas.create_line(x_coord, 0, x_coord, self.canvas_height, tags=str(i))
 			if i%10==0:
 				frames_canvas.itemconfig(frame, fill='blue')
@@ -626,7 +625,6 @@ class TextGridModule(object):
 		Jumps to clicked frame
 		'''
 		item = event.widget.find_closest(event.x, event.y)
-		print(event.widget.gettags(item))
 		self.app.frame = int(event.widget.gettags(item)[0])
 		self.app.framesUpdate()
 
@@ -762,6 +760,21 @@ class TextGridModule(object):
 			elif self.app.frame > int(self.selectedTierFrames[-1]):
 				self.app.framesPrev()
 				# self.update()
+
+	def zoomToInterval(self, event):
+		'''
+
+		'''
+		widg = event.widget
+		visible = []
+		self.genFrameList(event)
+		#for other non-frame tiers
+			for frame in self.selectedTierFrames:
+				include = widg.find_withtag(str(frame))
+				if not include in visible:
+					visible.append(include)
+		#get frames for frames tier from tags of zoomed-in frames
+		#use find_overlapping
 
 	# def update(self):
 	# 	'''
