@@ -739,7 +739,8 @@ class TextGridModule(object):
 				# so we should be careful about the exact contents of the passed TextGrid file
 				points = self.TextGrid.getFirst(self.frameTierName)
 				if frameNumber < len(points):
-					return points[frameNumber].time
+					#need a -1 because frameNumers start at 1
+					return points[frameNumber-1].time
 		# if we don't match all conditions, return a time value that will match no intervals
 		return -1
 
@@ -747,6 +748,7 @@ class TextGridModule(object):
 		'''
 		Wrapper for setting the text content of the `text` label
 		'''
+		# print(self.TkWidgets[t])
 		self.TkWidgets[t]['text']['text'] = text
 
 	def grid(self):
