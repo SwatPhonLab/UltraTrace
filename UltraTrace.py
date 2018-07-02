@@ -638,7 +638,7 @@ class TextGridModule(object):
 				canvas.create_line(re_loc,0,re_loc,self.canvas_height)
 			# if interval.mark != '':
 			text = canvas.create_text(le_loc+(intvl_length/2), self.canvas_height/2, justify=CENTER,
-								text=interval.mark, width=intvl_length)
+								text=interval.mark, width=intvl_length, activefill='blue')
 			#makes tag of text object into list of points within interval
 			for point in self.TextGrid.getFirst(self.frameTierName):
 				if interval.__contains__(point):
@@ -647,16 +647,19 @@ class TextGridModule(object):
 
 		#bindings
 		canvas.bind("<Button-1>", self.genFrameList)
-		self.widgets['label'].bind("<Button-1>", self.genFrameList)
+		# self.widgets['label'].bind("<Button-1>", self.genFrameList)
 
 		return self.widgets
 
-	def genFrameList(self, event): #does this need to change?
+	def genFrameList(self, event):
 		'''
 
 		'''
 		# print(event.widget.winfo_class())
 		# boundaries = self.boundaries
+		for widg in self.TkWidgets:
+			if 'canvas' in widg.keys():
+				widg['canvas'].itemconfig(ALL,fill='black')
 		maybe_item = event.widget.find_closest(event.x, event.y)
 		if isinstance(maybe_item[0], int):
 			if maybe_item[0]%2 == 1: #if item found is a boundary
@@ -667,6 +670,7 @@ class TextGridModule(object):
 					item = maybe_item[0]+3
 			else:
 				item = maybe_item[0]
+				event.widget.itemconfig(item,fill='blue')
 			self.selectedTierFrames = [x for x in event.widget.gettags(item)]
 		if 'current' in self.selectedTierFrames:
 			self.selectedTierFrames = self.selectedTierFrames[:-1]
