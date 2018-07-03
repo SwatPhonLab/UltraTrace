@@ -671,13 +671,14 @@ class TextGridModule(object):
 			#makes tag of text object into list of points within interval
 			for point in self.TextGrid.getFirst(self.frameTierName):
 				if interval.__contains__(point):
-					canvas.addtag_withtag(point.mark, text)
+					canvas.addtag_withtag("frame"+point.mark, text)
 					if interval.mark != '':
-						label.addtag_withtag(point.mark, label_text)
+						label.addtag_withtag("frame"+point.mark, label_text)
 				# print(canvas.gettags(label_text))
 
 		#bindings
 		canvas.bind("<Button-1>", self.genFrameList)
+		canvas.bind("<Double-Button-1>", self.zoomToInterval)
 		label.bind("<Button-1>", self.genFrameList)
 		# self.widgets['label'].bind("<Button-1>", self.genFrameList)
 
@@ -699,7 +700,7 @@ class TextGridModule(object):
 
 		if len(event.widget.find_all()) == 1: #if on tier-label canvas
 			event.widget.itemconfig(maybe_item,fill='blue')
-			self.selectedTierFrames = [x for x in event.widget.gettags(maybe_item)]
+			self.selectedTierFrames = [x[5:] for x in event.widget.gettags(maybe_item)]
 			#make all text intervals blue
 			canvas = self.tier_pairs[event.widget]
 			for el in canvas.find_all():
@@ -717,9 +718,9 @@ class TextGridModule(object):
 				else:
 					item = maybe_item[0]
 					event.widget.itemconfig(item,fill='blue')
-				self.selectedTierFrames = [x for x in event.widget.gettags(item)]
+				self.selectedTierFrames = [x[5:] for x in event.widget.gettags(item)]
 
-		if 'current' in self.selectedTierFrames: #automatically gets appended at the end of tags by tkinter, but we don't want it
+		if 'nt' in self.selectedTierFrames: #'current' automatically gets appended at the end of tags by tkinter, but we don't want it
 			self.selectedTierFrames = self.selectedTierFrames[:-1]
 		# self.selectedTierFrames = [x for x in event.widget.gettags(event.widget.children['text'])]
 		# frame_tier = self.TextGrid.getFirst(self.frameTierName)
@@ -768,11 +769,45 @@ class TextGridModule(object):
 		widg = event.widget
 		visible = []
 		self.genFrameList(event)
-		#for other non-frame tiers
-			for frame in self.selectedTierFrames:
-				include = widg.find_withtag(str(frame))
-				if not include in visible:
-					visible.append(include)
+		intvl_num = widg.find_withtag("frame"+str(self.selectedTierFrames[0]))[0]
+		boundaries = (intvl_num-3, intvl_num-1)
+		#x values of lines
+		edges = (widg.coords(intvl_num-3)[0], widg.coords(intvl_num-1)[0])
+		sc_factor = edges[1]-edges[0]
+
+		#delete extra items and scale to fit
+		for el in self.TkWidgets:
+			if 'canvas' in el:
+				tier = el['canvas']
+				for item in tier.find_all():
+					loc = tier.coords(item)
+					x = loc[0]
+					#if item in zoomed area
+					print(item, loc)
+					if edges[0] < tier.coords(item)[0] < edges[1]:
+						#scale to new size
+						new_x = (x-edges[0])*(self.canvas_width/sc_factor)
+						if len(loc) == 4:
+							widg.itemconfig(item,[new_x, 0, new_x, self.canvas_height])
+						elif len(loc) == 2:
+							widg.itemconfig(item,[new_x, self.canvas_height/2])
+					else:
+						tier.delete(item)
+
+
+
+		#figures out objects in non-frame tiers to display
+		# for tier in self.TkWidgets:
+		# 	if 'canvas' in tier:
+		#
+		#
+		#
+		#
+		# #for other non-frame tiers
+		# 	for frame in self.selectedTierFrames:
+		# 		include = widg.find_withtag(str(frame))
+		# 		if not include in visible:
+		# 			visible.append(include)
 		#get frames for frames tier from tags of zoomed-in frames
 		#use find_overlapping
 
