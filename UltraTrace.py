@@ -633,8 +633,6 @@ class TextGridModule(object):
 		Each tier should have two canvas widgets: `canvas-label` (the tier name),
 		and `canvas` (the intervals on the tier with their marks)
 		'''
-		# self.boundaries.append([])
-		# boundaries = self.boundaries[-1]
 		self.tier_pairs = {}
 
 		self.canvas_width=700
@@ -651,7 +649,7 @@ class TextGridModule(object):
 		label = self.widgets['canvas-label']
 		tg_length=self.TextGrid.maxTime
 
-		#builds label functionality
+		#builds tier label functionality
 		label_text = label.create_text(label_width/2,self.canvas_height/2, justify=CENTER,
 										text=tier+': ', width=label_width, activefill='blue')
 
@@ -677,7 +675,9 @@ class TextGridModule(object):
 		#bindings
 		canvas.bind("<Button-1>", self.genFrameList)
 		self.app.bind("<Control-n>", self.zoomToInterval)
-		self.app.bind("<Control-o>", self.reset)
+		self.app.bind("<Control-a>", self.zoomAll)
+		self.app.bind("<Control-i>", self.zoomFactorOfTwo)
+		self.app.bind("<Control-o>", self.zoomFactorOfTwo)
 		label.bind("<Button-1>", self.genFrameList)
 		# self.widgets['label'].bind("<Button-1>", self.genFrameList)
 
@@ -760,9 +760,7 @@ class TextGridModule(object):
 		if self.selectedItem == None:
 			return
 		widg = self.selectedItem[0]
-		# intvl_num = widg.find_withtag("frame"+str(self.selectedTierFrames[0]))[0]
 		intvl_num = self.selectedItem[1]
-		# boundaries = (intvl_num-3, intvl_num-1)
 		boundaries = (intvl_num-1, intvl_num+1)
 		#x values of lines
 		if boundaries[0] > 0:
@@ -773,12 +771,31 @@ class TextGridModule(object):
 			redge =  widg.coords(boundaries[1])[0]
 		else:
 			redge = widg.find_all()[-1]
-		# edges = (widg.coords(boundaries[0])[0], widg.coords(boundaries[1])[0])
-		# sc_factor = edges[1]-edges[0]
+
+		self.zoomAll(ledge=ledge, redge=redge)
+
+	def zoomFactorOfTwo(self, event):
+		'''
+
+		'''
+		if event.keysym == 'i':
+			pass
+		elif event.keysym == 'o':
+			pass
+
+		self.zoomAll(ledge=ledge, redge=redge)
+
+	def zoomAll(self, event=None, ledge=0, redge=None):
+		'''
+
+		'''
+		if event:
+			redge = self.canvas_width
+		print(ledge, redge)
 		sc_factor = redge-ledge
 
-		#delete extra items and scale to fit
-		for el in self.TkWidgets:
+		#find items between edges
+		for q, el in enumerate(self.TkWidgets):
 			if 'canvas' in el or 'frames' in el:
 				if 'canvas' in el:
 					tier = el['canvas']
@@ -793,7 +810,7 @@ class TextGridModule(object):
 						new_x = (x-ledge)*(self.canvas_width/sc_factor)
 						items.append((item,x,new_x))
 
-				#include half-cut-off intervals
+				#include half-cut-off intervals CHECK IF THIS WORKS
 				opnums=[]
 				if 'canvas' in el and len(items) > 0:
 					if tier.type(items[0][0]) == 'line':
@@ -849,15 +866,8 @@ class TextGridModule(object):
 	# 				return points[frameNumber-1].time
 	# 	# if we don't match all conditions, return a time value that will match no intervals
 	# 	return -1
-	#
-	# def setTierText(self, t, text):
-	# 	'''
-	# 	Wrapper for setting the text content of the `text` label
-	# 	'''
-	# 	# print(self.TkWidgets[t])
-	# 	self.TkWidgets[t]['text']['text'] = text
 
-	def grid(self):
+	def grid(self, event=None):
 		'''
 		Wrapper for gridding all of our Tk widgets.  This funciton assumes that the tiers (as
 		specified in the actual TextGrid files) are in some sort of reasonable order, with the
