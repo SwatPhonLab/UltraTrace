@@ -560,12 +560,13 @@ class TextGridModule(object):
 		self.frame.grid( row=0, column=0, sticky=W )
 		self.TextGrid = None
 		self.selectedTier = StringVar()
-		self.selectedTierFrames = []
 
-	def reset(self):
+	def reset(self, event=None):
 		'''
 		Try to load a TextGrid file based on information stored in the metadata
 		'''
+		self.selectedTierFrames = []
+		self.selectedItem = None
 		if _TEXTGRID_LIBS_INSTALLED:
 			# default Label in case there are errors below
 			self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
@@ -586,12 +587,6 @@ class TextGridModule(object):
 							tierWidgets = self.makeTierWidgets( tier )
 							self.TkWidgets.append( tierWidgets )
 					self.makeFrameWidget()
-					#make a row for "all"
-					# self.TkWidgets.append({
-					# 'label':Label(self.frame, text="- all:", wraplength=200, justify=LEFT),
-					# 'checkbutton':Radiobutton(self.frame, text="", value="all",
-   				 	# 						variable=self.selectedTier, command=self.genFrameList)
-					# })
 				except:
 					pass
 			# grid the widgets whether we loaded successfully or not
@@ -607,10 +602,10 @@ class TextGridModule(object):
 		raise NameError( 'Unable to find alignment tier' )
 
 	def makeFrameWidget(self):
-		frames_canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height)
+		frames_canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
 		self.TkWidgets.append({'frames':frames_canvas})
 
-		frames_canvas.create_line(0,self.canvas_height/2,self.canvas_width,self.canvas_height/2)
+		# frames_canvas.create_line(0,self.canvas_height/2,self.canvas_width,self.canvas_height/2)
 		tier_len = len(self.TextGrid.getFirst(self.frameTierName))
 		for i in range(1,tier_len+1):
 			x_coord = i/tier_len*self.canvas_width
@@ -630,9 +625,8 @@ class TextGridModule(object):
 
 	def makeTierWidgets(self, tier):
 		'''
-		Each tier should have THREE Label widgets: `label` (the tier name), `text`
-		(the text content ["mark"] at the current frame), and `canvas`
-		(the visualization of the intervals on the tier with their marks)
+		Each tier should have two canvas widgets: `canvas-label` (the tier name),
+		and `canvas` (the intervals on the tier with their marks)
 		'''
 		# self.boundaries.append([])
 		# boundaries = self.boundaries[-1]
@@ -646,7 +640,7 @@ class TextGridModule(object):
 		self.widgets = { #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
 						 'canvas-label':Canvas(self.frame, width=label_width, height=self.canvas_height),
 						 # 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
-						 'canvas':Canvas(self.frame, width=self.canvas_width, height=self.canvas_height)}
+						 'canvas':Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')}
 
 		canvas = self.widgets['canvas']
 		label = self.widgets['canvas-label']
@@ -663,9 +657,9 @@ class TextGridModule(object):
 			re_loc = interval.maxTime/tg_length*self.canvas_width #x-coordinate for right edge of interval
 			# boundaries.append((le_loc, re_loc))
 			intvl_length = re_loc-le_loc
+			# print(interval, intvl_length)
 			if interval != intervals[-1]:
 				canvas.create_line(re_loc,0,re_loc,self.canvas_height)
-			# if interval.mark != '':
 			text = canvas.create_text(le_loc+(intvl_length/2), self.canvas_height/2, justify=CENTER,
 								text=interval.mark, width=intvl_length, activefill='blue')
 			#makes tag of text object into list of points within interval
@@ -675,10 +669,10 @@ class TextGridModule(object):
 					if interval.mark != '':
 						label.addtag_withtag("frame"+point.mark, label_text)
 				# print(canvas.gettags(label_text))
-
 		#bindings
 		canvas.bind("<Button-1>", self.genFrameList)
-		canvas.bind("<Double-Button-1>", self.zoomToInterval)
+		self.app.bind("<Control-n>", self.zoomToInterval)
+		self.app.bind("<Control-o>", self.reset)
 		label.bind("<Button-1>", self.genFrameList)
 		# self.widgets['label'].bind("<Button-1>", self.genFrameList)
 
@@ -689,16 +683,19 @@ class TextGridModule(object):
 		Reads frames within interval from the tags to the text item of that interval,
 		and highlights text of clicked interval
 		'''
-		# print(event.widget.winfo_class())
-		# boundaries = self.boundaries
 		for widg in self.TkWidgets:
 			if 'canvas' in widg.keys():
 				widg['canvas'].itemconfig(ALL,fill='black')
 				widg['canvas-label'].itemconfig(ALL,fill='black')
 
-		maybe_item = event.widget.find_closest(event.x, event.y)
+		# xcoord = event.widget.canvasx(event.x)
+		# ycoord = event.widget.canvasy(event.y)
 
-		if len(event.widget.find_all()) == 1: #if on tier-label canvas
+		maybe_item = event.widget.find_closest(event.x, event.y)
+		# print(event.widget.find_all())
+		# print(maybe_item[0], event.widget.coords(maybe_item[0]), event.widget.itemcget(maybe_item, 'width'), xcoord, ycoord)
+
+		if event.widget in self.tier_pairs.keys(): #if on tier-label canvas
 			event.widget.itemconfig(maybe_item,fill='blue')
 			self.selectedTierFrames = [x[5:] for x in event.widget.gettags(maybe_item)]
 			#make all text intervals blue
@@ -718,6 +715,8 @@ class TextGridModule(object):
 				else:
 					item = maybe_item[0]
 					event.widget.itemconfig(item,fill='blue')
+
+				self.selectedItem = (event.widget, item)
 				self.selectedTierFrames = [x[5:] for x in event.widget.gettags(item)]
 
 		if 'nt' in self.selectedTierFrames: #'current' automatically gets appended at the end of tags by tkinter, but we don't want it
@@ -766,10 +765,13 @@ class TextGridModule(object):
 		'''
 
 		'''
-		widg = event.widget
 		visible = []
-		self.genFrameList(event)
-		intvl_num = widg.find_withtag("frame"+str(self.selectedTierFrames[0]))[0]
+		#make sure that tier is selected
+		if self.selectedItem == None:
+			return
+		widg = self.selectedItem[0]
+		# intvl_num = widg.find_withtag("frame"+str(self.selectedTierFrames[0]))[0]
+		intvl_num = self.selectedItem[1]
 		boundaries = (intvl_num-3, intvl_num-1)
 		#x values of lines
 		edges = (widg.coords(intvl_num-3)[0], widg.coords(intvl_num-1)[0])
@@ -777,39 +779,42 @@ class TextGridModule(object):
 
 		#delete extra items and scale to fit
 		for el in self.TkWidgets:
-			if 'canvas' in el:
-				tier = el['canvas']
+			if 'canvas' in el or 'frames' in el:
+				if 'canvas' in el:
+					tier = el['canvas']
+				elif 'frames' in el:
+					tier = el['frames']
+				items = []
 				for item in tier.find_all():
-					loc = tier.coords(item)
-					x = loc[0]
 					#if item in zoomed area
-					print(item, loc)
 					if edges[0] < tier.coords(item)[0] < edges[1]:
-						#scale to new size
+						loc = tier.coords(item)
+						x = loc[0]
 						new_x = (x-edges[0])*(self.canvas_width/sc_factor)
-						if len(loc) == 4:
-							widg.itemconfig(item,[new_x, 0, new_x, self.canvas_height])
-						elif len(loc) == 2:
-							widg.itemconfig(item,[new_x, self.canvas_height/2])
+						items.append((item,x,new_x))
+
+				#include half-cut-off intervals
+				# opnums=[]
+				# if 'canvas' in el:
+				# 	if tier.type(items[0][0]) == 'line':
+				# 		opnums.append(0)
+				# 	elif tier.type(items[-1][0]) == 'line':
+				# 		opnums.append(-1)
+				# for opnum in opnums:
+				# 	item = items[opnum][0]-1
+				# 	x = tier.coords(item)[0]
+				# 	new_x = (items[opnum][2]/2)
+				# 	items.append((item,x,new_x))
+
+				#move to new position or delete
+				for item in tier.find_all():
+					item_nums = [i[0] for i in items]
+					if item in item_nums:
+						item = items[item_nums.index(item)]
+						tier.move(item[0],item[2]-item[1], 0)
 					else:
 						tier.delete(item)
 
-
-
-		#figures out objects in non-frame tiers to display
-		# for tier in self.TkWidgets:
-		# 	if 'canvas' in tier:
-		#
-		#
-		#
-		#
-		# #for other non-frame tiers
-		# 	for frame in self.selectedTierFrames:
-		# 		include = widg.find_withtag(str(frame))
-		# 		if not include in visible:
-		# 			visible.append(include)
-		#get frames for frames tier from tags of zoomed-in frames
-		#use find_overlapping
 
 	# def update(self):
 	# 	'''
