@@ -604,14 +604,15 @@ class TextGridModule(object):
 	def makeFrameWidget(self):
 		frames_canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
 		self.TkWidgets.append({'frames':frames_canvas})
+		tier = self.TextGrid.getFirst(self.frameTierName)
 
 		# frames_canvas.create_line(0,self.canvas_height/2,self.canvas_width,self.canvas_height/2)
-		tier_len = len(self.TextGrid.getFirst(self.frameTierName))
-		for i in range(1,tier_len+1):
-			x_coord = i/tier_len*self.canvas_width
-			frame = frames_canvas.create_line(x_coord, 0, x_coord, self.canvas_height, tags=str(i))
-			if i%10==0:
-				frames_canvas.itemconfig(frame, fill='blue')
+		#
+		for point in tier:
+			x_coord = point.time/self.TextGrid.maxTime*self.canvas_width
+			frame = frames_canvas.create_line(x_coord, 0, x_coord, self.canvas_height, tags=point.mark)
+			# if i%10==0:
+			# 	frames_canvas.itemconfig(frame, fill='blue')
 
 		frames_canvas.bind("<Button-1>", self.getClickedFrame)
 
@@ -619,8 +620,10 @@ class TextGridModule(object):
 		'''
 		Jumps to clicked frame
 		'''
-		item = event.widget.find_closest(event.x, event.y)
+		self.wipeFill()
+		item = self.my_find_closest(event)
 		self.app.frame = int(event.widget.gettags(item)[0])
+		self.selectedTierFrames = []
 		self.app.framesUpdate()
 
 	def makeTierWidgets(self, tier):
@@ -678,17 +681,10 @@ class TextGridModule(object):
 
 		return self.widgets
 
-	def genFrameList(self, event):
+	def my_find_closest(self, event):
 		'''
-		Reads frames within interval from the tags to the text item of that interval,
-		and highlights text of clicked interval
+		replaces TkInter's find_closest function, which is buggy
 		'''
-		for widg in self.TkWidgets:
-			if 'canvas' in widg.keys():
-				widg['canvas'].itemconfig(ALL,fill='black')
-				widg['canvas-label'].itemconfig(ALL,fill='black')
-
-		# maybe_item = event.widget.find_closest(event.x, event.y)
 		maybe_item = None
 		dist = 999999999999
 		for el in event.widget.find_all():
@@ -696,6 +692,23 @@ class TextGridModule(object):
 			if abs(obj_x-event.x) < dist:
 				dist = abs(obj_x-event.x)
 				maybe_item = el
+		return maybe_item
+
+	def wipeFill(self):
+		'''
+		turns selected frame back to black
+		'''
+		if self.selectedItem:
+			self.selectedItem[0].itemconfig(self.selectedItem[1], fill='black')
+
+	def genFrameList(self, event):
+		'''
+		Reads frames within interval from the tags to the text item of that interval,
+		and highlights text of clicked interval
+		'''
+		self.wipeFill()
+		# maybe_item = event.widget.find_closest(event.x, event.y) <<< has strange bug
+		maybe_item = self.my_find_closest(event)
 
 		if event.widget in self.tier_pairs.keys(): #if on tier-label canvas
 			event.widget.itemconfig(maybe_item,fill='blue')
@@ -718,43 +731,14 @@ class TextGridModule(object):
 						item = maybe_item+1
 				else:
 					item = maybe_item
+
 				event.widget.itemconfig(item,fill='blue')
-				print(maybe_item, item)
 				self.selectedItem = (event.widget, item)
 				self.selectedTierFrames = [x[5:] for x in event.widget.gettags(item)]
 
-		if 'nt' in self.selectedTierFrames: #'current' automatically gets appended at the end of tags by tkinter, but we don't want it
+		#'current' automatically gets appended at the end of tags by tkinter, but we don't want it
+		if 'nt' in self.selectedTierFrames:
 			self.selectedTierFrames = self.selectedTierFrames[:-1]
-		# self.selectedTierFrames = [x for x in event.widget.gettags(event.widget.children['text'])]
-		# frame_tier = self.TextGrid.getFirst(self.frameTierName)
-		#
-		# #find indexes of selected interval(s) in self.boundaries
-		# if event.widget.winfo_class() == "Canvas":
-		# 	if str(event.widget)[-1] == 's':
-		# 		dim1 = 0
-		# 	else:
-		# 		#number of the tier is calculated based on all tiers in all frames
-		# 		#therefore need to mod number to generate correct index to self.boundaries
-		# 		numnum = (int(str(event.widget)[-1])%3)-1
-		# 		if numnum < 0:
-		# 			dim1 = 2
-		# 		else:
-		# 			dim1 = numnum
-		#
-		# 	dim2 = 0
-		# 	while True:
-		# 		if not dim2 < len(boundaries[dim1]):
-		# 			break
-		# 		if event.x >= boundaries[dim1][dim2][0] \
-		# 		 and event.x <=  boundaries[dim1][dim2][1]:
-		# 			break
-		# 		else:
-		# 			dim2 += 1
-
-		#return list of frames in said interval
-		# for point in frame_tier:
-		# 	if self.TextGrid[dim1][dim2].__contains__(point):
-		# 		self.selectedTierFrames.append(point.mark)
 
 		#automatically updates frame
 		if not str(self.app.frame) in self.selectedTierFrames:
@@ -779,8 +763,17 @@ class TextGridModule(object):
 		# boundaries = (intvl_num-3, intvl_num-1)
 		boundaries = (intvl_num-1, intvl_num+1)
 		#x values of lines
-		edges = (widg.coords(boundaries[0])[0], widg.coords(boundaries[1])[0])
-		sc_factor = edges[1]-edges[0]
+		if boundaries[0] > 0:
+			ledge = widg.coords(boundaries[0])[0]
+		else:
+			ledge = 0
+		if boundaries[1] < len(widg.find_all()):
+			redge =  widg.coords(boundaries[1])[0]
+		else:
+			redge = widg.find_all()[-1]
+		# edges = (widg.coords(boundaries[0])[0], widg.coords(boundaries[1])[0])
+		# sc_factor = edges[1]-edges[0]
+		sc_factor = redge-ledge
 
 		#delete extra items and scale to fit
 		for el in self.TkWidgets:
@@ -792,24 +785,24 @@ class TextGridModule(object):
 				items = []
 				for item in tier.find_all():
 					#if item in zoomed area
-					if edges[0] < tier.coords(item)[0] < edges[1]:
+					if ledge < tier.coords(item)[0] < redge:
 						loc = tier.coords(item)
 						x = loc[0]
-						new_x = (x-edges[0])*(self.canvas_width/sc_factor)
+						new_x = (x-ledge)*(self.canvas_width/sc_factor)
 						items.append((item,x,new_x))
 
 				#include half-cut-off intervals
-				# opnums=[]
-				# if 'canvas' in el:
-				# 	if tier.type(items[0][0]) == 'line':
-				# 		opnums.append(0)
-				# 	elif tier.type(items[-1][0]) == 'line':
-				# 		opnums.append(-1)
-				# for opnum in opnums:
-				# 	item = items[opnum][0]-1
-				# 	x = tier.coords(item)[0]
-				# 	new_x = (items[opnum][2]/2)
-				# 	items.append((item,x,new_x))
+				opnums=[]
+				if 'canvas' in el and len(items) > 0:
+					if tier.type(items[0][0]) == 'line':
+						opnums.append(0)
+					elif tier.type(items[-1][0]) == 'line':
+						opnums.append(-1)
+				for opnum in opnums:
+					item = items[opnum][0]-1
+					x = tier.coords(item)[0]
+					new_x = (items[opnum][2]/2)
+					items.append((item,x,new_x))
 
 				#move to new position or delete
 				for item in tier.find_all():
