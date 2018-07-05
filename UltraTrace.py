@@ -620,10 +620,12 @@ class TextGridModule(object):
 		'''
 		Jumps to clicked frame
 		'''
-		self.wipeFill()
 		item = self.my_find_closest(event)
-		self.app.frame = int(event.widget.gettags(item)[0])
-		self.selectedTierFrames = []
+		frame = event.widget.gettags(item)[0]
+		self.app.frame = int(frame)
+		if not frame in self.selectedTierFrames:
+			self.selectedTierFrames = []
+			self.wipeFill()
 		self.app.framesUpdate()
 
 	def makeTierWidgets(self, tier):
