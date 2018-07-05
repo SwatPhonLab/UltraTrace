@@ -658,10 +658,10 @@ class TextGridModule(object):
 			# boundaries.append((le_loc, re_loc))
 			intvl_length = re_loc-le_loc
 			# print(interval, intvl_length)
-			if interval != intervals[-1]:
-				canvas.create_line(re_loc,0,re_loc,self.canvas_height)
 			text = canvas.create_text(le_loc+(intvl_length/2), self.canvas_height/2, justify=CENTER,
 								text=interval.mark, width=intvl_length, activefill='blue')
+			if interval != intervals[-1]:
+				canvas.create_line(re_loc,0,re_loc,self.canvas_height)
 			#makes tag of text object into list of points within interval
 			for point in self.TextGrid.getFirst(self.frameTierName):
 				if interval.__contains__(point):
@@ -688,12 +688,14 @@ class TextGridModule(object):
 				widg['canvas'].itemconfig(ALL,fill='black')
 				widg['canvas-label'].itemconfig(ALL,fill='black')
 
-		# xcoord = event.widget.canvasx(event.x)
-		# ycoord = event.widget.canvasy(event.y)
-
-		maybe_item = event.widget.find_closest(event.x, event.y)
-		# print(event.widget.find_all())
-		# print(maybe_item[0], event.widget.coords(maybe_item[0]), event.widget.itemcget(maybe_item, 'width'), xcoord, ycoord)
+		# maybe_item = event.widget.find_closest(event.x, event.y)
+		maybe_item = None
+		dist = 999999999999
+		for el in event.widget.find_all():
+			obj_x = event.widget.coords(el)[0]
+			if abs(obj_x-event.x) < dist:
+				dist = abs(obj_x-event.x)
+				maybe_item = el
 
 		if event.widget in self.tier_pairs.keys(): #if on tier-label canvas
 			event.widget.itemconfig(maybe_item,fill='blue')
@@ -705,17 +707,19 @@ class TextGridModule(object):
 					canvas.itemconfig(el, fill='blue')
 
 		else: #on canvas with intervals/frames
-			if isinstance(maybe_item[0], int):
-				if maybe_item[0]%2 == 1: #if item found is a boundary
+			if isinstance(maybe_item, int):
+				if maybe_item%2 == 0: #if item found is a boundary
 					#determine on which side of the line the event occurred
 					if event.widget.coords(maybe_item)[0] > event.x:
-						item = maybe_item[0]+1 #righthand boundary drawn before text
+						# item = maybe_item+1 #righthand boundary drawn before text
+						item = maybe_item-1
 					else: #i.e. event was on line or to the right of it
-						item = maybe_item[0]+3
+						# item = maybe_item+3
+						item = maybe_item+1
 				else:
-					item = maybe_item[0]
-					event.widget.itemconfig(item,fill='blue')
-
+					item = maybe_item
+				event.widget.itemconfig(item,fill='blue')
+				print(maybe_item, item)
 				self.selectedItem = (event.widget, item)
 				self.selectedTierFrames = [x[5:] for x in event.widget.gettags(item)]
 
@@ -772,9 +776,10 @@ class TextGridModule(object):
 		widg = self.selectedItem[0]
 		# intvl_num = widg.find_withtag("frame"+str(self.selectedTierFrames[0]))[0]
 		intvl_num = self.selectedItem[1]
-		boundaries = (intvl_num-3, intvl_num-1)
+		# boundaries = (intvl_num-3, intvl_num-1)
+		boundaries = (intvl_num-1, intvl_num+1)
 		#x values of lines
-		edges = (widg.coords(intvl_num-3)[0], widg.coords(intvl_num-1)[0])
+		edges = (widg.coords(boundaries[0])[0], widg.coords(boundaries[1])[0])
 		sc_factor = edges[1]-edges[0]
 
 		#delete extra items and scale to fit
