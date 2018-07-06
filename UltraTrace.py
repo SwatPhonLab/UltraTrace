@@ -4,7 +4,7 @@
 from tkinter import *
 from tkinter import filedialog
 import argparse, datetime, json, \
-	math, os, random, shutil, warnings
+	math, os, random, shutil, warnings, decimal
 
 # monkeypatch the warnings module
 warnings.showwarning = lambda msg, *args : print( 'WARNING: %s' % msg )
@@ -560,6 +560,7 @@ class TextGridModule(object):
 		self.frame.grid( row=0, column=0, sticky=W )
 		self.TextGrid = None
 		self.selectedTier = StringVar()
+		self.tg_zoom_factor = 1.5
 
 	def reset(self, event=None):
 		'''
@@ -567,6 +568,12 @@ class TextGridModule(object):
 		'''
 		self.selectedTierFrames = []
 		self.selectedItem = None
+		#bindings
+		self.app.bind("<Control-n>", self.getBounds)
+		self.app.bind("<Control-a>", self.getBounds)
+		self.app.bind("<Control-i>", self.getBounds)
+		self.app.bind("<Control-o>", self.getBounds)
+
 		if _TEXTGRID_LIBS_INSTALLED:
 			# default Label in case there are errors below
 			self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
@@ -586,7 +593,11 @@ class TextGridModule(object):
 							# make some widgets for each tier
 							tierWidgets = self.makeTierWidgets( tier )
 							self.TkWidgets.append( tierWidgets )
-					self.makeFrameWidget()
+					#make frame widget
+					frames_canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
+					self.TkWidgets.append({'name':self.frameTierName,'frames':frames_canvas})
+					frames_canvas.bind("<Button-1>", self.getClickedFrame)
+					#put items on canvases
 					self.fillCanvases()
 				except:
 					pass
@@ -603,18 +614,18 @@ class TextGridModule(object):
 				return name
 		raise NameError( 'Unable to find alignment tier' )
 
-	def makeFrameWidget(self):
-		frames_canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
-		self.TkWidgets.append({'frames':frames_canvas})
-		frames_canvas.bind("<Button-1>", self.getClickedFrame)
+	# def makeFrameWidget(self):
+	# 	frames_canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
+	# 	self.TkWidgets.append({'name':self.frameTierName,'frames':frames_canvas})
+	# 	frames_canvas.bind("<Button-1>", self.getClickedFrame)
 ######################################################################
-		tier = self.TextGrid.getFirst(self.frameTierName)
+		# tier = self.TextGrid.getFirst(self.frameTierName)
 
 		# frames_canvas.create_line(0,self.canvas_height/2,self.canvas_width,self.canvas_height/2)
 		#
-		for point in tier:
-			x_coord = point.time/self.TextGrid.maxTime*self.canvas_width
-			frame = frames_canvas.create_line(x_coord, 0, x_coord, self.canvas_height, tags=point.mark)
+		# for point in tier:
+			# x_coord = point.time/self.TextGrid.maxTime*self.canvas_width
+			# frame = frames_canvas.create_line(x_coord, 0, x_coord, self.canvas_height, tags=point.mark)
 			# if i%10==0:
 			# 	frames_canvas.itemconfig(frame, fill='blue')
 
@@ -641,7 +652,7 @@ class TextGridModule(object):
 		label_width=self.canvas_width/7
 		self.canvas_height=60
 		self.start = 0
-		self.end = self.TextGrid.maxTime
+		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
 
 		tier_obj = self.TextGrid.getFirst(tier)
 		self.widgets = { 'name':tier,
@@ -657,6 +668,9 @@ class TextGridModule(object):
 		#builds tier label functionality
 		label_text = label.create_text(label_width/2,self.canvas_height/2, justify=CENTER,
 										text=tier+': ', width=label_width, activefill='blue')
+
+		canvas.bind("<Button-1>", self.genFrameList)
+		label.bind("<Button-1>", self.genFrameList)
 ##############################################################################
 		# #puts numbers of frames contained in intervals into the tags of the text of teach interval
 		# intervals = [i for i in tier_obj]
@@ -678,70 +692,101 @@ class TextGridModule(object):
 		# 				label.addtag_withtag("frame"+point.mark, label_text)
 				# print(canvas.gettags(label_text))
 		#bindings
-		canvas.bind("<Button-1>", self.genFrameList)
-		self.app.bind("<Control-n>", self.zoomToInterval)
-		self.app.bind("<Control-a>", self.zoomAll)
-		self.app.bind("<Control-i>", self.zoomFactorOfTwo)
-		self.app.bind("<Control-o>", self.zoomFactorOfTwo)
-		label.bind("<Button-1>", self.genFrameList)
+		# canvas.bind("<Button-1>", self.genFrameList)
+		# self.app.bind("<Control-n>", self.zoomToInterval)
+		# self.app.bind("<Control-a>", self.zoomAll)
+		# self.app.bind("<Control-i>", self.zoomFactorOfTwo)
+		# self.app.bind("<Control-o>", self.zoomFactorOfTwo)
+		# label.bind("<Button-1>", self.genFrameList)
 		# self.widgets['label'].bind("<Button-1>", self.genFrameList)
 
 		return self.widgets
+	def getBounds(self, event):
+		'''
+
+		'''
+		f = decimal.Decimal(self.tg_zoom_factor)
+		a = self.end - self.start
+		z_out = (a-(a/f))/2
+		z_in = ((f*a)-a)/2
+
+		if event.keysym == 'n':
+			for tag in self.selectedItem[0].gettags(self.selectedItem[1]):
+				if tag[:7] == 'minTime':
+					self.start = decimal.Decimal(tag[7:])
+				elif tag[:7] == 'maxTime':
+					self.end = decimal.Decimal(tag[7:])
+		if event.keysym == 'a':
+			self.start = 0
+			self.end = self.TextGrid.maxTime
+		if event.keysym == 'o':
+			self.start = self.start - z_in
+			self.end = self.end + z_in
+		if event.keysym == 'i':
+			self.start = self.start + z_out
+			self.end = self.end - z_out
+		self.fillCanvases()
 
 	def fillCanvases(self):
 		'''
 
 		'''
+		if self.start < 0:
+			self.start = 0
+		if self.end > self.TextGrid.maxTime:
+			self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
+
 		duration = self.end - self.start
+		frametier = self.TextGrid.getFirst(self.frameTierName)
 		for el in self.TkWidgets:
 			if 'name' in el:
 				tier = self.TextGrid.getFirst(el['name'])
 				# print(tier)
 			if 'canvas' in el:
 				canvas = el['canvas']
+				canvas.delete(ALL)
 				i = tier.indexContaining(self.start)
 				time = tier[i].maxTime
 				# rel_time = time-self.start
 				# text_loc = (rel_time/2)/duration*self.canvas_width
 				# canvas.create_text(text_loc, self.canvas_height/2, justify=CENTER,
 				# 					text=tier[i].mark, width=rel_time, activefill='blue')
+				frame_i = 0
 				while time <= self.end and i < len(tier)-1:
 					rel_time = time-self.start
 					length = tier[i].maxTime - tier[i].minTime
 					mod = length/2
 					loc=(rel_time-mod)/duration*self.canvas_width
-					canvas.create_text(loc, self.canvas_height/2, justify=CENTER,
+					text = canvas.create_text(loc, self.canvas_height/2, justify=CENTER,
 										text=tier[i].mark, width=length, activefill='blue')
+					canvas.addtag_withtag("minTime"+str(tier[i].minTime), text)
+					canvas.addtag_withtag("maxTime"+str(tier[i].maxTime), text)
+					#add containted frames to tags
+					while frametier[frame_i].time <= tier[i].maxTime and frame_i < len(frametier):
+						if frametier[frame_i].time >= tier[i].minTime:
+							canvas.addtag_withtag("frame"+frametier[frame_i].mark, text)
+						frame_i+=1
+					#create line
 					loc=rel_time/duration*self.canvas_width
-					# print(tier[i].mark, loc)
 					i+=1
-					print(tier[i].maxTime, self.end)
 					time = tier[i].maxTime
 					canvas.create_line(loc,0,loc,self.canvas_height)
-				print('made it')
 
-			# elif 'frames' in el:
-			# 	i = 0
-			# 	s_found = False
-			# 	while tier[i].time <= self.end:
-			# 		if tier[i].time >= self.start and s_found == False:
-			# 			first_point = i
-			# 			minTime = tier[i].time
-			# 			s_found = True
-			# 		if s_found == True:
-
-				# 	last_point = i
-				# 	maxTime = tier[i].time
-				# 	i+=1
-				# objs = tier[first_point:last_point+1]
-
-
-
+			elif 'frames' in el:
+				i = 0
+				frames = el['frames']
+				frames.delete(ALL)
+				while tier[i].time <= self.end and i < len(tier):
+					if tier[i].time >= self.start:
+						x_coord = (tier[i].time-self.start)/duration*self.canvas_width
+						frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags=tier[i].mark)
+					i+=1
 
 	def my_find_closest(self, event):
 		'''
 		replaces TkInter's find_closest function, which is buggy
 		'''
+		#could be more efficient FIXME
 		maybe_item = None
 		dist = 999999999999
 		for el in event.widget.find_all():
@@ -769,7 +814,11 @@ class TextGridModule(object):
 
 		if event.widget in self.tier_pairs.keys(): #if on tier-label canvas
 			event.widget.itemconfig(maybe_item,fill='blue')
-			self.selectedTierFrames = [x[5:] for x in event.widget.gettags(maybe_item)]
+			# self.selectedTierFrames = [x[5:] for x in event.widget.gettags(maybe_item)]
+			self.selectedTierFrames = []
+			for x in event.widget.gettags(maybe_item):
+				if x[:5] == 'frame':
+					self.selectedTierFrames.append(x[5:])
 			#make all text intervals blue
 			canvas = self.tier_pairs[event.widget]
 			for el in canvas.find_all():
@@ -791,11 +840,15 @@ class TextGridModule(object):
 
 				event.widget.itemconfig(item,fill='blue')
 				self.selectedItem = (event.widget, item)
-				self.selectedTierFrames = [x[5:] for x in event.widget.gettags(item)]
+				# self.selectedTierFrames = [x[5:] for x in event.widget.gettags(item)]
+				self.selectedTierFrames = []
+				for x in event.widget.gettags(item):
+					if x[:5] == 'frame':
+						self.selectedTierFrames.append(x[5:])
 
-		#'current' automatically gets appended at the end of tags by tkinter, but we don't want it
-		if 'nt' in self.selectedTierFrames:
-			self.selectedTierFrames = self.selectedTierFrames[:-1]
+		# #'current' automatically gets appended at the end of tags by tkinter, but we don't want it
+		# if 'nt' in self.selectedTierFrames:
+		# 	self.selectedTierFrames = self.selectedTierFrames[:-1]
 
 		#automatically updates frame
 		if not str(self.app.frame) in self.selectedTierFrames:
