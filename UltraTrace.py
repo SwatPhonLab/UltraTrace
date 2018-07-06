@@ -587,9 +587,11 @@ class TextGridModule(object):
 							tierWidgets = self.makeTierWidgets( tier )
 							self.TkWidgets.append( tierWidgets )
 					self.makeFrameWidget()
+					self.fillCanvases()
 				except:
 					pass
 			# grid the widgets whether we loaded successfully or not
+			# self.CurrentWidgets = self.TkWidgets
 			self.grid()
 
 	def getFrameTierName(self):
@@ -604,6 +606,8 @@ class TextGridModule(object):
 	def makeFrameWidget(self):
 		frames_canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
 		self.TkWidgets.append({'frames':frames_canvas})
+		frames_canvas.bind("<Button-1>", self.getClickedFrame)
+######################################################################
 		tier = self.TextGrid.getFirst(self.frameTierName)
 
 		# frames_canvas.create_line(0,self.canvas_height/2,self.canvas_width,self.canvas_height/2)
@@ -613,8 +617,6 @@ class TextGridModule(object):
 			frame = frames_canvas.create_line(x_coord, 0, x_coord, self.canvas_height, tags=point.mark)
 			# if i%10==0:
 			# 	frames_canvas.itemconfig(frame, fill='blue')
-
-		frames_canvas.bind("<Button-1>", self.getClickedFrame)
 
 	def getClickedFrame(self, event):
 		'''
@@ -638,9 +640,12 @@ class TextGridModule(object):
 		self.canvas_width=700
 		label_width=self.canvas_width/7
 		self.canvas_height=60
+		self.start = 0
+		self.end = self.TextGrid.maxTime
 
 		tier_obj = self.TextGrid.getFirst(tier)
-		self.widgets = { #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
+		self.widgets = { 'name':tier,
+						 #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
 						 'canvas-label':Canvas(self.frame, width=label_width, height=self.canvas_height),
 						 # 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
 						 'canvas':Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')}
@@ -652,25 +657,25 @@ class TextGridModule(object):
 		#builds tier label functionality
 		label_text = label.create_text(label_width/2,self.canvas_height/2, justify=CENTER,
 										text=tier+': ', width=label_width, activefill='blue')
-
-		#puts numbers of frames contained in intervals into the tags of the text of teach interval
-		intervals = [i for i in tier_obj]
-		for interval in intervals:
-			le_loc = interval.minTime/tg_length*self.canvas_width #x-coordinate for left edge of interval
-			re_loc = interval.maxTime/tg_length*self.canvas_width #x-coordinate for right edge of interval
-			# boundaries.append((le_loc, re_loc))
-			intvl_length = re_loc-le_loc
-			# print(interval, intvl_length)
-			text = canvas.create_text(le_loc+(intvl_length/2), self.canvas_height/2, justify=CENTER,
-								text=interval.mark, width=intvl_length, activefill='blue')
-			if interval != intervals[-1]:
-				canvas.create_line(re_loc,0,re_loc,self.canvas_height)
-			#makes tag of text object into list of points within interval
-			for point in self.TextGrid.getFirst(self.frameTierName):
-				if interval.__contains__(point):
-					canvas.addtag_withtag("frame"+point.mark, text)
-					if interval.mark != '':
-						label.addtag_withtag("frame"+point.mark, label_text)
+##############################################################################
+		# #puts numbers of frames contained in intervals into the tags of the text of teach interval
+		# intervals = [i for i in tier_obj]
+		# for interval in intervals:
+		# 	le_loc = interval.minTime/tg_length*self.canvas_width #x-coordinate for left edge of interval
+		# 	re_loc = interval.maxTime/tg_length*self.canvas_width #x-coordinate for right edge of interval
+		# 	# boundaries.append((le_loc, re_loc))
+		# 	intvl_length = re_loc-le_loc
+		# 	# print(interval, intvl_length)
+		# 	text = canvas.create_text(le_loc+(intvl_length/2), self.canvas_height/2, justify=CENTER,
+		# 						text=interval.mark, width=intvl_length, activefill='blue')
+		# 	if interval != intervals[-1]:
+		# 		canvas.create_line(re_loc,0,re_loc,self.canvas_height)
+		# 	#makes tag of text object into list of points within interval
+		# 	for point in self.TextGrid.getFirst(self.frameTierName):
+		# 		if interval.__contains__(point):
+		# 			canvas.addtag_withtag("frame"+point.mark, text)
+		# 			if interval.mark != '':
+		# 				label.addtag_withtag("frame"+point.mark, label_text)
 				# print(canvas.gettags(label_text))
 		#bindings
 		canvas.bind("<Button-1>", self.genFrameList)
@@ -682,6 +687,56 @@ class TextGridModule(object):
 		# self.widgets['label'].bind("<Button-1>", self.genFrameList)
 
 		return self.widgets
+
+	def fillCanvases(self):
+		'''
+
+		'''
+		duration = self.end - self.start
+		for el in self.TkWidgets:
+			if 'name' in el:
+				tier = self.TextGrid.getFirst(el['name'])
+				# print(tier)
+			if 'canvas' in el:
+				canvas = el['canvas']
+				i = tier.indexContaining(self.start)
+				time = tier[i].maxTime
+				# rel_time = time-self.start
+				# text_loc = (rel_time/2)/duration*self.canvas_width
+				# canvas.create_text(text_loc, self.canvas_height/2, justify=CENTER,
+				# 					text=tier[i].mark, width=rel_time, activefill='blue')
+				while time <= self.end and i < len(tier)-1:
+					rel_time = time-self.start
+					length = tier[i].maxTime - tier[i].minTime
+					mod = length/2
+					loc=(rel_time-mod)/duration*self.canvas_width
+					canvas.create_text(loc, self.canvas_height/2, justify=CENTER,
+										text=tier[i].mark, width=length, activefill='blue')
+					loc=rel_time/duration*self.canvas_width
+					# print(tier[i].mark, loc)
+					i+=1
+					print(tier[i].maxTime, self.end)
+					time = tier[i].maxTime
+					canvas.create_line(loc,0,loc,self.canvas_height)
+				print('made it')
+
+			# elif 'frames' in el:
+			# 	i = 0
+			# 	s_found = False
+			# 	while tier[i].time <= self.end:
+			# 		if tier[i].time >= self.start and s_found == False:
+			# 			first_point = i
+			# 			minTime = tier[i].time
+			# 			s_found = True
+			# 		if s_found == True:
+
+				# 	last_point = i
+				# 	maxTime = tier[i].time
+				# 	i+=1
+				# objs = tier[first_point:last_point+1]
+
+
+
 
 	def my_find_closest(self, event):
 		'''
@@ -791,15 +846,19 @@ class TextGridModule(object):
 		'''
 		if event:
 			redge = self.canvas_width
-		print(ledge, redge)
 		sc_factor = redge-ledge
 
 		#find items between edges
-		for q, el in enumerate(self.TkWidgets):
+		self.CurrentWidgets = self.TkWidgets[:]
+		print('1: ')
+		print(len(self.CurrentWidgets[1]['canvas'].find_all()), len(self.TkWidgets[1]['canvas'].find_all()))
+		for el in self.CurrentWidgets:
 			if 'canvas' in el or 'frames' in el:
 				if 'canvas' in el:
+					tier_name = 'canvas'
 					tier = el['canvas']
 				elif 'frames' in el:
+					tier_name = 'frames'
 					tier = el['frames']
 				items = []
 				for item in tier.find_all():
@@ -831,7 +890,8 @@ class TextGridModule(object):
 						tier.move(item[0],item[2]-item[1], 0)
 					else:
 						tier.delete(item)
-
+		print('2: ')
+		print(len(self.CurrentWidgets[1]['canvas'].find_all()), len(self.TkWidgets[1]['canvas'].find_all()))
 
 	# def update(self):
 	# 	'''
