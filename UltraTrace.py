@@ -765,6 +765,7 @@ class TextGridModule(object):
 					while frametier[frame_i].time <= tier[i].maxTime and frame_i < len(frametier):
 						if frametier[frame_i].time >= tier[i].minTime:
 							canvas.addtag_withtag("frame"+frametier[frame_i].mark, text)
+							el['canvas-label'].addtag_all("frame"+frametier[frame_i].mark)
 						frame_i+=1
 					#create line
 					loc=rel_time/duration*self.canvas_width
