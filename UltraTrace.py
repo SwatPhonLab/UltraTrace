@@ -864,6 +864,7 @@ class TextGridModule(object):
 			if self.selectedItem[0] in self.tier_pairs.keys():
 				self.selectedItem[0].itemconfig(1, fill='black')
 				self.tier_pairs[self.selectedItem[0]].itemconfig(ALL, fill='black')
+				self.TkWidgets[-1]['frames'].itemconfig(ALL, fill='black')
 
 
 	def genFrameList(self, event):
@@ -887,6 +888,10 @@ class TextGridModule(object):
 			for el in canvas.find_all():
 				if canvas.type(canvas.find_withtag(el)) == 'text':
 					canvas.itemconfig(el, fill='blue')
+					if canvas.itemcget(el, 'text') != '':
+						for tag in canvas.gettags(el):
+							frame_match = self.TkWidgets[-1]['frames'].find_withtag(tag[5:])
+							self.TkWidgets[-1]['frames'].itemconfig(frame_match, fill='red')
 			item = maybe_item
 
 		else: #on canvas with intervals/frames
