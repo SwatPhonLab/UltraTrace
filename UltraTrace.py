@@ -605,21 +605,23 @@ class TextGridModule(object):
 					frames_canvas.bind("<Button-1>", self.getClickedFrame)
 					#put items on canvases
 					# self.fillCanvases()
-					# self.app.Trace.frame.update() #this is the main thing
-					# self.frame.config(width=self.app.Trace.frame.winfo_width())
-					# self.frame.update()
-					# print("Trace Frame width", self.app.Trace.frame.winfo_width())
-					# print(self.frame.winfo_width())
+					self.app.Trace.frame.update() #this is the main thing
+					self.frame.config(width=self.app.Trace.frame.winfo_width())
+					self.frame.grid_propagate(0)
+					self.frame.update()
+					print("Trace Frame width", self.app.Trace.frame.winfo_width())
+					print(self.frame.winfo_width())
 				except:
 					pass
 			# grid the widgets whether we loaded successfully or not
 			# self.CurrentWidgets = self.TkWidgets
 			self.grid()
-			self.app.Trace.frame.update() #this is the main thing
-			self.frame.config(width=self.app.Trace.frame.winfo_width())
-			self.frame.update()
-			print("Trace Frame width", self.app.Trace.frame.winfo_width())
-			print(self.frame.winfo_width())
+			# self.app.Trace.frame.update() #this is the main thing
+			# self.frame.config(width=self.app.Trace.frame.winfo_width())
+			# self.frame.grid_propagate(0)
+			# self.frame.update()
+			# print("Trace Frame width", self.app.Trace.frame.winfo_width())
+			# print(self.frame.winfo_width())
 
 	def getFrameTierName(self):
 		'''
