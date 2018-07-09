@@ -591,7 +591,8 @@ class TextGridModule(object):
 					# try to load up our TextGrid using the textgrid lib
 					self.TextGrid = TextGrid.fromFile( filename )
 					# reset default Label to actually be useful
-					self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
+					# self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
+					self.TkWidgets = []
 					# iterate the tiers
 					self.frameTierName = self.getFrameTierName()
 					for tier in self.TextGrid.getNames():
@@ -604,8 +605,8 @@ class TextGridModule(object):
 					frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height)
 					self.TkWidgets.append({'name':self.frameTierName,'frames':frames_canvas,
 										   'frames-label':frames_label})
-					frames_label.create_text(self.label_width/2,self.canvas_height/2, justify=CENTER,
-											 text='frames: ', width=self.label_width, activefill='blue')
+					frames_label.create_text(self.label_width,self.canvas_height/2, anchor=E, justify=CENTER,
+											 text='frames:\t\t', width=self.label_width, activefill='blue')
 					frames_canvas.bind("<Button-1>", self.getClickedFrame)
 					#put items on canvases
 					self.fillCanvases()
@@ -619,14 +620,10 @@ class TextGridModule(object):
 					pass
 			# grid the widgets whether we loaded successfully or not
 			# self.CurrentWidgets = self.TkWidgets
-			# self.frame.grid_propagate(0)
+			# self.app.Trace.frame.update() #this is the main thing
+			# self.frame.config(width=self.app.Trace.frame.winfo_width())
+			# self.frame.grid_propagate(False)
 			# self.frame.update()
-			# self.grid()
-			# self.frame.update()
-			self.app.Trace.frame.update() #this is the main thing
-			self.frame.config(width=self.app.Trace.frame.winfo_width())
-			self.frame.grid_propagate(0)
-			self.frame.update()
 			self.grid()
 			self.frame.update()
 			print("Trace Frame width", self.app.Trace.frame.winfo_width())
@@ -676,7 +673,9 @@ class TextGridModule(object):
 		self.tier_pairs = {}
 
 		self.canvas_width=800
-		self.label_width=self.canvas_width/7
+		self.app.Trace.frame.update()
+		print(self.app.Trace.frame.winfo_width())
+		self.label_width=self.app.Trace.frame.winfo_width()#self.canvas_width/7
 		self.canvas_height=60
 		self.start = 0
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
@@ -693,8 +692,8 @@ class TextGridModule(object):
 		tg_length=self.TextGrid.maxTime
 
 		#builds tier label functionality
-		label_text = label.create_text(self.label_width/2,self.canvas_height/2, justify=CENTER,
-										text=tier+': ', width=self.label_width, activefill='blue')
+		label_text = label.create_text(self.label_width, self.canvas_height/2, anchor=E, justify=CENTER,
+										text=tier+':\t\t', width=self.label_width/2, activefill='blue')
 
 		canvas.bind("<Button-1>", self.genFrameList)
 		label.bind("<Button-1>", self.genFrameList)
@@ -900,10 +899,10 @@ class TextGridModule(object):
 				tierWidgets['label'].grid(row=t, column=0, sticky=W)
 			if 'frames' in tierWidgets:
 				tierWidgets['frames'].grid(row=t, column=2, sticky=W)
-				tierWidgets['frames-label'].grid(row=t, column=0, sticky=E)
+				tierWidgets['frames-label'].grid(row=t, column=0, sticky=W)
 			if 'canvas' in tierWidgets:
 				tierWidgets['canvas'].grid(row=t, column=2, sticky=W)
-				tierWidgets['canvas-label'].grid(row=t, column=0, sticky=E)
+				tierWidgets['canvas-label'].grid(row=t, column=0, sticky=W)
 				self.tier_pairs[tierWidgets['canvas-label']] = tierWidgets['canvas']
 
 class TraceModule(object):
