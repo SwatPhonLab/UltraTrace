@@ -859,8 +859,12 @@ class TextGridModule(object):
 		turns selected frame back to black
 		'''
 		if self.selectedItem:
-			print(self.selectedItem, '862')
 			self.selectedItem[0].itemconfig(self.selectedItem[1], fill='black')
+			#clicked tier label
+			if self.selectedItem[0] in self.tier_pairs.keys():
+				self.selectedItem[0].itemconfig(1, fill='black')
+				self.tier_pairs[self.selectedItem[0]].itemconfig(ALL, fill='black')
+
 
 	def genFrameList(self, event):
 		'''
@@ -883,6 +887,7 @@ class TextGridModule(object):
 			for el in canvas.find_all():
 				if canvas.type(canvas.find_withtag(el)) == 'text':
 					canvas.itemconfig(el, fill='blue')
+			item = maybe_item
 
 		else: #on canvas with intervals/frames
 			if isinstance(maybe_item, int):
@@ -898,12 +903,13 @@ class TextGridModule(object):
 					item = maybe_item
 
 				event.widget.itemconfig(item,fill='blue')
-				self.selectedItem = (event.widget, item)
+				# self.selectedItem = (event.widget, item)
 				# self.selectedTierFrames = [x[5:] for x in event.widget.gettags(item)]
 				self.selectedTierFrames = []
 				for x in event.widget.gettags(item):
 					if x[:5] == 'frame':
 						self.selectedTierFrames.append(x[5:])
+		self.selectedItem = (event.widget, item)
 
 		# #'current' automatically gets appended at the end of tags by tkinter, but we don't want it
 		# if 'nt' in self.selectedTierFrames:
