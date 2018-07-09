@@ -575,6 +575,10 @@ class TextGridModule(object):
 		self.app.bind("<Control-a>", self.getBounds)
 		self.app.bind("<Control-i>", self.getBounds)
 		self.app.bind("<Control-o>", self.getBounds)
+		#destroy
+		for wframe in [self.frame, self.canvas_frame]:
+			for child in wframe.winfo_children():
+				child.destroy()
 
 		if _TEXTGRID_LIBS_INSTALLED:
 			# default Label in case there are errors below
@@ -615,13 +619,18 @@ class TextGridModule(object):
 					pass
 			# grid the widgets whether we loaded successfully or not
 			# self.CurrentWidgets = self.TkWidgets
-			self.grid()
+			# self.frame.grid_propagate(0)
+			# self.frame.update()
+			# self.grid()
+			# self.frame.update()
 			self.app.Trace.frame.update() #this is the main thing
 			self.frame.config(width=self.app.Trace.frame.winfo_width())
 			self.frame.grid_propagate(0)
 			self.frame.update()
+			self.grid()
+			self.frame.update()
 			print("Trace Frame width", self.app.Trace.frame.winfo_width())
-			print(self.frame.winfo_width())
+			print(self.frame.winfo_width(), self.frame.winfo_children())
 
 	def getFrameTierName(self):
 		'''
