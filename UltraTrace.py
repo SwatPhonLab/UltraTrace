@@ -557,7 +557,8 @@ class TextGridModule(object):
 		print( ' - initializing module: TextGrid' )
 		self.app = app
 		self.frame = Frame(self.app.BOTTOM)#, width=1000)
-		self.canvas_frame = Frame(self.app.BOTTOM)#, width=200)
+		self.label_padx = 20
+		self.canvas_frame = Frame(self.app.BOTTOM, padx=self.label_padx)#, width=200)
 		self.frame.grid( row=0, column=0)
 		self.canvas_frame.grid(row=0, column=1, sticky=E)
 		self.TextGrid = None
@@ -606,7 +607,7 @@ class TextGridModule(object):
 					self.TkWidgets.append({'name':self.frameTierName,'frames':frames_canvas,
 										   'frames-label':frames_label})
 					frames_label.create_text(self.label_width,self.canvas_height/2, anchor=E, justify=CENTER,
-											 text='frames:\t\t', width=self.label_width, activefill='blue')
+											 text='frames: ', width=self.label_width, activefill='blue')
 					frames_canvas.bind("<Button-1>", self.getClickedFrame)
 					#put items on canvases
 					self.fillCanvases()
@@ -625,9 +626,9 @@ class TextGridModule(object):
 			# self.frame.grid_propagate(False)
 			# self.frame.update()
 			self.grid()
-			self.frame.update()
-			print("Trace Frame width", self.app.Trace.frame.winfo_width())
-			print(self.frame.winfo_width(), self.frame.winfo_children())
+			# self.frame.update()
+			# print("Trace Frame width", self.app.Trace.frame.winfo_width())
+			# print(self.frame.winfo_width(), self.frame.winfo_children())
 
 	def getFrameTierName(self):
 		'''
@@ -674,8 +675,7 @@ class TextGridModule(object):
 
 		self.canvas_width=800
 		self.app.Trace.frame.update()
-		print(self.app.Trace.frame.winfo_width())
-		self.label_width=self.app.Trace.frame.winfo_width()#self.canvas_width/7
+		self.label_width=self.app.Trace.frame.winfo_width()-self.label_padx
 		self.canvas_height=60
 		self.start = 0
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
@@ -693,7 +693,7 @@ class TextGridModule(object):
 
 		#builds tier label functionality
 		label_text = label.create_text(self.label_width, self.canvas_height/2, anchor=E, justify=CENTER,
-										text=tier+':\t\t', width=self.label_width/2, activefill='blue')
+										text='temp', width=self.label_width/2, activefill='blue')
 
 		canvas.bind("<Button-1>", self.genFrameList)
 		label.bind("<Button-1>", self.genFrameList)
@@ -791,13 +791,20 @@ class TextGridModule(object):
 					while frametier[frame_i].time <= tier[i].maxTime and frame_i < len(frametier):
 						if frametier[frame_i].time >= tier[i].minTime:
 							canvas.addtag_withtag("frame"+frametier[frame_i].mark, text)
-							el['canvas-label'].addtag_all("frame"+frametier[frame_i].mark)
+							if tier[i].mark != '':
+								el['canvas-label'].addtag_all("frame"+frametier[frame_i].mark)
 						frame_i+=1
 					#create line
 					loc=rel_time/duration*self.canvas_width
 					i+=1
 					time = tier[i].maxTime
 					canvas.create_line(loc,0,loc,self.canvas_height)
+
+					#fills labels with info about tiers w/traces
+					current_label = el['canvas-label'].find_all()[0]
+					nonempty_frames = len(el['canvas-label'].gettags(current_label))
+					el['canvas-label'].itemconfig(current_label,
+												  text='{}:\n({}/{})'.format(tier.name,0, nonempty_frames))
 
 			elif 'frames' in el:
 				i = 0
@@ -829,6 +836,7 @@ class TextGridModule(object):
 		turns selected frame back to black
 		'''
 		if self.selectedItem:
+			print(self.selectedItem)
 			self.selectedItem[0].itemconfig(self.selectedItem[1], fill='black')
 
 	def genFrameList(self, event):
