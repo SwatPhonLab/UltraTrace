@@ -545,6 +545,18 @@ class MetadataModule(object):
 		self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ str(frame) ] = crosshairs
 		self.write()
 
+	def tracesExist( self, trace ):
+		'''
+
+		'''
+		filename = self.getCurrentFilename()
+		try:
+			dict = self.data[ 'traces' ][ trace ][ 'files' ][ filename ]
+			# print(dict)
+			return [x for x in dict if dict[x] != []]
+		except KeyError:
+			return []
+
 class TextGridModule(object):
 	'''
 	Manages all the widgets related to TextGrid files, including the tier name
@@ -753,6 +765,17 @@ class TextGridModule(object):
 			self.end = self.end - z_out
 		self.fillCanvases()
 
+	def getTracedFrames(self,frames):
+		'''
+
+		'''
+		frames = [frame[5:] for frame in frames] #to get rid of word "frame in tag"
+		tracedFrames = []
+		for trace in self.app.Data.data['traces']:
+			tracedFrames = tracedFrames+self.app.Data.tracesExist(trace)
+
+		return set(frames).intersection(tracedFrames)
+
 	def fillCanvases(self):
 		'''
 
@@ -802,9 +825,9 @@ class TextGridModule(object):
 
 					#fills labels with info about tiers w/traces
 					current_label = el['canvas-label'].find_all()[0]
-					nonempty_frames = len(el['canvas-label'].gettags(current_label))
+					nonempty_frames = el['canvas-label'].gettags(current_label)
 					el['canvas-label'].itemconfig(current_label,
-												  text='{}:\n({}/{})'.format(tier.name,0, nonempty_frames))
+					  text='{}:\n({}/{})'.format(tier.name,len(self.getTracedFrames(nonempty_frames)), len(nonempty_frames)))
 
 			elif 'frames' in el:
 				i = 0
@@ -836,7 +859,7 @@ class TextGridModule(object):
 		turns selected frame back to black
 		'''
 		if self.selectedItem:
-			print(self.selectedItem)
+			print(self.selectedItem, '862')
 			self.selectedItem[0].itemconfig(self.selectedItem[1], fill='black')
 
 	def genFrameList(self, event):
