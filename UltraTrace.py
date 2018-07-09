@@ -623,24 +623,10 @@ class TextGridModule(object):
 					frames_canvas.bind("<Button-1>", self.getClickedFrame)
 					#put items on canvases
 					self.fillCanvases()
-					# self.app.Trace.frame.update() #this is the main thing
-					# self.frame.config(width=self.app.Trace.frame.winfo_width())
-					# self.frame.grid_propagate(0)
-					# self.frame.update()
-					# print("Trace Frame width", self.app.Trace.frame.winfo_width())
-					# print(self.frame.winfo_width())
 				except:
 					pass
-			# grid the widgets whether we loaded successfully or not
-			# self.CurrentWidgets = self.TkWidgets
-			# self.app.Trace.frame.update() #this is the main thing
-			# self.frame.config(width=self.app.Trace.frame.winfo_width())
-			# self.frame.grid_propagate(False)
-			# self.frame.update()
 			self.grid()
-			# self.frame.update()
-			# print("Trace Frame width", self.app.Trace.frame.winfo_width())
-			# print(self.frame.winfo_width(), self.frame.winfo_children())
+
 
 	def getFrameTierName(self):
 		'''
@@ -671,7 +657,7 @@ class TextGridModule(object):
 		Jumps to clicked frame
 		'''
 		item = self.my_find_closest(event)
-		frame = event.widget.gettags(item)[0]
+		frame = event.widget.gettags(item)[0][5:]
 		self.app.frame = int(frame)
 		if not frame in self.selectedTierFrames:
 			self.selectedTierFrames = []
@@ -836,7 +822,7 @@ class TextGridModule(object):
 				while tier[i].time <= self.end and i < len(tier):
 					if tier[i].time >= self.start:
 						x_coord = (tier[i].time-self.start)/duration*self.canvas_width
-						frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags=tier[i].mark)
+						frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags="frame"+tier[i].mark)
 						CanvasTooltip(frames, frame,text=tier[i].mark)
 					i+=1
 
@@ -866,7 +852,6 @@ class TextGridModule(object):
 				self.tier_pairs[self.selectedItem[0]].itemconfig(ALL, fill='black')
 				self.TkWidgets[-1]['frames'].itemconfig(ALL, fill='black')
 
-
 	def genFrameList(self, event):
 		'''
 		Reads frames within interval from the tags to the text item of that interval,
@@ -888,10 +873,12 @@ class TextGridModule(object):
 			for el in canvas.find_all():
 				if canvas.type(canvas.find_withtag(el)) == 'text':
 					canvas.itemconfig(el, fill='blue')
-					if canvas.itemcget(el, 'text') != '':
-						for tag in canvas.gettags(el):
-							frame_match = self.TkWidgets[-1]['frames'].find_withtag(tag[5:])
-							self.TkWidgets[-1]['frames'].itemconfig(frame_match, fill='red')
+			self.paintFrames()
+					# #highlight in red every frame in a nonempty tier
+					# if canvas.itemcget(el, 'text') != '':
+					# 	for tag in canvas.gettags(el):
+					# 		frame_match = self.TkWidgets[-1]['frames'].find_withtag(tag[5:])
+					# 		self.TkWidgets[-1]['frames'].itemconfig(frame_match, fill='red')
 			item = maybe_item
 
 		else: #on canvas with intervals/frames
@@ -928,6 +915,28 @@ class TextGridModule(object):
 			elif self.app.frame > int(self.selectedTierFrames[-1]):
 				self.app.framesPrev()
 				# self.update()
+
+	def paintFrames(self):
+		'''
+
+		'''
+		if self.selectedItem:
+			frames = self.selectedItem[0].gettags(self.selectedItem[1])
+			for frame in frames:
+				frame_obj = self.TkWidgets[-1]['frames'].find_withtag(frame)
+				self.TkWidgets[-1]['frames'].itemconfig(frame_obj, fill='red')
+
+	def update(self):
+		'''
+
+		'''
+		#repaint all frames
+		self.paintFrames()
+		#if touchedFrame == True, rewite labels
+
+		#current frame highlighted in blue
+		highlighted_frame = self.TkWidgets[-1]['frames'].find_withtag(str(self.app.frame))
+		self.TkWidgets[-1]['frames'].itemconfig(highlighted_frame, fill='blue')
 
 	def grid(self, event=None):
 		'''
@@ -1998,7 +2007,7 @@ class App(Tk):
 		self.Dicom.update()
 		self.Trace.update()
 		self.Audio.update()
-		# self.TextGrid.update()
+		self.TextGrid.update()
 
 		# check if we can pan left/right
 		self.framesPrevBtn['state'] = DISABLED if self.frame==1 else NORMAL
