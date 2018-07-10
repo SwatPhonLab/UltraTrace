@@ -751,10 +751,11 @@ class TextGridModule(object):
 				while time <= self.end and i < len(tier)-1:
 					rel_time = time-self.start
 					length = tier[i].maxTime - tier[i].minTime
+					pixel_length = length/duration*self.canvas_width
 					mod = length/2
 					loc=(rel_time-mod)/duration*self.canvas_width
 					text = canvas.create_text(loc, self.canvas_height/2, justify=CENTER,
-										text=tier[i].mark, width=length*50, activefill='blue')
+										text=tier[i].mark, width=pixel_length, activefill='blue')
 					minTimetag = "minTime"+str(tier[i].minTime)
 					maxTimetag = "maxTime"+str(tier[i].maxTime)
 					canvas.addtag_withtag(minTimetag, text)
