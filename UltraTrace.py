@@ -769,7 +769,7 @@ class TextGridModule(object):
 		if self.start < 0:
 			self.start = 0
 		if self.end > self.TextGrid.maxTime:
-			self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
+			self.end = self.TextGrid.maxTime
 
 		duration = self.end - self.start
 		frametier = self.TextGrid.getFirst(self.frameTierName)
@@ -793,7 +793,7 @@ class TextGridModule(object):
 					mod = length/2
 					loc=(rel_time-mod)/duration*self.canvas_width
 					text = canvas.create_text(loc, self.canvas_height/2, justify=CENTER,
-										text=tier[i].mark, width=length, activefill='blue')
+										text=tier[i].mark, width=length*50, activefill='blue')
 					canvas.addtag_withtag("minTime"+str(tier[i].minTime), text)
 					canvas.addtag_withtag("maxTime"+str(tier[i].maxTime), text)
 					#add containted frames to tags
@@ -825,6 +825,7 @@ class TextGridModule(object):
 						frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags="frame"+tier[i].mark)
 						CanvasTooltip(frames, frame,text=tier[i].mark)
 					i+=1
+		self.paintFrames()
 
 	def my_find_closest(self, event):
 		'''
@@ -844,6 +845,7 @@ class TextGridModule(object):
 		'''
 		turns selected frame back to black
 		'''
+		self.TkWidgets[-1]['frames'].itemconfig(ALL, fill='black')
 		if self.selectedItem:
 			self.selectedItem[0].itemconfig(self.selectedItem[1], fill='black')
 			#clicked tier label
@@ -873,7 +875,6 @@ class TextGridModule(object):
 			for el in canvas.find_all():
 				if canvas.type(canvas.find_withtag(el)) == 'text':
 					canvas.itemconfig(el, fill='blue')
-			self.paintFrames()
 					# #highlight in red every frame in a nonempty tier
 					# if canvas.itemcget(el, 'text') != '':
 					# 	for tag in canvas.gettags(el):
@@ -902,7 +903,7 @@ class TextGridModule(object):
 					if x[:5] == 'frame':
 						self.selectedTierFrames.append(x[5:])
 		self.selectedItem = (event.widget, item)
-
+		self.paintFrames()
 		# #'current' automatically gets appended at the end of tags by tkinter, but we don't want it
 		# if 'nt' in self.selectedTierFrames:
 		# 	self.selectedTierFrames = self.selectedTierFrames[:-1]
@@ -921,10 +922,16 @@ class TextGridModule(object):
 
 		'''
 		if self.selectedItem:
+			self.wipeFill()
 			frames = self.selectedItem[0].gettags(self.selectedItem[1])
 			for frame in frames:
 				frame_obj = self.TkWidgets[-1]['frames'].find_withtag(frame)
 				self.TkWidgets[-1]['frames'].itemconfig(frame_obj, fill='red')
+
+		#current frame highlighted in blue
+		if self.app.frame:
+			highlighted_frame = self.TkWidgets[-1]['frames'].find_withtag(str(self.app.frame))
+			self.TkWidgets[-1]['frames'].itemconfig(highlighted_frame, fill='blue')
 
 	def update(self):
 		'''
@@ -933,10 +940,6 @@ class TextGridModule(object):
 		#repaint all frames
 		self.paintFrames()
 		#if touchedFrame == True, rewite labels
-
-		#current frame highlighted in blue
-		highlighted_frame = self.TkWidgets[-1]['frames'].find_withtag(str(self.app.frame))
-		self.TkWidgets[-1]['frames'].itemconfig(highlighted_frame, fill='blue')
 
 	def grid(self, event=None):
 		'''
