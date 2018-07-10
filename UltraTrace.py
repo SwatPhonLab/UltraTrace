@@ -3,6 +3,9 @@
 # core libs
 from tkinter import *
 from tkinter import filedialog
+from scipy import signal
+from scipy.io import wavfile
+#import matplotlib.pyplot as plt
 import argparse, datetime, json, \
 	math, os, random, shutil, warnings, decimal
 
@@ -571,11 +574,13 @@ class TextGridModule(object):
 		self.frame = Frame(self.app.BOTTOM)#, width=1000)
 		self.label_padx = 20
 		self.canvas_frame = Frame(self.app.BOTTOM, padx=self.label_padx)#, width=200)
-		self.frame.grid( row=0, column=0)
-		self.canvas_frame.grid(row=0, column=1, sticky=E)
+		self.frame.grid( row=1, column=0 )
+		self.canvas_frame.grid(row=1, column=1, sticky=E)
 		self.TextGrid = None
 		self.selectedTier = StringVar()
 		self.tg_zoom_factor = 1.5
+		self.canvas_width=800
+		self.canvas_height=60
 
 	def reset(self, event=None):
 		'''
@@ -627,7 +632,6 @@ class TextGridModule(object):
 					pass
 			self.grid()
 
-
 	def getFrameTierName(self):
 		'''
 		Handle some inconsistency in how we're naming our alignment tier
@@ -636,21 +640,6 @@ class TextGridModule(object):
 			if name in self.TextGrid.getNames():
 				return name
 		raise NameError( 'Unable to find alignment tier' )
-
-	# def makeFrameWidget(self):
-	# 	frames_canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
-	# 	self.TkWidgets.append({'name':self.frameTierName,'frames':frames_canvas})
-	# 	frames_canvas.bind("<Button-1>", self.getClickedFrame)
-######################################################################
-		# tier = self.TextGrid.getFirst(self.frameTierName)
-
-		# frames_canvas.create_line(0,self.canvas_height/2,self.canvas_width,self.canvas_height/2)
-		#
-		# for point in tier:
-			# x_coord = point.time/self.TextGrid.maxTime*self.canvas_width
-			# frame = frames_canvas.create_line(x_coord, 0, x_coord, self.canvas_height, tags=point.mark)
-			# if i%10==0:
-			# 	frames_canvas.itemconfig(frame, fill='blue')
 
 	def getClickedFrame(self, event):
 		'''
@@ -671,10 +660,8 @@ class TextGridModule(object):
 		'''
 		self.tier_pairs = {}
 
-		self.canvas_width=800
 		self.app.Trace.frame.update()
 		self.label_width=self.app.Trace.frame.winfo_width()-self.label_padx
-		self.canvas_height=60
 		self.start = 0
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
 
@@ -695,34 +682,6 @@ class TextGridModule(object):
 
 		canvas.bind("<Button-1>", self.genFrameList)
 		label.bind("<Button-1>", self.genFrameList)
-##############################################################################
-		# #puts numbers of frames contained in intervals into the tags of the text of teach interval
-		# intervals = [i for i in tier_obj]
-		# for interval in intervals:
-		# 	le_loc = interval.minTime/tg_length*self.canvas_width #x-coordinate for left edge of interval
-		# 	re_loc = interval.maxTime/tg_length*self.canvas_width #x-coordinate for right edge of interval
-		# 	# boundaries.append((le_loc, re_loc))
-		# 	intvl_length = re_loc-le_loc
-		# 	# print(interval, intvl_length)
-		# 	text = canvas.create_text(le_loc+(intvl_length/2), self.canvas_height/2, justify=CENTER,
-		# 						text=interval.mark, width=intvl_length, activefill='blue')
-		# 	if interval != intervals[-1]:
-		# 		canvas.create_line(re_loc,0,re_loc,self.canvas_height)
-		# 	#makes tag of text object into list of points within interval
-		# 	for point in self.TextGrid.getFirst(self.frameTierName):
-		# 		if interval.__contains__(point):
-		# 			canvas.addtag_withtag("frame"+point.mark, text)
-		# 			if interval.mark != '':
-		# 				label.addtag_withtag("frame"+point.mark, label_text)
-				# print(canvas.gettags(label_text))
-		#bindings
-		# canvas.bind("<Button-1>", self.genFrameList)
-		# self.app.bind("<Control-n>", self.zoomToInterval)
-		# self.app.bind("<Control-a>", self.zoomAll)
-		# self.app.bind("<Control-i>", self.zoomFactorOfTwo)
-		# self.app.bind("<Control-o>", self.zoomFactorOfTwo)
-		# label.bind("<Button-1>", self.genFrameList)
-		# self.widgets['label'].bind("<Button-1>", self.genFrameList)
 
 		return self.widgets
 	def getBounds(self, event):
@@ -819,7 +778,7 @@ class TextGridModule(object):
 				i = 0
 				frames = el['frames']
 				frames.delete(ALL)
-				while tier[i].time <= self.end and i < len(tier):
+				while tier[i].time <= self.end and i < len(tier)-1:
 					if tier[i].time >= self.start:
 						x_coord = (tier[i].time-self.start)/duration*self.canvas_width
 						frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags="frame"+tier[i].mark)
@@ -865,7 +824,7 @@ class TextGridModule(object):
 
 		if event.widget in self.tier_pairs.keys(): #if on tier-label canvas
 			event.widget.itemconfig(maybe_item,fill='blue')
-			# self.selectedTierFrames = [x[5:] for x in event.widget.gettags(maybe_item)]
+			#fill selected tier frames
 			self.selectedTierFrames = []
 			for x in event.widget.gettags(maybe_item):
 				if x[:5] == 'frame':
@@ -875,11 +834,6 @@ class TextGridModule(object):
 			for el in canvas.find_all():
 				if canvas.type(canvas.find_withtag(el)) == 'text':
 					canvas.itemconfig(el, fill='blue')
-					# #highlight in red every frame in a nonempty tier
-					# if canvas.itemcget(el, 'text') != '':
-					# 	for tag in canvas.gettags(el):
-					# 		frame_match = self.TkWidgets[-1]['frames'].find_withtag(tag[5:])
-					# 		self.TkWidgets[-1]['frames'].itemconfig(frame_match, fill='red')
 			item = maybe_item
 
 		else: #on canvas with intervals/frames
@@ -910,12 +864,14 @@ class TextGridModule(object):
 
 		#automatically updates frame
 		if not str(self.app.frame) in self.selectedTierFrames:
-			if self.app.frame < int(self.selectedTierFrames[0]):
-				self.app.framesNext()
-				# self.update()
-			elif self.app.frame > int(self.selectedTierFrames[-1]):
-				self.app.framesPrev()
-				# self.update()
+			self.app.frame = int(self.selectedTierFrames[0])
+			self.app.framesUpdate()
+			# if self.app.frame < int(self.selectedTierFrames[0]):
+			# 	self.app.framesNext()
+			# 	# self.update()
+			# elif self.app.frame > int(self.selectedTierFrames[-1]):
+			# 	self.app.framesPrev()
+			# 	# self.update()
 
 	def paintFrames(self):
 		'''
@@ -958,6 +914,41 @@ class TextGridModule(object):
 				tierWidgets['canvas'].grid(row=t, column=2, sticky=W)
 				tierWidgets['canvas-label'].grid(row=t, column=0, sticky=W)
 				self.tier_pairs[tierWidgets['canvas-label']] = tierWidgets['canvas']
+
+class SpectrogramModule(object):
+	'''
+
+	'''
+	def __init__(self,app):
+		print( ' - initializing module: Spectrogram' )
+
+		self.app = app
+
+		self.frame = Frame(self.app.BOTTOM)
+		self.frame.grid( row=0, column=1 )
+		self.canvas_width = self.app.TextGrid.canvas_width
+		self.canvas_height = 120
+		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
+		self.bbox = self.canvas.bbox(ALL)
+
+	def reset(self):
+		'''
+
+		'''
+		sample_rate, samples = wavfile.read('/Volumes/ResearchAssistant/ultrasound/raw/2015-05-20/audio/13-31-46.wav')
+		frequencies, times, spectrogram = signal.spectrogram(samples, sample_rate)
+		# plt.pcolormesh(times, frequencies, spectrogram)
+		# plt.imshow(spectrogram)
+		# plt.ylabel('Frequency [Hz]')
+		# plt.xlabel('Time [sec]')
+		# plt.show()
+		self.grid()
+
+	def grid(self):
+		'''
+
+		'''
+		self.canvas.grid(row=0, column=0, sticky=W)
 
 class TraceModule(object):
 	'''
@@ -1744,6 +1735,7 @@ class App(Tk):
 		self.Trace = TraceModule(self)
 		self.Audio = PlaybackModule(self)
 		self.TextGrid = TextGridModule(self)
+		self.Spectrogram = SpectrogramModule(self)
 
 		print( ' - loading widgets' )
 
@@ -1773,6 +1765,7 @@ class App(Tk):
 		Builds the basic skeleton of our app widgets.
 			- items marked with (*) are built directly in this function
 			- items marked with (~) are built by the individual modules
+			# WARNING: out of date diagram
 		.________________________________________.
 		|	ROOT 						         |
 		| .____________________________________. |
@@ -1969,6 +1962,7 @@ class App(Tk):
 		self.Dicom.reset() # need this after Trace.reset()
 		self.Audio.reset()
 		self.TextGrid.reset()
+		self.Spectrogram.reset()
 
 		# check if we can pan left/right
 		self.filesPrevBtn['state'] = DISABLED if self.Data.getFileLevel('_prev')==None else NORMAL
@@ -2011,6 +2005,7 @@ class App(Tk):
 		self.Trace.update()
 		self.Audio.update()
 		self.TextGrid.update()
+		#self.Spectrogram.update()
 
 		# check if we can pan left/right
 		self.framesPrevBtn['state'] = DISABLED if self.frame==1 else NORMAL
