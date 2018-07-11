@@ -3,11 +3,13 @@
 # core libs
 from tkinter import *
 from tkinter import filedialog
-from scipy import signal
-from scipy.io import wavfile
-#import matplotlib.pyplot as plt
+# import soundfile as sf
+# import numpy as np
+# import scipy.fftpack as fftpack
+# import urllib.request as request
 import argparse, datetime, json, \
-	math, os, random, shutil, warnings, decimal
+	math, os, random, shutil, warnings, decimal, \
+	soundfile as sf, scipy.fftpack as fftpack, urllib.request as request #FIXME should I put these with non-critical dependencies?
 
 # monkeypatch the warnings module
 warnings.showwarning = lambda msg, *args : print( 'WARNING: %s' % msg )
@@ -409,7 +411,9 @@ class MetadataModule(object):
 		self.files = self.getFilenames()
 
 	def importOldMeasurement(self, filepath, filename):
-		# print(filepath)
+		'''
+		Writes information from .measurement file into metadata file
+		'''
 		open_file = json.load(open(filepath, 'r'))
 		for key, value in open_file.items():
 			if isinstance(value, dict):
@@ -417,7 +421,6 @@ class MetadataModule(object):
 					array = value['points']
 
 		filenum, framenum = filename.split('_')
-		# print('>>>>>>>', filenum, framenum)
 		new_array = [{"x":point1,"y":point2} for point1, point2 in array]
 		list_of_files = self.data['traces']['tongue']['files']
 		if not filenum in list_of_files:
@@ -937,7 +940,9 @@ class TextGridModule(object):
 
 class SpectrogramModule(object):
 	'''
-
+	much material in functions other than __init__ and grid borrowed or adapted
+	from Mark Hasegawa-Johnson and his online course materials at:
+	https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
 	'''
 	def __init__(self,app):
 		print( ' - initializing module: Spectrogram' )
@@ -950,19 +955,67 @@ class SpectrogramModule(object):
 		self.canvas_height = 120
 		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
 		self.bbox = self.canvas.bbox(ALL)
+		self.spectrogram = None
 
 	def reset(self):
 		'''
 
 		'''
-		sample_rate, samples = wavfile.read('/Volumes/ResearchAssistant/ultrasound/raw/2015-05-20/audio/13-31-46.wav')
-		frequencies, times, spectrogram = signal.spectrogram(samples, sample_rate)
-		# plt.pcolormesh(times, frequencies, spectrogram)
-		# plt.imshow(spectrogram)
-		# plt.ylabel('Frequency [Hz]')
-		# plt.xlabel('Time [sec]')
-		# plt.show()
+		p_data, p_fs = sf.read('/Volumes/ResearchAssistant/ultrasound/raw/2015-05-20/flac/14-18-56.flac')
+
+		# amount of time from the beginning to display
+		pointsix = 2
+
+		p_wav = p_data[int(0.74*p_fs):int((0.74+pointsix)*p_fs)]
+
+		p_timeaxis = np.linspace(0,pointsix,len(p_wav))
+
+		(p_sgram,p_maxtime, p_maxfreq) = self.sgram(p_wav, int(0.001*p_fs), int(0.004*p_fs), 1024, p_fs, 5000)
+		self.spectrogram = np.transpose(np.array(p_sgram)) #for example file, is a 2d array, 106x1997
+
+		print(len(self.spectrogram), len(self.spectrogram[0]), self.spectrogram[0][0])
+
+		# img = Image.fromarray(p_sgram)
+		# img.save('~/Desktop/doesthiswork.png', format='PNG')
+
+		# plt.imshow(np.transpose(np.array(p_sgram)),origin='lower',extent=(0,p_maxtime,0,p_maxfreq),aspect='auto')
+
 		self.grid()
+
+	def enframe(self,x,S,L):
+   # w = 0.54*np.ones(L)
+        #for n in range(0,L):
+         #   w[n] = w[n] - 0.46*math.cos(2*math.pi*n/(L-1))
+		w = np.hamming(L)
+		frames = []
+		nframes = 1+int((len(x)-L)/S)
+		for t in range(0,nframes):
+			frames.append(np.copy(x[(t*S):(t*S+L)])*w)
+		return(frames)
+
+	def sgram(self,x,frame_skip,frame_length,fft_length, fs, max_freq):
+		frames = self.enframe(x,frame_skip,frame_length)
+		(spectra, freq_axis) = self.stft(frames, fft_length, fs)
+		sgram = self.stft2level(spectra, int(max_freq*fft_length/fs))
+		max_time = len(frames)*frame_skip/fs
+		return(sgram, max_time, max_freq)
+
+	def stft(self,frames,N,Fs):
+		stft_frames = [ fftpack.fft(x,N) for x in frames]
+		freq_axis = np.linspace(0,Fs,N)
+		return(stft_frames, freq_axis)
+
+	def stft2level(self,stft_spectra,max_freq_bin):
+		magnitude_spectra = [ abs(x) for x in stft_spectra ]
+		max_magnitude = max([ max(x) for x in magnitude_spectra ])
+		min_magnitude = max_magnitude / 1000.0
+		for t in range(0,len(magnitude_spectra)):
+			for k in range(0,len(magnitude_spectra[t])):
+				magnitude_spectra[t][k] /= min_magnitude
+				if magnitude_spectra[t][k] < 1:
+					magnitude_spectra[t][k] = 1
+		level_spectra = [ 20*np.log10(x[0:max_freq_bin]) for x in magnitude_spectra ]
+		return(level_spectra)
 
 	def grid(self):
 		'''
