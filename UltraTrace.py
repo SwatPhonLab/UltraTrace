@@ -1808,7 +1808,7 @@ class App(Tk):
 		self.Trace = TraceModule(self)
 		self.Audio = PlaybackModule(self)
 		self.TextGrid = TextGridModule(self)
-		self.Spectrogram = SpectrogramModule(self)
+		#self.Spectrogram = SpectrogramModule(self)
 
 		print( ' - loading widgets' )
 
