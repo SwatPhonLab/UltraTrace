@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # critical
-sudo -H pip3 install -U python-magic
+sudo -H pip3 install -U python-magic soundfile scipy
 
 # non-critical
 sudo -H pip3 install -U cairosvg wav2vec pygame numpy pillow pydicom textgrid
@@ -11,5 +11,5 @@ echo 'Note: you will need to install some other packages to use the full'
 echo '  functionality of this program for example, OSX users can try running'
 echo '  this command:'
 echo ''
-echo '    $ brew install --upgrade cairo sdl sdl_mixer'
+echo '    $ brew install --upgrade cairo sdl sdl_mixer libmagic'
 echo ''
