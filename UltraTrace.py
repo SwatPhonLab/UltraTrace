@@ -952,9 +952,9 @@ class SpectrogramModule(object):
 		self.frame = Frame(self.app.BOTTOM)
 		self.frame.grid( row=0, column=1 )
 		self.canvas_width = self.app.TextGrid.canvas_width
-		self.canvas_height = 120
+		self.canvas_height = 1
 		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
-		self.bbox = self.canvas.bbox(ALL)
+		# self.bbox = self.canvas.bbox(ALL)
 		self.spectrogram = None
 
 	def reset(self):
@@ -973,12 +973,20 @@ class SpectrogramModule(object):
 		(p_sgram,p_maxtime, p_maxfreq) = self.sgram(p_wav, int(0.001*p_fs), int(0.004*p_fs), 1024, p_fs, 5000)
 		self.spectrogram = np.transpose(np.array(p_sgram)) #for example file, is a 2d array, 106x1997
 
-		print(len(self.spectrogram), len(self.spectrogram[0]), self.spectrogram[0][0])
+		# print(len(self.spectrogram), len(self.spectrogram[0]), self.spectrogram[0][0])
 
-		# img = Image.fromarray(p_sgram)
-		# img.save('~/Desktop/doesthiswork.png', format='PNG')
+		img = Image.fromarray(self.spectrogram)
+		# print(img)
+		if img.mode != 'RGB':
+			img = img.convert('RGB')
+		img = ImageTk.PhotoImage(img)
+		# print(img.height())
+		# img.save('doesthiswork.png', format='PNG')
+		self.canvas_height = img.height()
+		self.canvas.config(height=self.canvas_height)
 
-		# plt.imshow(np.transpose(np.array(p_sgram)),origin='lower',extent=(0,p_maxtime,0,p_maxfreq),aspect='auto')
+		self.canvas.create_image(0,0, anchor=NW, image=img)
+		self.img = img
 
 		self.grid()
 
