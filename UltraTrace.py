@@ -1822,7 +1822,7 @@ class App(Tk):
 		self.Trace = TraceModule(self)
 		self.Audio = PlaybackModule(self)
 		self.TextGrid = TextGridModule(self)
-		self.Spectrogram = SpectrogramModule(self)
+		#self.Spectrogram = SpectrogramModule(self)
 
 		print( ' - loading widgets' )
 
@@ -2049,7 +2049,7 @@ class App(Tk):
 		self.Dicom.reset() # need this after Trace.reset()
 		self.Audio.reset()
 		self.TextGrid.reset()
-		self.Spectrogram.reset()
+		#self.Spectrogram.reset()
 
 		# check if we can pan left/right
 		self.filesPrevBtn['state'] = DISABLED if self.Data.getFileLevel('_prev')==None else NORMAL
