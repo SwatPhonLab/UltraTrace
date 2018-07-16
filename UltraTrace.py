@@ -11,6 +11,8 @@ import argparse, datetime, json, \
 	math, os, random, shutil, warnings, decimal, \
 	soundfile as sf, scipy.fftpack as fftpack, urllib.request as request #FIXME should I put these with non-critical dependencies?
 
+from stft2level import stft2level
+
 # monkeypatch the warnings module
 warnings.showwarning = lambda msg, *args : print( 'WARNING: %s' % msg )
 
@@ -349,6 +351,8 @@ class MetadataModule(object):
 			MIMEs = {
 				'audio/x-wav'		:	['.wav'],
 				'audio/x-flac'		:	['.flac'],
+				'audio/wav'			:	['.wav'],
+				'audio/flac'		:	['.flac'],
 				'application/dicom'	:	['.dicom'],
 				'text/plain'		:	['.TextGrid']
 			}
@@ -365,7 +369,6 @@ class MetadataModule(object):
 					real_filepath = os.path.realpath(filepath)
 
 					MIME = getMIMEType(real_filepath)
-					# print(MIME)
 					if MIME in MIMEs:
 						# add `good` files
 						if extension in MIMEs[ MIME ]:
@@ -713,6 +716,8 @@ class TextGridModule(object):
 			self.end = self.end - z_out
 		self.fillCanvases()
 
+		self.app.Spectrogram.reset()
+
 	def getTracedFrames(self,frames):
 		'''
 
@@ -961,27 +966,27 @@ class SpectrogramModule(object):
 		'''
 
 		'''
-		p_data, p_fs = sf.read('/Volumes/ResearchAssistant/ultrasound/raw/2015-05-20/flac/14-18-56.flac')
+		p_data, p_fs = sf.read(self.app.Audio.current)
 
 		# amount of time from the beginning to display
 		pointsix = 2
 
-		p_wav = p_data[int(0.74*p_fs):int((0.74+pointsix)*p_fs)]
-
-		p_timeaxis = np.linspace(0,pointsix,len(p_wav))
+		p_wav = p_data[int(self.app.TextGrid.start*p_fs):int(self.app.TextGrid.end*p_fs)]#[int(0.74*p_fs):int((0.74+pointsix)*p_fs)]
+		# print(len(p_wav), 973)
+		# p_timeaxis = np.linspace(0,pointsix,len(p_wav))
 
 		(p_sgram,p_maxtime, p_maxfreq) = self.sgram(p_wav, int(0.001*p_fs), int(0.004*p_fs), 1024, p_fs, 5000)
 		self.spectrogram = np.transpose(np.array(p_sgram)) #for example file, is a 2d array, 106x1997
 
-		# print(len(self.spectrogram), len(self.spectrogram[0]), self.spectrogram[0][0])
+		print(len(self.spectrogram), len(self.spectrogram[0]), self.spectrogram[0][0])
 
 		img = Image.fromarray(self.spectrogram)
 		# print(img)
 		if img.mode != 'RGB':
 			img = img.convert('RGB')
-		img = ImageTk.PhotoImage(img)
-		# print(img.height())
 		# img.save('doesthiswork.png', format='PNG')
+		img = img.resize((self.canvas_width, img.height))
+		img = ImageTk.PhotoImage(img)
 		self.canvas_height = img.height()
 		self.canvas.config(height=self.canvas_height)
 
@@ -1001,10 +1006,11 @@ class SpectrogramModule(object):
 			frames.append(np.copy(x[(t*S):(t*S+L)])*w)
 		return(frames)
 
+	@profile
 	def sgram(self,x,frame_skip,frame_length,fft_length, fs, max_freq):
 		frames = self.enframe(x,frame_skip,frame_length)
 		(spectra, freq_axis) = self.stft(frames, fft_length, fs)
-		sgram = self.stft2level(spectra, int(max_freq*fft_length/fs))
+		sgram = stft2level(np.array(spectra).astype('float64'), int(max_freq*fft_length/fs))
 		max_time = len(frames)*frame_skip/fs
 		return(sgram, max_time, max_freq)
 
@@ -1013,17 +1019,17 @@ class SpectrogramModule(object):
 		freq_axis = np.linspace(0,Fs,N)
 		return(stft_frames, freq_axis)
 
-	def stft2level(self,stft_spectra,max_freq_bin):
-		magnitude_spectra = [ abs(x) for x in stft_spectra ]
-		max_magnitude = max([ max(x) for x in magnitude_spectra ])
-		min_magnitude = max_magnitude / 1000.0
-		for t in range(0,len(magnitude_spectra)):
-			for k in range(0,len(magnitude_spectra[t])):
-				magnitude_spectra[t][k] /= min_magnitude
-				if magnitude_spectra[t][k] < 1:
-					magnitude_spectra[t][k] = 1
-		level_spectra = [ 20*np.log10(x[0:max_freq_bin]) for x in magnitude_spectra ]
-		return(level_spectra)
+	# def stft2level(self,stft_spectra,max_freq_bin):
+	# 	magnitude_spectra = [ abs(x) for x in stft_spectra ]
+	# 	max_magnitude = max([ max(x) for x in magnitude_spectra ])
+	# 	min_magnitude = max_magnitude / 1000.0
+	# 	for t in range(0,len(magnitude_spectra)):
+	# 		for k in range(0,len(magnitude_spectra[t])):
+	# 			magnitude_spectra[t][k] /= min_magnitude
+	# 			if magnitude_spectra[t][k] < 1:
+	# 				magnitude_spectra[t][k] = 1
+	# 	level_spectra = [ 20*np.log10(x[0:max_freq_bin]) for x in magnitude_spectra ]
+	# 	return(level_spectra)
 
 	def grid(self):
 		'''

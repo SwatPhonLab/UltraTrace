@@ -6,6 +6,8 @@ sudo -H pip3 install -U python-magic
 # non-critical
 sudo -H pip3 install -U cairosvg wav2vec pygame numpy pillow pydicom textgrid
 
+python3 ./setup.py build_ext --inplace
+
 echo ''
 echo 'Note: you will need to install some other packages to use the full'
 echo '  functionality of this program for example, OSX users can try running'
