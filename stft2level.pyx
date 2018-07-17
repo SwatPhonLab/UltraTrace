@@ -39,15 +39,15 @@ import numpy as np
 #         level_spectra[t][k] = 20*log10(magnitude_spectra[t][k])
 #   return(level_spectra)
 
-cpdef double[:,:] stft2level(np.ndarray[np.float64_t, ndim=2] stft_spectra, float max_freq_bin):
+cpdef double[:,:] stft2level(np.ndarray[np.float64_t, ndim=2] stft_spectra, int max_freq_bin):
     cdef np.ndarray[np.float64_t, ndim=2] magnitude_spectra = np.absolute(stft_spectra)
     cdef float max_magnitude = np.max(magnitude_spectra)
     cdef float min_magnitude = max_magnitude / 1000.0
-    print(np.shape(stft_spectra))
+    #print("fast", np.shape(stft_spectra), min_magnitude, max_magnitude, np.shape(magnitude_spectra))
     cdef int x = len(stft_spectra)
     cdef int y = len(stft_spectra[0])
     #cdef np.ndarray[np.float64_t, ndim=2] level_spectra = cvarray(shape=(x, y), itemsize=sizeof(double), format="d")
-    cdef np.ndarray[np.float64_t, ndim=2] level_spectra = np.zeros((x,y))
+    cdef np.ndarray[np.float64_t, ndim=2] level_spectra = np.zeros((x,max_freq_bin))
     #for t in prange(len(magnitude_spectra), nogil=True):
     for t in range(len(magnitude_spectra)):
         for k in range(len(magnitude_spectra[t])):
@@ -55,6 +55,7 @@ cpdef double[:,:] stft2level(np.ndarray[np.float64_t, ndim=2] stft_spectra, floa
             if magnitude_spectra[t, k] < 1:
                 magnitude_spectra[t, k] = 1
             if k < max_freq_bin:
+                #print(t, k)
                 level_spectra[t, k] = 20*log10(magnitude_spectra[t, k])
-    print(np.shape(level_spectra))
+    #print("fast", np.shape(level_spectra))
     return(level_spectra)

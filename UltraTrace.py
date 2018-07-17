@@ -718,7 +718,7 @@ class TextGridModule(object):
 			self.end = self.end - z_out
 		self.fillCanvases()
 
-		# self.app.Spectrogram.reset()
+		self.app.Spectrogram.reset()
 
 	def getTracedFrames(self,frames):
 		'''
@@ -996,20 +996,23 @@ class SpectrogramModule(object):
 		(p_sgram,p_maxtime, p_maxfreq) = self.sgram(p_wav, int(0.001*p_fs), int(0.004*p_fs), 1024, p_fs, 5000)
 		self.spectrogram = np.transpose(np.array(p_sgram)) #for example file, is a 2d array, 106x1997
 
-		print(len(self.spectrogram), len(self.spectrogram[0]), self.spectrogram[0][0])
+		#print(len(self.spectrogram), len(self.spectrogram[0]), self.spectrogram[0][0])
 
 		img = Image.fromarray(self.spectrogram)
 		# print(img)
 		if img.mode != 'RGB':
 			img = img.convert('RGB')
 		# img.save('doesthiswork.png', format='PNG')
-		img = img.resize((self.canvas_width, img.height))
-		img = ImageTk.PhotoImage(img)
-		self.canvas_height = img.height()
+		self.canvas_height = 100#img.height
+		img = img.resize((self.canvas_width, self.canvas_height))
+
+		photo_img = ImageTk.PhotoImage(img)
+		# self.canvas_height = photo_img.height()
+		#print(self.canvas_height, self.canvas_width)
 		self.canvas.config(height=self.canvas_height)
 
-		self.canvas.create_image(0,0, anchor=NW, image=img)
-		self.img = img
+		self.canvas.create_image(0,0, anchor=NW, image=photo_img)
+		self.img = photo_img
 
 		self.grid()
 
@@ -1029,6 +1032,7 @@ class SpectrogramModule(object):
 		frames = self.enframe(x,frame_skip,frame_length)
 		(spectra, freq_axis) = self.stft(frames, fft_length, fs)
 		sgram = stft2level(np.array(spectra).astype('float64'), int(max_freq*fft_length/fs))
+		#sgram = self.stft2level(np.array(spectra).astype('float64'), int(max_freq*fft_length/fs))
 		max_time = len(frames)*frame_skip/fs
 		return(sgram, max_time, max_freq)
 
@@ -1041,12 +1045,14 @@ class SpectrogramModule(object):
 	# 	magnitude_spectra = [ abs(x) for x in stft_spectra ]
 	# 	max_magnitude = max([ max(x) for x in magnitude_spectra ])
 	# 	min_magnitude = max_magnitude / 1000.0
+	# 	#print("slow", np.shape(stft_spectra), min_magnitude, max_magnitude, np.shape(magnitude_spectra))
 	# 	for t in range(0,len(magnitude_spectra)):
 	# 		for k in range(0,len(magnitude_spectra[t])):
 	# 			magnitude_spectra[t][k] /= min_magnitude
 	# 			if magnitude_spectra[t][k] < 1:
 	# 				magnitude_spectra[t][k] = 1
 	# 	level_spectra = [ 20*np.log10(x[0:max_freq_bin]) for x in magnitude_spectra ]
+	# 	#print("slow", np.shape(level_spectra))
 	# 	return(level_spectra)
 
 	def grid(self):
@@ -1054,6 +1060,10 @@ class SpectrogramModule(object):
 
 		'''
 		self.canvas.grid(row=0, column=0, sticky=W)
+
+	def update(self):
+		return
+
 
 class TraceModule(object):
 	'''
@@ -1845,7 +1855,7 @@ class App(Tk):
 		self.Trace = TraceModule(self)
 		self.Audio = PlaybackModule(self)
 		self.TextGrid = TextGridModule(self)
-		#self.Spectrogram = SpectrogramModule(self)
+		self.Spectrogram = SpectrogramModule(self)
 
 		print( ' - loading widgets' )
 
@@ -2071,7 +2081,7 @@ class App(Tk):
 		self.Dicom.reset() # need this after Trace.reset()
 		self.Audio.reset()
 		self.TextGrid.reset()
-		#self.Spectrogram.reset()
+		self.Spectrogram.reset()
 
 		# check if we can pan left/right
 		self.filesPrevBtn['state'] = DISABLED if self.Data.getFileLevel('_prev')==None else NORMAL
@@ -2114,7 +2124,7 @@ class App(Tk):
 		self.Trace.update()
 		self.Audio.update()
 		self.TextGrid.update()
-		#self.Spectrogram.update()
+		self.Spectrogram.update()
 
 		# check if we can pan left/right
 		self.framesPrevBtn['state'] = DISABLED if self.frame==1 else NORMAL
