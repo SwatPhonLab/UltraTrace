@@ -670,6 +670,8 @@ class TextGridModule(object):
 		self.label_width=self.app.Trace.frame.winfo_width()-self.label_padx
 		self.start = 0
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
+		self.first_frame = 1
+		self.last_frame = self.TextGrid.getFirst(self.frameTierName)[-1].mark
 
 		tier_obj = self.TextGrid.getFirst(tier)
 		self.widgets = { 'name':tier,
@@ -716,7 +718,7 @@ class TextGridModule(object):
 			self.end = self.end - z_out
 		self.fillCanvases()
 
-		self.app.Spectrogram.reset()
+		# self.app.Spectrogram.reset()
 
 	def getTracedFrames(self,frames):
 		'''
@@ -748,20 +750,26 @@ class TextGridModule(object):
 				# print(tier)
 			if 'canvas' in el:
 				canvas = el['canvas']
+				#remove previous intervals
 				canvas.delete(ALL)
+				#get starting interval
 				i = tier.indexContaining(self.start)
 				time = tier[i].maxTime
-				# rel_time = time-self.start
-				# text_loc = (rel_time/2)/duration*self.canvas_width
-				# canvas.create_text(text_loc, self.canvas_height/2, justify=CENTER,
-				# 					text=tier[i].mark, width=rel_time, activefill='blue')
 				frame_i = 0
-				while time <= self.end and i < len(tier)-1:
-					rel_time = time-self.start
-					length = tier[i].maxTime - tier[i].minTime
+				while i < len(tier) and tier[i].minTime <= self.end:
+					if self.start >= tier[i].minTime:
+						strtime = self.start
+					else:
+						strtime = tier[i].minTime
+					if self.end <= tier[i].maxTime:
+						time = self.end
+					length = time - strtime
 					pixel_length = length/duration*self.canvas_width
+
 					mod = length/2
+					rel_time = time-self.start
 					loc=(rel_time-mod)/duration*self.canvas_width
+
 					text = canvas.create_text(loc, self.canvas_height/2, justify=CENTER,
 										text=tier[i].mark, width=pixel_length, activefill='blue')
 					minTimetag = "minTime"+str(tier[i].minTime)
@@ -769,7 +777,7 @@ class TextGridModule(object):
 					canvas.addtag_withtag(minTimetag, text)
 					canvas.addtag_withtag(maxTimetag, text)
 					#add containted frames to tags
-					while frametier[frame_i].time <= tier[i].maxTime and frame_i < len(frametier):
+					while frame_i < len(frametier) and frametier[frame_i].time <= tier[i].maxTime:
 						if frametier[frame_i].time >= tier[i].minTime:
 							canvas.addtag_withtag("frame"+frametier[frame_i].mark, text)
 							if tier[i].mark != '':
@@ -779,31 +787,49 @@ class TextGridModule(object):
 					if self.selectedItem:
 						# old_selected_tags = self.selectedItem[0].gettags(self.selectedItem[1])
 						if minTimetag in old_selected_tags and maxTimetag in old_selected_tags:
-							# print('this happened')
 							self.selectedItem = (canvas, text)
 					#create line
 					loc=rel_time/duration*self.canvas_width
 					i+=1
-					time = tier[i].maxTime
-					canvas.create_line(loc,0,loc,self.canvas_height)
+					if i < len(tier) and loc < self.canvas_width:
+						canvas.create_line(loc,0,loc,self.canvas_height)
+						time = tier[i].maxTime #here so that loop doesn't run an extra time
 
-					#fills labels with info about tiers w/traces
-					current_label = el['canvas-label'].find_all()[0]
-					nonempty_frames = el['canvas-label'].gettags(current_label)
-					el['canvas-label'].itemconfig(current_label,
-					  text='{}:\n({}/{})'.format(tier.name,len(self.getTracedFrames(nonempty_frames)), len(nonempty_frames)))
+				#fills labels with info about tiers w/traces
+				self.updateTierLabels()
+				# current_label = el['canvas-label'].find_all()[0]
+				# nonempty_frames = el['canvas-label'].gettags(current_label)
+				# el['canvas-label'].itemconfig(current_label,
+				#   text='{}:\n({}/{})'.format(tier.name,len(self.getTracedFrames(nonempty_frames)), len(nonempty_frames)))
 
 			elif 'frames' in el:
-				i = 0
 				frames = el['frames']
+				i = 0
 				frames.delete(ALL)
-				while tier[i].time <= self.end and i < len(tier)-1:
+				first_frame_found = False
+				while i < len(tier) and tier[i].time <= self.end :
 					if tier[i].time >= self.start:
 						x_coord = (tier[i].time-self.start)/duration*self.canvas_width
 						frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags="frame"+tier[i].mark)
+						if first_frame_found == False:
+							self.first_frame = int(tier[i].mark)
+							first_frame_found = True
 						CanvasTooltip(frames, frame,text=tier[i].mark)
 					i+=1
+				self.last_frame = int(tier[i-1].mark)
 				self.paintCanvases()
+
+	def updateTierLabels(self):
+		'''
+
+		'''
+		for el in self.TkWidgets:
+			if 'canvas' in el:
+				current_label = el['canvas-label'].find_all()[0]
+				nonempty_frames = el['canvas-label'].gettags(current_label)
+				el['canvas-label'].itemconfig(current_label,
+				  text='{}:\n({}/{})'.format(el['name'],len(self.getTracedFrames(nonempty_frames)), len(nonempty_frames)))
+
 
 	def my_find_closest(self, event):
 		'''
@@ -842,28 +868,21 @@ class TextGridModule(object):
 		maybe_item = self.my_find_closest(event)
 
 		if event.widget in self.tier_pairs.keys(): #if on tier-label canvas
-			# event.widget.itemconfig(maybe_item,fill='blue')
 			#fill selected tier frames
 			self.selectedTierFrames = []
 			for x in event.widget.gettags(maybe_item):
 				if x[:5] == 'frame':
 					self.selectedTierFrames.append(x[5:])
-			#make all text intervals blue
-			# canvas = self.tier_pairs[event.widget]
-			# for el in canvas.find_all():
-			# 	if canvas.type(canvas.find_withtag(el)) == 'text':
-			# 		canvas.itemconfig(el, fill='blue')
 			item = maybe_item
 
 		else: #on canvas with intervals/frames
 			if isinstance(maybe_item, int):
-				if maybe_item%2 == 0: #if item found is a boundary
+				#if item found is a boundary
+				if len(event.widget.gettags(maybe_item)) == 0 or event.widget.gettags(maybe_item) == ('current',):
 					#determine on which side of the line the event occurred
 					if event.widget.coords(maybe_item)[0] > event.x:
-						# item = maybe_item+1 #righthand boundary drawn before text
 						item = maybe_item-1
 					else: #i.e. event was on line or to the right of it
-						# item = maybe_item+3
 						item = maybe_item+1
 				else:
 					item = maybe_item
@@ -880,14 +899,13 @@ class TextGridModule(object):
 
 		#automatically updates frame
 		if not str(self.app.frame) in self.selectedTierFrames:
-			self.app.frame = int(self.selectedTierFrames[0])
+			new_frame = int(self.selectedTierFrames[0])
+			if self.first_frame > new_frame:
+				new_frame = self.first_frame
+			elif new_frame > self.last_frame:
+				new_frame = self.last_frame
+			self.app.frame = new_frame
 			self.app.framesUpdate()
-			# if self.app.frame < int(self.selectedTierFrames[0]):
-			# 	self.app.framesNext()
-			# 	# self.update()
-			# elif self.app.frame > int(self.selectedTierFrames[-1]):
-			# 	self.app.framesPrev()
-			# 	# self.update()
 
 	def paintCanvases(self):
 		'''
@@ -1006,7 +1024,7 @@ class SpectrogramModule(object):
 			frames.append(np.copy(x[(t*S):(t*S+L)])*w)
 		return(frames)
 
-	@profile
+	# @profile
 	def sgram(self,x,frame_skip,frame_length,fft_length, fs, max_freq):
 		frames = self.enframe(x,frame_skip,frame_length)
 		(spectra, freq_axis) = self.stft(frames, fft_length, fs)
@@ -1157,20 +1175,25 @@ class TraceModule(object):
 				pass
 	def write(self):
 		'''
-		write out the coordinates of all of our crosshairs to the metadata file
+		write out the coordinates of all of our crosshairs to the metadata file:
 		'''
 
 		trace = self.getCurrentTraceName()
 		traces = []
 
+		# prepare trace data in format for metadata array
 		if trace in self.crosshairs:
 			for ch in self.crosshairs[ trace ]:
 				if ch.isVisible:
 					x,y = ch.getTrueCoords()
 					data = { 'x':x, 'y':y }
 					if data not in traces:
+						# add trace to temporary array for including in metadata array
 						traces.append(data)
+		# add to metadata array and update file
 		self.app.Data.setCurrentTraceCurrentFrame( traces )
+		# update tier labels for number of annotated frames
+		self.app.TextGrid.updateTierLabels()
 
 	def getCurrentTraceName(self):
 		'''
@@ -1949,7 +1972,6 @@ class App(Tk):
 				ch = self.Trace.add( *self.click )
 
 				self.Control.push({ 'type':'add', 'chs':[ch] })
-
 				return
 
 			# NOTE: only get here if we clicked near something
@@ -2104,7 +2126,7 @@ class App(Tk):
 		if self.Dicom.isLoaded and self.frame > 1:
 			self.frame -= 1
 			if len(self.TextGrid.selectedTierFrames) != 0:
-				while str(self.frame) not in self.TextGrid.selectedTierFrames:
+				while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame > self.TextGrid.last_frame:
 					if self.frame <= int(self.TextGrid.selectedTierFrames[0]):
 						self.frame = int(self.TextGrid.selectedTierFrames[0])
 						break
@@ -2117,7 +2139,7 @@ class App(Tk):
 		if self.Dicom.isLoaded and self.frame < self.frames:
 			self.frame += 1
 			if len(self.TextGrid.selectedTierFrames) != 0:
-				while str(self.frame) not in self.TextGrid.selectedTierFrames:
+				while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame < self.TextGrid.first_frame:
 					if self.frame >= int(self.TextGrid.selectedTierFrames[-1]):
 						self.frame = int(self.TextGrid.selectedTierFrames[-1])
 						break
