@@ -1616,6 +1616,7 @@ class DicomModule(object):
 				self.loadBtn.grid_remove()
 				self.grid()
 
+	@profile
 	def process(self):
 		'''
 		perform the dicom->PNG operation
@@ -1673,6 +1674,32 @@ class DicomModule(object):
 		self.app.Data.setFileLevel( 'processed', processedData )
 		self.app.lift()
 		self.load()
+
+	# an attempt at making things parallel, but we get the following error:
+	# _pickle.PicklingError: Could not pickle the task to send it to the workers.
+
+	# 	#for f in range(frames):
+	# 	Parallel(n_jobs=2)(delayed(self.writeTempImage)(f, frames, outputpath, RGB, pixels) for f in range(frames))
+	#
+	#
+	# 	self.app.Data.setFileLevel( 'processed', self.processedData )
+	# 	self.app.lift()
+	# 	self.load()
+	#
+	# def writeTempImage(self, f, frames, outputpath, RGB, pixels):
+	#
+	# 	#printProgressBar(f+1, frames, prefix = 'Processing:', suffix = ('complete (%d of %d)' % (f+1,frames)))
+	#
+	# 	arr = pixels[ f,:,:,: ] if RGB else pixels[ f,:,: ]
+	# 	img = Image.fromarray( arr )
+	#
+	# 	outputfilename = '%s_frame_%04d.png' % ( self.app.Data.getFileLevel('name'), f )
+	# 	outputfilepath = os.path.join( outputpath, outputfilename )
+	# 	img.save( outputfilepath, format='PNG' )
+	#
+	# 	## keep track of all the processing we've finished
+	# 	#self.processedData[ str(f) ] = outputfilepath
+	# 	return (str(f), outputfilepath)
 
 	def reset(self):
 		'''
