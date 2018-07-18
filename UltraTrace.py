@@ -627,13 +627,13 @@ class TextGridModule(object):
 							tierWidgets = self.makeTierWidgets( tier )
 							self.TkWidgets.append( tierWidgets )
 					#make frame widget
-					frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray')
+					self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray')
 					frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height)
-					self.TkWidgets.append({'name':self.frameTierName,'frames':frames_canvas,
+					self.TkWidgets.append({'name':self.frameTierName,'frames':self.frames_canvas,
 										   'frames-label':frames_label})
 					frames_label.create_text(self.label_width,self.canvas_height/2, anchor=E, justify=CENTER,
 											 text='frames: ', width=self.label_width, activefill='blue')
-					frames_canvas.bind("<Button-1>", self.getClickedFrame)
+					self.frames_canvas.bind("<Button-1>", self.getClickedFrame)
 					#put items on canvases
 					self.fillCanvases()
 				except:
@@ -857,14 +857,14 @@ class TextGridModule(object):
 		'''
 		turns selected frame back to black
 		'''
-		self.TkWidgets[-1]['frames'].itemconfig(ALL, fill='black')
+		self.frames_canvas.itemconfig(ALL, fill='black')
 		if self.selectedItem:
 			self.selectedItem[0].itemconfig(self.selectedItem[1], fill='black')
 			#clicked tier label
 			if self.selectedItem[0] in self.tier_pairs.keys():
 				self.selectedItem[0].itemconfig(1, fill='black')
 				self.tier_pairs[self.selectedItem[0]].itemconfig(ALL, fill='black')
-				self.TkWidgets[-1]['frames'].itemconfig(ALL, fill='black')
+				self.frames_canvas.itemconfig(ALL, fill='black')
 
 	def genFrameList(self, event):
 		'''
@@ -934,22 +934,39 @@ class TextGridModule(object):
 			frames = wdg.gettags(itm)
 			for frame in frames:
 				if frame[:5] == 'frame':
-					frame_obj = self.TkWidgets[-1]['frames'].find_withtag(frame)
-					self.TkWidgets[-1]['frames'].itemconfig(frame_obj, fill='red')
+					frame_obj = self.frames_canvas.find_withtag(frame)
+					self.frames_canvas.itemconfig(frame_obj, fill='red')
 
 		#current frame highlighted in blue
 		if self.app.frame:
-			highlighted_frame = self.TkWidgets[-1]['frames'].find_withtag('frame'+str(self.app.frame))
-			self.TkWidgets[-1]['frames'].itemconfig(highlighted_frame, fill='blue')
+			highlighted_frame = self.frames_canvas.find_withtag('frame'+str(self.app.frame))
+			self.frames_canvas.itemconfig(highlighted_frame, fill='blue')
 
 	def update(self):
 		'''
 
 		'''
-		#repaint all frames
+		#create list of displayed frames' tags
+		itrobj = []
+		for itm in self.frames_canvas.find_all():
+			itrobj += list(self.frames_canvas.gettags(itm))
+		#if selected frame is out of view
+		if "frame"+str(self.app.frame) not in itrobj:
+			duration = self.end - self.start
+			#if selected frame outside selected interval, deselect interval
+			if self.selectedItem:
+				if "frame"+str(self.app.frame) not in self.selectedItem[0].gettags(self.selectedItem[1]):
+					self.selectedItem = None
+			#recenter view on selected frame
+			new_time = self.TextGrid.getFirst(self.frameTierName)[self.app.frame-1].time
+			self.start = new_time - (duration/2)
+			self.end = new_time + (duration/2)
+			#redraw
+			self.fillCanvases()
+
+		# repaint all frames
 		self.wipeFill()
 		self.paintCanvases()
-		#if touchedFrame == True, rewite labels
 
 	def grid(self, event=None):
 		'''
