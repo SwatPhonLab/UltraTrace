@@ -633,6 +633,20 @@ class TextGridModule(object):
 					pass
 			self.grid()
 
+	def shiftFrames(self):
+		'''
+
+		'''
+		print(640)
+		try:
+			# float(self.frame_shift)
+			for point in self.TextGrid.getFirst(self.frameTierName):
+				point.time += decimal.Decimal(self.frame_shift.get()/100) ## NOTE: currently 100th of second
+			self.fillCanvases()
+		except ValueError:
+			print('Not a float!')
+
+
 	def makeFrameWidget(self):
 		'''
 		makes frame widget
@@ -644,10 +658,14 @@ class TextGridModule(object):
 		frames_label.create_text(self.label_width,self.canvas_height/2, anchor=E, justify=CENTER,
 								 text='frames: ', width=self.label_width, activefill='blue')
 
-		num = DoubleVar()
-		txtbox = Entry(self.frame, textvariable=num)
-		window = frames_label.create_window(0,self.canvas_height/2, anchor=W, window=txtbox)
+		self.frame_shift = DoubleVar()
+		go_btn = Button(self.frame, text='Go', command=self.shiftFrames)
+		txtbox = Entry(self.frame, textvariable=self.frame_shift, width=40)
+		window = frames_label.create_window(self.canvas_width/4,self.canvas_height/2, anchor=E, window=txtbox, width=40)
 		self.TkWidgets[-1]['entry'] = txtbox
+		self.TkWidgets[-1]['button'] = go_btn
+
+		# num.trace("w", self.shiftFrames())
 		self.frames_canvas.bind("<Button-1>", self.getClickedFrame)
 
 	def getFrameTierName(self):
@@ -992,7 +1010,7 @@ class TextGridModule(object):
 				tierWidgets['canvas-label'].grid(row=t, column=0, sticky=W)
 				self.tier_pairs[tierWidgets['canvas-label']] = tierWidgets['canvas']
 			if 'entry' in tierWidgets:
-				tierWidgets['entry'].grid(row=t, column=0, sticky=W)
+				tierWidgets['button'].grid(row=t, column=0)
 
 class SpectrogramModule(object):
 	'''
