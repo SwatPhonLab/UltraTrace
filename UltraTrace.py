@@ -592,6 +592,8 @@ class TextGridModule(object):
 		self.app.bind("<Control-a>", self.getBounds)
 		self.app.bind("<Control-i>", self.getBounds)
 		self.app.bind("<Control-o>", self.getBounds)
+		self.app.bind("<Left>", self.getBounds)
+		self.app.bind("<Right>", self.getBounds)
 
 	def reset(self, event=None):
 		'''
@@ -716,6 +718,12 @@ class TextGridModule(object):
 		if event.keysym == 'i':
 			self.start = self.start + z_out
 			self.end = self.end - z_out
+		if event.keysym == 'Left':
+			self.start -= a/(10*f)
+			self.end -= a/(10*f)
+		if event.keysym == 'Right':
+			self.start += a/(10*f)
+			self.end += a/(10*f)
 		self.fillCanvases()
 
 		self.app.Spectrogram.reset()
