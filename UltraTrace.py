@@ -977,44 +977,33 @@ class SpectrogramModule(object):
 		self.canvas_width = self.app.TextGrid.canvas_width
 		self.canvas_height = 1
 		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
-		# self.bbox = self.canvas.bbox(ALL)
 		self.spectrogram = None
 
 	def reset(self):
 		'''
 
 		'''
-		p_data, p_fs = sf.read(self.app.Audio.current)
+		p_data, p_fs = sf.read(self.app.Audio.current) ## NOTE: reads audio again even when zooming
 
-		# amount of time from the beginning to display
-		pointsix = 2
-
-		p_wav = p_data[int(self.app.TextGrid.start*p_fs):int(self.app.TextGrid.end*p_fs)]#[int(0.74*p_fs):int((0.74+pointsix)*p_fs)]
-		# print(len(p_wav), 973)
-		# p_timeaxis = np.linspace(0,pointsix,len(p_wav))
+		p_wav = p_data[int(self.app.TextGrid.start*p_fs):int(self.app.TextGrid.end*p_fs)]
 
 		(p_sgram,p_maxtime, p_maxfreq) = self.sgram(p_wav, int(0.001*p_fs), int(0.004*p_fs), 1024, p_fs, 5000)
 		self.spectrogram = np.transpose(np.array(p_sgram)) #for example file, is a 2d array, 106x1997
 
-		#print(len(self.spectrogram), len(self.spectrogram[0]), self.spectrogram[0][0])
-
 		img = Image.fromarray(self.spectrogram)
-		# print(img)
 		if img.mode != 'RGB':
 			img = img.convert('RGB')
-		# img.save('doesthiswork.png', format='PNG')
-		self.canvas_height = 100#img.height
+		self.canvas_height = img.height
 		img = img.resize((self.canvas_width, self.canvas_height))
 
 		photo_img = ImageTk.PhotoImage(img)
-		# self.canvas_height = photo_img.height()
-		#print(self.canvas_height, self.canvas_width)
 		self.canvas.config(height=self.canvas_height)
 
 		self.canvas.create_image(0,0, anchor=NW, image=photo_img)
 		self.img = photo_img
 
 		self.grid()
+		self.drawInterval()
 
 	def enframe(self,x,S,L):
    # w = 0.54*np.ones(L)
@@ -1027,7 +1016,6 @@ class SpectrogramModule(object):
 			frames.append(np.copy(x[(t*S):(t*S+L)])*w)
 		return(frames)
 
-	# @profile
 	def sgram(self,x,frame_skip,frame_length,fft_length, fs, max_freq):
 		frames = self.enframe(x,frame_skip,frame_length)
 		(spectra, freq_axis) = self.stft(frames, fft_length, fs)
@@ -1041,19 +1029,20 @@ class SpectrogramModule(object):
 		freq_axis = np.linspace(0,Fs,N)
 		return(stft_frames, freq_axis)
 
-	# def stft2level(self,stft_spectra,max_freq_bin):
-	# 	magnitude_spectra = [ abs(x) for x in stft_spectra ]
-	# 	max_magnitude = max([ max(x) for x in magnitude_spectra ])
-	# 	min_magnitude = max_magnitude / 1000.0
-	# 	#print("slow", np.shape(stft_spectra), min_magnitude, max_magnitude, np.shape(magnitude_spectra))
-	# 	for t in range(0,len(magnitude_spectra)):
-	# 		for k in range(0,len(magnitude_spectra[t])):
-	# 			magnitude_spectra[t][k] /= min_magnitude
-	# 			if magnitude_spectra[t][k] < 1:
-	# 				magnitude_spectra[t][k] = 1
-	# 	level_spectra = [ 20*np.log10(x[0:max_freq_bin]) for x in magnitude_spectra ]
-	# 	#print("slow", np.shape(level_spectra))
-	# 	return(level_spectra)
+	def drawInterval(self):
+		'''
+
+		'''
+		if self.app.TextGrid.selectedItem:
+			widg = self.app.TextGrid.selectedItem[0]
+			itm = self.app.TextGrid.selectedItem[1]
+
+			if itm-1 in widg.find_all():
+				l_loc = widg.coords(itm-1)[0]
+				self.canvas.create_line(l_loc, 0, l_loc, self.canvas_height, tags='line', fill='blue')
+			if itm+1 in widg.find_all():
+				r_loc = widg.coords(itm+1)[0]
+				self.canvas.create_line(r_loc, 0, r_loc, self.canvas_height, tags='line', fill='blue')
 
 	def grid(self):
 		'''
@@ -1062,7 +1051,8 @@ class SpectrogramModule(object):
 		self.canvas.grid(row=0, column=0, sticky=W)
 
 	def update(self):
-		return
+		self.canvas.delete('line')
+		self.drawInterval()
 
 
 class TraceModule(object):
