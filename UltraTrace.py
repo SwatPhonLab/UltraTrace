@@ -592,8 +592,8 @@ class TextGridModule(object):
 		self.app.bind("<Control-a>", self.getBounds)
 		self.app.bind("<Control-i>", self.getBounds)
 		self.app.bind("<Control-o>", self.getBounds)
-		self.app.bind("<Left>", self.getBounds)
-		self.app.bind("<Right>", self.getBounds)
+		self.app.bind("<Shift-Left>", self.getBounds)
+		self.app.bind("<Shift-Right>", self.getBounds)
 
 	def reset(self, event=None):
 		'''
