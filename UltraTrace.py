@@ -588,12 +588,12 @@ class TextGridModule(object):
 		self.canvas_width=800
 		self.canvas_height=60
 		#bindings
-		self.app.bind("<Control-n>", self.getBounds)
-		self.app.bind("<Control-a>", self.getBounds)
-		self.app.bind("<Control-i>", self.getBounds)
-		self.app.bind("<Control-o>", self.getBounds)
-		self.app.bind("<Shift-Left>", self.getBounds)
-		self.app.bind("<Shift-Right>", self.getBounds)
+		self.app.bind("<Command-n>", self.getBounds)
+		self.app.bind("<Command-a>", self.getBounds)
+		self.app.bind("<Command-i>", self.getBounds)
+		self.app.bind("<Command-o>", self.getBounds)
+		self.app.bind("<Command-Left>", self.getBounds)
+		self.app.bind("<Command-Right>", self.getBounds)
 
 	def reset(self, event=None):
 		'''
@@ -1615,6 +1615,7 @@ class DicomModule(object):
 				self.frame.grid_remove()
 				self.loadBtn.grid_remove()
 				self.grid()
+
 	def process(self):
 		'''
 		perform the dicom->PNG operation
@@ -2176,12 +2177,12 @@ class App(Tk):
 		'''
 		if self.Dicom.isLoaded and self.frame > 1:
 			self.frame -= 1
-			if len(self.TextGrid.selectedTierFrames) != 0:
-				while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame > self.TextGrid.last_frame:
-					if self.frame <= int(self.TextGrid.selectedTierFrames[0]):
-						self.frame = int(self.TextGrid.selectedTierFrames[0])
-						break
-					self.frame -= 1
+			# if len(self.TextGrid.selectedTierFrames) != 0:
+			# 	while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame > self.TextGrid.last_frame:
+			# 		if self.frame <= int(self.TextGrid.selectedTierFrames[0]):
+			# 			self.frame = int(self.TextGrid.selectedTierFrames[0])
+			# 			break
+			# 		self.frame -= 1
 			self.framesUpdate()
 	def framesNext(self, event=None):
 		'''
@@ -2189,12 +2190,12 @@ class App(Tk):
 		'''
 		if self.Dicom.isLoaded and self.frame < self.frames:
 			self.frame += 1
-			if len(self.TextGrid.selectedTierFrames) != 0:
-				while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame < self.TextGrid.first_frame:
-					if self.frame >= int(self.TextGrid.selectedTierFrames[-1]):
-						self.frame = int(self.TextGrid.selectedTierFrames[-1])
-						break
-					self.frame += 1
+			# if len(self.TextGrid.selectedTierFrames) != 0:
+			# 	while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame < self.TextGrid.first_frame:
+			# 		if self.frame >= int(self.TextGrid.selectedTierFrames[-1]):
+			# 			self.frame = int(self.TextGrid.selectedTierFrames[-1])
+			# 			break
+			# 		self.frame += 1
 			self.framesUpdate()
 	def framesJumpTo(self):
 		'''
