@@ -577,9 +577,9 @@ class TextGridModule(object):
 		'''
 		print( ' - initializing module: TextGrid' )
 		self.app = app
-		self.frame = Frame(self.app.BOTTOM)#, width=1000)
+		self.frame = Frame(self.app.BOTTOM)
 		self.label_padx = 20
-		self.canvas_frame = Frame(self.app.BOTTOM, padx=self.label_padx)#, width=200)
+		self.canvas_frame = Frame(self.app.BOTTOM, padx=self.label_padx)
 		self.frame.grid( row=1, column=0 )
 		self.canvas_frame.grid(row=1, column=1, sticky=E)
 		self.TextGrid = None
@@ -613,7 +613,6 @@ class TextGridModule(object):
 			filename = self.app.Data.getFileLevel( '.TextGrid' )
 			if filename:
 				try:
-					# self.boundaries = [] #for putting in the interval boundaries
 					# try to load up our TextGrid using the textgrid lib
 					self.TextGrid = TextGrid.fromFile( filename )
 					# reset default Label to actually be useful
@@ -627,18 +626,29 @@ class TextGridModule(object):
 							tierWidgets = self.makeTierWidgets( tier )
 							self.TkWidgets.append( tierWidgets )
 					#make frame widget
-					self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray')
-					frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height)
-					self.TkWidgets.append({'name':self.frameTierName,'frames':self.frames_canvas,
-										   'frames-label':frames_label})
-					frames_label.create_text(self.label_width,self.canvas_height/2, anchor=E, justify=CENTER,
-											 text='frames: ', width=self.label_width, activefill='blue')
-					self.frames_canvas.bind("<Button-1>", self.getClickedFrame)
+					self.makeFrameWidget()
 					#put items on canvases
 					self.fillCanvases()
 				except:
 					pass
 			self.grid()
+
+	def makeFrameWidget(self):
+		'''
+		makes frame widget
+		'''
+		self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray')
+		frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height)
+		self.TkWidgets.append({'name':self.frameTierName,'frames':self.frames_canvas,
+							   'frames-label':frames_label})
+		frames_label.create_text(self.label_width,self.canvas_height/2, anchor=E, justify=CENTER,
+								 text='frames: ', width=self.label_width, activefill='blue')
+
+		num = DoubleVar()
+		txtbox = Entry(self.frame, textvariable=num)
+		window = frames_label.create_window(0,self.canvas_height/2, anchor=W, window=txtbox)
+		self.TkWidgets[-1]['entry'] = txtbox
+		self.frames_canvas.bind("<Button-1>", self.getClickedFrame)
 
 	def getFrameTierName(self):
 		'''
@@ -805,10 +815,6 @@ class TextGridModule(object):
 
 				#fills labels with info about tiers w/traces
 				self.updateTierLabels()
-				# current_label = el['canvas-label'].find_all()[0]
-				# nonempty_frames = el['canvas-label'].gettags(current_label)
-				# el['canvas-label'].itemconfig(current_label,
-				#   text='{}:\n({}/{})'.format(tier.name,len(self.getTracedFrames(nonempty_frames)), len(nonempty_frames)))
 
 			elif 'frames' in el:
 				frames = el['frames']
@@ -985,6 +991,8 @@ class TextGridModule(object):
 				tierWidgets['canvas'].grid(row=t, column=2, sticky=W)
 				tierWidgets['canvas-label'].grid(row=t, column=0, sticky=W)
 				self.tier_pairs[tierWidgets['canvas-label']] = tierWidgets['canvas']
+			if 'entry' in tierWidgets:
+				tierWidgets['entry'].grid(row=t, column=0, sticky=W)
 
 class SpectrogramModule(object):
 	'''
