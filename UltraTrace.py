@@ -594,6 +594,10 @@ class TextGridModule(object):
 		self.app.bind("<Command-o>", self.getBounds)
 		self.app.bind("<Command-Left>", self.getBounds)
 		self.app.bind("<Command-Right>", self.getBounds)
+		self.app.bind("<Command-Up>", self.changeTiers)
+		self.app.bind("<Command-Down>", self.changeTiers)
+		self.app.bind("<Shift-Left>", self.getBounds)
+		self.app.bind("<Shift-Right>", self.getBounds)
 
 	def reset(self, event=None):
 		'''
@@ -722,10 +726,41 @@ class TextGridModule(object):
 		label.bind("<Button-1>", self.genFrameList)
 
 		return self.widgets
+
+	def changeTiers(self, event):
+		'''
+
+		'''
+		index = None
+		if self.selectedItem:
+			for i, el in enumerate(self.TkWidgets):
+				if self.selectedItem[0] in el.values():
+					index = i
+
+			if index != None:
+				if event.keysym == 'Up' and 'canvas' in self.TkWidgets[index-1]:
+					new_widg = self.TkWidgets[index-1]['canvas']
+				elif event.keysym == 'Down' and 'canvas' in self.TkWidgets[index+1]:
+					new_widg = self.TkWidgets[index+1]['canvas']
+				else:
+					return
+
+				# old_tags = self.selectedItem[0].gettags(self.selectedItem[1])
+				# finding_tag = old_tags[int(len(old_tags)/2)]
+				# print(old_tags, finding_tag)
+				new_item = new_widg.find_withtag("frame"+str(self.app.frame))[0]
+				self.selectedItem = (new_widg, new_item)
+
+				self.fillCanvases()
+				self.update()
+				self.app.Spectrogram.update()
+
+
 	def getBounds(self, event):
 		'''
 
 		'''
+		print(event.char, event.keysym, event.keycode)
 		f = decimal.Decimal(self.tg_zoom_factor)
 		a = self.end - self.start
 		z_out = (a-(a/f))/2
@@ -1616,7 +1651,7 @@ class DicomModule(object):
 				self.loadBtn.grid_remove()
 				self.grid()
 
-	@profile
+	# @profile
 	def process(self):
 		'''
 		perform the dicom->PNG operation
