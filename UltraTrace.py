@@ -323,6 +323,7 @@ class MetadataModule(object):
 		self.path = path
 
 		self.mdfile = os.path.join( self.path, 'metadata.json' )
+		self.offset = 0.0
 
 		# either load up existing metadata
 		if os.path.exists( self.mdfile ):
@@ -344,6 +345,7 @@ class MetadataModule(object):
 					'tongue': {
 						'color': 'red',
 						'files': {} } },
+				'offset':self.offset,
 				'files': {} }
 
 			# we want each object to have entries for everything here
@@ -434,6 +436,7 @@ class MetadataModule(object):
 		'''
 		Write metadata out to file
 		'''
+		# print(self.data['offset'])
 		mdfile = self.mdfile if _mdfile==None else _mdfile
 		with open( mdfile, 'w' ) as f:
 			json.dump( self.data, f, indent=3 )
@@ -587,6 +590,10 @@ class TextGridModule(object):
 		self.tg_zoom_factor = 1.5
 		self.canvas_width=800
 		self.canvas_height=60
+
+		self.start = 0
+		self.end = 0
+
 		#bindings
 		self.app.bind("<Command-n>", self.getBounds)
 		self.app.bind("<Command-a>", self.getBounds)
@@ -596,8 +603,8 @@ class TextGridModule(object):
 		self.app.bind("<Command-Right>", self.getBounds)
 		self.app.bind("<Command-Up>", self.changeTiers)
 		self.app.bind("<Command-Down>", self.changeTiers)
-		self.app.bind("<Shift-Left>", self.getBounds)
-		self.app.bind("<Shift-Right>", self.getBounds)
+		self.app.bind("<Shift_L>", self.getBounds)
+		self.app.bind("<Shift_L>", self.getBounds)
 
 	def reset(self, event=None):
 		'''
@@ -629,8 +636,9 @@ class TextGridModule(object):
 							# make some widgets for each tier
 							tierWidgets = self.makeTierWidgets( tier )
 							self.TkWidgets.append( tierWidgets )
-					#make frame widget
+					#make other widgets
 					self.makeFrameWidget()
+					self.makeTimeWidget()
 					#put items on canvases
 					self.fillCanvases()
 				except:
@@ -641,15 +649,21 @@ class TextGridModule(object):
 		'''
 
 		'''
-		print(640)
 		try:
 			# float(self.frame_shift)
 			for point in self.TextGrid.getFirst(self.frameTierName):
-				point.time += decimal.Decimal(self.frame_shift.get()/100) ## NOTE: currently 100th of second
+				shift = self.frame_shift.get()
+				self.app.Data.offset += shift
+				point.time += decimal.Decimal(shift/100) ## NOTE: currently 100th of second
 			self.fillCanvases()
 		except ValueError:
 			print('Not a float!')
 
+	def makeTimeWidget(self):
+		self.time_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height/3)
+		s = self.time_canvas.create_text(3,0, anchor=NW, text=self.start)
+		e = self.time_canvas.create_text(self.canvas_width,0, anchor=NE, text=self.end)
+		self.TkWidgets.append({'times':self.time_canvas})
 
 	def makeFrameWidget(self):
 		'''
@@ -702,7 +716,6 @@ class TextGridModule(object):
 
 		self.app.Trace.frame.update()
 		self.label_width=self.app.Trace.frame.winfo_width()-self.label_padx
-		self.start = 0
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
 		self.first_frame = 1
 		self.last_frame = self.TextGrid.getFirst(self.frameTierName)[-1].mark
@@ -810,6 +823,7 @@ class TextGridModule(object):
 			self.start = 0
 		if self.end > self.TextGrid.maxTime:
 			self.end = self.TextGrid.maxTime
+		self.updateTimeLabels()
 
 		if self.selectedItem:
 			old_selected_tags = self.selectedItem[0].gettags(self.selectedItem[1])
@@ -885,6 +899,16 @@ class TextGridModule(object):
 					i+=1
 				self.last_frame = int(tier[i-1].mark)
 				self.paintCanvases()
+
+	def updateTimeLabels(self):
+		'''
+
+		'''
+		# return
+		# print('908')
+		# print(self.TkWidgets[-1]['times'].itemcget(1,'text'))
+		self.TkWidgets[-1]['times'].itemconfig(1,text='{:.6f}'.format(self.start))
+		self.TkWidgets[-1]['times'].itemconfig(2,text='{:.6f}'.format(self.end))
 
 	def updateTierLabels(self):
 		'''
@@ -1012,19 +1036,24 @@ class TextGridModule(object):
 		#if selected frame is out of view
 		if "frame"+str(self.app.frame) not in itrobj:
 			duration = self.end - self.start
-			#if selected frame outside selected interval, deselect interval
-			if self.selectedItem:
-				if "frame"+str(self.app.frame) not in self.selectedItem[0].gettags(self.selectedItem[1]):
-					self.selectedItem = None
+			# #if selected frame outside selected interval, deselect interval
+			# if self.selectedItem:
+			# 	if "frame"+str(self.app.frame) not in self.selectedItem[0].gettags(self.selectedItem[1]):
+			# 		self.selectedItem = None
 			#recenter view on selected frame
 			new_time = self.TextGrid.getFirst(self.frameTierName)[self.app.frame-1].time
 			self.start = new_time - (duration/2)
 			self.end = new_time + (duration/2)
 			#redraw
 			self.fillCanvases()
+		self.wipeFill()
+		#if selected frame outside selected interval
+		if self.selectedItem:
+			if "frame"+str(self.app.frame) not in self.selectedItem[0].gettags(self.selectedItem[1]):
+				new_interval = self.selectedItem[0].find_withtag("frame"+str(self.app.frame))[0]
+				self.selectedItem = (self.selectedItem[0], new_interval)
 
 		# repaint all frames
-		self.wipeFill()
 		self.paintCanvases()
 
 	def grid(self, event=None):
@@ -1046,6 +1075,8 @@ class TextGridModule(object):
 				self.tier_pairs[tierWidgets['canvas-label']] = tierWidgets['canvas']
 			if 'entry' in tierWidgets:
 				tierWidgets['button'].grid(row=t, column=0)
+			if 'times' in tierWidgets:
+				tierWidgets['times'].grid(row=t, column=2, sticky=S)
 
 class SpectrogramModule(object):
 	'''
