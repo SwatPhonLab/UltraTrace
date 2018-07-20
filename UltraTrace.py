@@ -599,12 +599,12 @@ class TextGridModule(object):
 		self.app.bind("<Command-a>", self.getBounds)
 		self.app.bind("<Command-i>", self.getBounds)
 		self.app.bind("<Command-o>", self.getBounds)
-		self.app.bind("<Command-Left>", self.getBounds)
-		self.app.bind("<Command-Right>", self.getBounds)
+		self.app.bind("<Shift-Left>", self.getBounds)
+		self.app.bind("<Shift-Right>", self.getBounds)
 		self.app.bind("<Command-Up>", self.changeTiers)
 		self.app.bind("<Command-Down>", self.changeTiers)
-		self.app.bind("<Shift_L>", self.getBounds)
-		self.app.bind("<Shift_L>", self.getBounds)
+		self.app.bind("<Command-Left>", self.changeIntervals)
+		self.app.bind("<Command-Right>", self.changeIntervals)
 
 	def reset(self, event=None):
 		'''
@@ -699,7 +699,7 @@ class TextGridModule(object):
 		'''
 		Jumps to clicked frame
 		'''
-		item = self.my_find_closest(event)
+		item = self.my_find_closest(event.widget, event.x)
 		frame = event.widget.gettags(item)[0][5:]
 		self.app.frame = int(frame)
 		if not frame in self.selectedTierFrames:
@@ -740,6 +740,39 @@ class TextGridModule(object):
 
 		return self.widgets
 
+	def changeIntervals(self,event):
+		'''
+
+		'''
+		if self.selectedItem:
+			duration = self.end - self.start
+			widg = self.selectedItem[0]
+			itm = self.selectedItem[1]
+			for el in self.TkWidgets:
+				if widg in el.values():
+					tier_name = el['name']
+					break
+
+			tier = self.TextGrid.getFirst(tier_name)
+			intvl_i = tier.indexContaining(self.end-duration/2)
+
+			if event.keysym == 'Left' and intvl_i != 0:
+				newMinTime = tier[intvl_i-1].minTime
+				newMaxTime = tier[intvl_i-1].maxTime
+			if event.keysym == 'Right' and intvl_i != len(tier):
+				newMinTime = tier[intvl_i+1].minTime
+				newMaxTime = tier[intvl_i+1].maxTime
+			newDuration = newMaxTime - newMinTime
+
+			newCenter = newMinTime + newDuration/2
+
+			self.start = newCenter - duration/2
+			self.end = newCenter + duration/2
+
+			self.fillCanvases()
+			self.genFrameList(widg=widg, x_loc=self.canvas_width/2) #new interval should always be centered
+			self.update()
+
 	def changeTiers(self, event):
 		'''
 
@@ -758,9 +791,6 @@ class TextGridModule(object):
 				else:
 					return
 
-				# old_tags = self.selectedItem[0].gettags(self.selectedItem[1])
-				# finding_tag = old_tags[int(len(old_tags)/2)]
-				# print(old_tags, finding_tag)
 				new_item = new_widg.find_withtag("frame"+str(self.app.frame))[0]
 				self.selectedItem = (new_widg, new_item)
 
@@ -778,6 +808,8 @@ class TextGridModule(object):
 		a = self.end - self.start
 		z_out = (a-(a/f))/2
 		z_in = ((f*a)-a)/2
+		old_start = self.start
+		old_end = self.end
 
 		if event.keysym == 'n':
 			for tag in self.selectedItem[0].gettags(self.selectedItem[1]):
@@ -800,9 +832,8 @@ class TextGridModule(object):
 		if event.keysym == 'Right':
 			self.start += a/(10*f)
 			self.end += a/(10*f)
-		self.fillCanvases()
 
-		self.app.Spectrogram.reset()
+		self.fillCanvases()
 
 	def getTracedFrames(self,frames):
 		'''
@@ -898,15 +929,14 @@ class TextGridModule(object):
 						CanvasTooltip(frames, frame,text=tier[i].mark)
 					i+=1
 				self.last_frame = int(tier[i-1].mark)
-				self.paintCanvases()
+
+		self.paintCanvases()
+		self.app.Spectrogram.reset()
 
 	def updateTimeLabels(self):
 		'''
 
 		'''
-		# return
-		# print('908')
-		# print(self.TkWidgets[-1]['times'].itemcget(1,'text'))
 		self.TkWidgets[-1]['times'].itemconfig(1,text='{:.6f}'.format(self.start))
 		self.TkWidgets[-1]['times'].itemconfig(2,text='{:.6f}'.format(self.end))
 
@@ -922,19 +952,46 @@ class TextGridModule(object):
 				  text='{}:\n({}/{})'.format(el['name'],len(self.getTracedFrames(nonempty_frames)), len(nonempty_frames)))
 
 
-	def my_find_closest(self, event):
+	def my_find_closest(self, widg, x_loc):
 		'''
-		replaces TkInter's find_closest function, which is buggy
+		replaces TkInter's find_closest function, which is buggy, determines
+		whether found item is text, line, or label, and returns corresponding item
 		'''
 		#could be more efficient FIXME
 		maybe_item = None
 		dist = 999999999999
-		for el in event.widget.find_all():
-			obj_x = event.widget.coords(el)[0]
-			if abs(obj_x-event.x) < dist:
-				dist = abs(obj_x-event.x)
+		for el in widg.find_all():
+			obj_x = widg.coords(el)[0]
+			if abs(obj_x-x_loc) < dist:
+				dist = abs(obj_x-x_loc)
 				maybe_item = el
-		return maybe_item
+
+		if widg in self.tier_pairs.keys(): #if on tier-label canvas
+			#fill selected tier frames
+			self.selectedTierFrames = []
+			for x in widg.gettags(maybe_item):
+				if x[:5] == 'frame':
+					self.selectedTierFrames.append(x[5:])
+			item = maybe_item
+
+		else: #on canvas with intervals/frames
+			if isinstance(maybe_item, int):
+				#if item found is a boundary
+				if len(widg.gettags(maybe_item)) == 0 or widg.gettags(maybe_item) == ('current',):
+					#determine on which side of the line the event occurred
+					if widg.coords(maybe_item)[0] > x_loc:
+						item = maybe_item-1
+					else: #i.e. event was on line or to the right of it
+						item = maybe_item+1
+				else:
+					item = maybe_item
+
+				self.selectedTierFrames = []
+				for x in widg.gettags(item):
+					if x[:5] == 'frame':
+						self.selectedTierFrames.append(x[5:])
+
+		return item
 
 	def wipeFill(self):
 		'''
@@ -949,44 +1006,18 @@ class TextGridModule(object):
 				self.tier_pairs[self.selectedItem[0]].itemconfig(ALL, fill='black')
 				self.frames_canvas.itemconfig(ALL, fill='black')
 
-	def genFrameList(self, event):
+	def genFrameList(self, event=None, widg=None, x_loc=None):
 		'''
-		Reads frames within interval from the tags to the text item of that interval,
+		Upon click, reads frames within interval from the tags to the text item of that interval,
 		and highlights text of clicked interval
 		'''
 		self.wipeFill()
-		# maybe_item = event.widget.find_closest(event.x, event.y) <<< has strange bug
-		maybe_item = self.my_find_closest(event)
+		if event:
+			widg=event.widget
+			x_loc=event.x
 
-		if event.widget in self.tier_pairs.keys(): #if on tier-label canvas
-			#fill selected tier frames
-			self.selectedTierFrames = []
-			for x in event.widget.gettags(maybe_item):
-				if x[:5] == 'frame':
-					self.selectedTierFrames.append(x[5:])
-			item = maybe_item
-
-		else: #on canvas with intervals/frames
-			if isinstance(maybe_item, int):
-				#if item found is a boundary
-				if len(event.widget.gettags(maybe_item)) == 0 or event.widget.gettags(maybe_item) == ('current',):
-					#determine on which side of the line the event occurred
-					if event.widget.coords(maybe_item)[0] > event.x:
-						item = maybe_item-1
-					else: #i.e. event was on line or to the right of it
-						item = maybe_item+1
-				else:
-					item = maybe_item
-
-				# event.widget.itemconfig(item,fill='blue')
-				# self.selectedItem = (event.widget, item)
-				# self.selectedTierFrames = [x[5:] for x in event.widget.gettags(item)]
-				self.selectedTierFrames = []
-				for x in event.widget.gettags(item):
-					if x[:5] == 'frame':
-						self.selectedTierFrames.append(x[5:])
-		self.selectedItem = (event.widget, item)
-		self.paintCanvases()
+		item = self.my_find_closest(widg, x_loc)
+		self.selectedItem = (widg, item)
 
 		#automatically updates frame
 		if not str(self.app.frame) in self.selectedTierFrames:
@@ -997,6 +1028,9 @@ class TextGridModule(object):
 				new_frame = self.last_frame
 			self.app.frame = new_frame
 			self.app.framesUpdate()
+		else:
+			self.paintCanvases()
+			self.app.Spectrogram.update()
 
 	def paintCanvases(self):
 		'''
@@ -1036,10 +1070,6 @@ class TextGridModule(object):
 		#if selected frame is out of view
 		if "frame"+str(self.app.frame) not in itrobj:
 			duration = self.end - self.start
-			# #if selected frame outside selected interval, deselect interval
-			# if self.selectedItem:
-			# 	if "frame"+str(self.app.frame) not in self.selectedItem[0].gettags(self.selectedItem[1]):
-			# 		self.selectedItem = None
 			#recenter view on selected frame
 			new_time = self.TextGrid.getFirst(self.frameTierName)[self.app.frame-1].time
 			self.start = new_time - (duration/2)
@@ -1047,7 +1077,7 @@ class TextGridModule(object):
 			#redraw
 			self.fillCanvases()
 		self.wipeFill()
-		#if selected frame outside selected interval
+		#if selected frame outside selected interval, select interval on same tier containing frame
 		if self.selectedItem:
 			if "frame"+str(self.app.frame) not in self.selectedItem[0].gettags(self.selectedItem[1]):
 				new_interval = self.selectedItem[0].find_withtag("frame"+str(self.app.frame))[0]
