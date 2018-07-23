@@ -716,7 +716,7 @@ class TextGridModule(object):
 		Each tier should have two canvas widgets: `canvas-label` (the tier name),
 		and `canvas` (the intervals on the tier with their marks)
 		'''
-		self.tier_pairs = {}
+		self.tier_pairs = {} #ends up being format {label: canvas}
 
 		self.app.Trace.frame.update()
 		self.label_width=self.app.Trace.frame.winfo_width()-self.label_padx
@@ -939,7 +939,7 @@ class TextGridModule(object):
 					loc=rel_time/duration*self.canvas_width
 					i+=1
 					if i < len(tier) and loc < self.canvas_width:
-						canvas.create_line(loc,0,loc,self.canvas_height)
+						canvas.create_line(loc,0,loc,self.canvas_height, tags='line')
 						time = tier[i].maxTime #here so that loop doesn't run an extra time
 
 				#fills labels with info about tiers w/traces
@@ -1007,8 +1007,9 @@ class TextGridModule(object):
 
 		else: #on canvas with intervals/frames
 			if isinstance(maybe_item, int):
-				#if item found is a boundary
-				if len(widg.gettags(maybe_item)) == 0 or widg.gettags(maybe_item) == ('current',):
+				# #if item found is a boundary
+				# if len(widg.gettags(maybe_item)) == 0 or widg.gettags(maybe_item) == ('current',):
+				if 'line' in widg.gettags(maybe_item):
 					#determine on which side of the line the event occurred
 					if widg.coords(maybe_item)[0] > x_loc:
 						item = maybe_item-1
@@ -1026,7 +1027,7 @@ class TextGridModule(object):
 
 	def wipeFill(self):
 		'''
-		turns selected frame back to black
+		Turns selected frame and interval back to black
 		'''
 		self.frames_canvas.itemconfig(ALL, fill='black')
 		if self.selectedItem:
@@ -1078,9 +1079,9 @@ class TextGridModule(object):
 			#paint selected
 			wdg.itemconfig(itm, fill='blue')
 			#paint boundaries of selected
-			if len(wdg.find_withtag(itm+1)) > 0:
+			if itm+1 in wdg.find_all():
 				wdg.itemconfig(itm+1, fill='blue')
-			if len(wdg.find_withtag(itm-1)) > 0:
+			if itm-1 in wdg.find_all():
 				wdg.itemconfig(itm-1, fill='blue')
 			if wdg in self.tier_pairs.keys(): #if on tier-label canvas
 				canvas = self.tier_pairs[wdg]
@@ -1226,12 +1227,18 @@ class SpectrogramModule(object):
 			widg = self.app.TextGrid.selectedItem[0]
 			itm = self.app.TextGrid.selectedItem[1]
 
-			if itm-1 in widg.find_all():
-				l_loc = widg.coords(itm-1)[0]
-				self.canvas.create_line(l_loc, 0, l_loc, self.canvas_height, tags='line', fill='blue')
-			if itm+1 in widg.find_all():
-				r_loc = widg.coords(itm+1)[0]
-				self.canvas.create_line(r_loc, 0, r_loc, self.canvas_height, tags='line', fill='blue')
+			if widg in self.app.TextGrid.tier_pairs: #if widg is label
+				itvl_canvas = self.app.TextGrid.tier_pairs[widg]
+				for i in itvl_canvas.find_withtag('line'):
+					loc = itvl_canvas.coords(i)[0]
+					self.canvas.create_line(loc, 0, loc, self.canvas_height, tags='line', fill='blue')
+			else:
+				if itm-1 in widg.find_all():
+					l_loc = widg.coords(itm-1)[0]
+					self.canvas.create_line(l_loc, 0, l_loc, self.canvas_height, tags='line', fill='blue')
+				if itm+1 in widg.find_all():
+					r_loc = widg.coords(itm+1)[0]
+					self.canvas.create_line(r_loc, 0, r_loc, self.canvas_height, tags='line', fill='blue')
 
 	def grid(self):
 		'''
