@@ -1030,11 +1030,17 @@ class TextGridModule(object):
 		'''
 		self.frames_canvas.itemconfig(ALL, fill='black')
 		if self.selectedItem:
-			self.selectedItem[0].itemconfig(self.selectedItem[1], fill='black')
+			wdg = self.selectedItem[0]
+			itm = self.selectedItem[1]
+			wdg.itemconfig(itm, fill='black')
+			if len(wdg.find_withtag(itm+1)) > 0:
+				wdg.itemconfig(itm+1, fill='black')
+			if len(wdg.find_withtag(itm-1)) > 0:
+				wdg.itemconfig(itm-1, fill='black')
 			#clicked tier label
-			if self.selectedItem[0] in self.tier_pairs.keys():
-				self.selectedItem[0].itemconfig(1, fill='black')
-				self.tier_pairs[self.selectedItem[0]].itemconfig(ALL, fill='black')
+			if wdg in self.tier_pairs.keys():
+				wdg.itemconfig(1, fill='black')
+				self.tier_pairs[wdg].itemconfig(ALL, fill='black')
 				self.frames_canvas.itemconfig(ALL, fill='black')
 
 	def genFrameList(self, event=None, widg=None, x_loc=None):
@@ -1071,12 +1077,17 @@ class TextGridModule(object):
 			wdg,itm = self.selectedItem
 			#paint selected
 			wdg.itemconfig(itm, fill='blue')
+			#paint boundaries of selected
+			if len(wdg.find_withtag(itm+1)) > 0:
+				wdg.itemconfig(itm+1, fill='blue')
+			if len(wdg.find_withtag(itm-1)) > 0:
+				wdg.itemconfig(itm-1, fill='blue')
 			if wdg in self.tier_pairs.keys(): #if on tier-label canvas
-				#make all text intervals blue
 				canvas = self.tier_pairs[wdg]
 				for el in canvas.find_all():
-					if canvas.type(canvas.find_withtag(el)) == 'text':
-						canvas.itemconfig(el, fill='blue')
+					# #make all text intervals blue
+					# if canvas.type(canvas.find_withtag(el)) == 'text':
+					canvas.itemconfig(el, fill='blue')
 
 			#paint frames
 			frames = wdg.gettags(itm)
