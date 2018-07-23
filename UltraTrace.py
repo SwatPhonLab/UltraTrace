@@ -323,7 +323,6 @@ class MetadataModule(object):
 		self.path = path
 
 		self.mdfile = os.path.join( self.path, 'metadata.json' )
-		self.offset = 0.0
 
 		# either load up existing metadata
 		if os.path.exists( self.mdfile ):
@@ -345,7 +344,7 @@ class MetadataModule(object):
 					'tongue': {
 						'color': 'red',
 						'files': {} } },
-				'offset':self.offset,
+				'offset':0,
 				'files': {} }
 
 			# we want each object to have entries for everything here
@@ -653,10 +652,11 @@ class TextGridModule(object):
 		#	# float(self.frame_shift)
 		shift = self.frame_shift.get()
 		if type(shift) == float:
-			self.app.Data.data['offset'] += shift
-			print(self.app.Data.data['offset'])
+			diff = shift - self.app.Data.data['offset']
 			for point in self.TextGrid.getFirst(self.frameTierName):
-				point.time += decimal.Decimal(shift/100) ## NOTE: currently 100th of second
+				point.time += decimal.Decimal(diff/100) ## NOTE: currently 100th of second
+			self.app.Data.data['offset'] = shift
+			self.frame_shift.set(shift)
 			self.app.Data.write()
 			self.fillCanvases()
 		#except ValueError:
@@ -681,6 +681,7 @@ class TextGridModule(object):
 								 text='frames: ', width=self.label_width, activefill='blue')
 
 		self.frame_shift = DoubleVar()
+		self.frame_shift.set(self.app.Data.data['offset'])
 		go_btn = Button(self.frame, text='Go', command=self.shiftFrames)
 		txtbox = Entry(self.frame, textvariable=self.frame_shift, width=40)
 		window = frames_label.create_window(self.canvas_width/4,self.canvas_height/2, anchor=E, window=txtbox, width=40)
