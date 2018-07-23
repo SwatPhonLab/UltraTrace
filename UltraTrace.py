@@ -649,14 +649,18 @@ class TextGridModule(object):
 		'''
 
 		'''
-		try:
-			# float(self.frame_shift)
+		#try:
+		#	# float(self.frame_shift)
+		shift = self.frame_shift.get()
+		if type(shift) == float:
+			self.app.Data.data['offset'] += shift
+			print(self.app.Data.data['offset'])
 			for point in self.TextGrid.getFirst(self.frameTierName):
-				shift = self.frame_shift.get()
-				self.app.Data.offset += shift
 				point.time += decimal.Decimal(shift/100) ## NOTE: currently 100th of second
+			self.app.Data.write()
 			self.fillCanvases()
-		except ValueError:
+		#except ValueError:
+		else:
 			print('Not a float!')
 
 	def makeTimeWidget(self):
@@ -746,6 +750,8 @@ class TextGridModule(object):
 		'''
 		if self.selectedItem:
 			duration = self.end - self.start
+
+			# There might be a more efficient way to get the tier name:
 			widg = self.selectedItem[0]
 			itm = self.selectedItem[1]
 			for el in self.TkWidgets:
@@ -753,25 +759,49 @@ class TextGridModule(object):
 					tier_name = el['name']
 					break
 
+			#finding Interval mintime and maxtime
+			oldMinTime = None
+			oldMaxTime = None
+			q=0
+			tags = widg.gettags(itm)
+			while oldMinTime == None or oldMaxTime == None:
+				if tags[q][:7] == 'minTime':
+					oldMinTime = float(tags[q][7:])
+				elif tags[q][:7] == 'maxTime':
+					oldMaxTime = float(tags[q][7:])
+				q+=1
+
 			tier = self.TextGrid.getFirst(tier_name)
-			intvl_i = tier.indexContaining(self.end-duration/2)
+			intvl_i = tier.indexContaining(oldMaxTime-((oldMaxTime-oldMinTime)/2))
 
-			if event.keysym == 'Left' and intvl_i != 0:
-				newMinTime = tier[intvl_i-1].minTime
-				newMaxTime = tier[intvl_i-1].maxTime
-			if event.keysym == 'Right' and intvl_i != len(tier):
-				newMinTime = tier[intvl_i+1].minTime
-				newMaxTime = tier[intvl_i+1].maxTime
-			newDuration = newMaxTime - newMinTime
+			if event.keysym == 'Left':
+				new_intvl_i = intvl_i-1
+			elif event.keysym == 'Right':
+				new_intvl_i = intvl_i+1
+			if 0 <= new_intvl_i < len(tier):
+				#find characteristics of new adjacent interval
+				newMinTime = tier[new_intvl_i].minTime
+				newMaxTime = tier[new_intvl_i].maxTime
+				itvlDuration = newMaxTime - newMinTime
+				newCenter = newMinTime + itvlDuration/2
 
-			newCenter = newMinTime + newDuration/2
+				#figure out new window parameters based on new interval
+				self.start = newCenter - duration/2
+				self.end = newCenter + duration/2
+				if self.start < 0:
+					self.start = 0
+				if self.end > self.TextGrid.maxTime:
+					self.end = self.TextGrid.maxTime
+				relDuration = self.end - self.start
 
-			self.start = newCenter - duration/2
-			self.end = newCenter + duration/2
+				# select new item
+				rel_time = newCenter - self.start
+				x_loc = float(rel_time/relDuration*self.canvas_width)
+				item = self.my_find_closest(widg, x_loc)
+				self.selectedItem = (widg, item)
 
-			self.fillCanvases()
-			self.genFrameList(widg=widg, x_loc=self.canvas_width/2) #new interval should always be centered
-			self.update()
+				self.fillCanvases()
+				self.genFrameList(widg=widg, x_loc=x_loc)
 
 	def changeTiers(self, event):
 		'''
@@ -803,7 +833,8 @@ class TextGridModule(object):
 		'''
 
 		'''
-		print(event.char, event.keysym, event.keycode)
+		# print(event.char, event.keysym, event.keycode)
+		# print(self.app.frame)
 		f = decimal.Decimal(self.tg_zoom_factor)
 		a = self.end - self.start
 		z_out = (a-(a/f))/2
