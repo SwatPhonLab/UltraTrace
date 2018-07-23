@@ -787,12 +787,23 @@ class TextGridModule(object):
 				newCenter = newMinTime + itvlDuration/2
 
 				#figure out new window parameters based on new interval
-				self.start = newCenter - duration/2
-				self.end = newCenter + duration/2
-				if self.start < 0:
+				start = newCenter - duration/2
+				end = newCenter + duration/2
+				if start < 0:
 					self.start = 0
-				if self.end > self.TextGrid.maxTime:
+					self.end = duration
+				elif end > self.TextGrid.maxTime:
+					self.start = self.TextGrid.maxTime - duration
 					self.end = self.TextGrid.maxTime
+				else:
+					self.start = newCenter - duration/2
+					self.end = newCenter + duration/2
+				# self.start = newCenter - duration/2
+				# self.end = newCenter + duration/2
+				# if self.start < 0:
+				# 	self.start = 0
+				# if self.end > self.TextGrid.maxTime:
+				# 	self.end = self.TextGrid.maxTime
 				relDuration = self.end - self.start
 
 				# select new item
@@ -859,11 +870,24 @@ class TextGridModule(object):
 			self.start = self.start + z_out
 			self.end = self.end - z_out
 		if event.keysym == 'Left':
-			self.start -= a/(10*f)
-			self.end -= a/(10*f)
+			start = self.start - a/(10*f)
+			end = self.end - a/(10*f)
+			if (start < 0):
+				self.start = 0
+				self.end = a
+			else:
+				self.start = start
+				self.end = end
 		if event.keysym == 'Right':
-			self.start += a/(10*f)
-			self.end += a/(10*f)
+			start = self.start + a/(10*f)
+			end = self.end + a/(10*f)
+			if end > self.TextGrid.maxTime:
+				self.start = self.TextGrid.maxTime - a
+				self.end = self.TextGrid.maxTime
+			else:
+				self.start = start
+				self.end = end
+
 
 		self.fillCanvases()
 
