@@ -1152,7 +1152,10 @@ class TextGridModule(object):
 		#if selected frame outside selected interval, select interval on same tier containing frame
 		if self.selectedItem:
 			if "frame"+str(self.app.frame) not in self.selectedItem[0].gettags(self.selectedItem[1]): #FIXME should also detect if on label canvas
-				new_interval = self.selectedItem[0].find_withtag("frame"+str(self.app.frame))[0]
+				widg = self.selectedItem[0]
+				if widg in self.tier_pairs:
+					widg = self.tier_pairs[widg]
+				new_interval = widg.find_withtag("frame"+str(self.app.frame))[0]
 				self.selectedItem = (self.selectedItem[0], new_interval)
 
 		# repaint all frames
@@ -2394,7 +2397,7 @@ class App(Tk):
 		controls self.framesPrevBtn for panning between frames
 		'''
 		if self.Dicom.isLoaded and self.frame > 1:
-				self.frame -= 1
+			self.frame -= 1
 			# if len(self.TextGrid.selectedTierFrames) != 0:
 			# 	while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame > self.TextGrid.last_frame:
 			# 		if self.frame <= int(self.TextGrid.selectedTierFrames[0]):
