@@ -673,22 +673,26 @@ class TextGridModule(object):
 		'''
 		makes frame widget
 		'''
+		#make regular frame stuff -- label and tier
 		self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray')
 		frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0)
-		test_frame = Frame(frames_label)
-		self.TkWidgets.append({'name':self.frameTierName,'frames':self.frames_canvas,
-							   'frames-label':frames_label})
 		frames_label.create_text(self.label_width,0, anchor=NE, justify=CENTER,
 								 text='frames: ', width=self.label_width, activefill='blue')
 
+		# make subframe to go on top of label canvas
+		sbframe = Frame(frames_label)
+		#put new widgets onto subframe
 		self.frame_shift = DoubleVar()
-		go_btn = Button(test_frame, text='Go', command=self.shiftFrames)
-		txtbox = Spinbox(test_frame, textvariable=self.frame_shift, from_=-1000, to=1000)
+		go_btn = Button(sbframe, text='Go', command=self.shiftFrames)
+		txtbox = Spinbox(sbframe, textvariable=self.frame_shift, from_=-1000, to=1000)
 		go_btn.grid(row=0, column=0, sticky=E)
 		txtbox.grid(row=0, column=1, sticky=E)
-		window = frames_label.create_window(self.label_width/2,self.canvas_height/3, anchor=NW, window=test_frame)
+		# put subframe on canvas
+		window = frames_label.create_window(self.label_width/2,self.canvas_height/3, anchor=NW, window=sbframe)
 
-		# num.trace("w", self.shiftFrames())
+		self.TkWidgets.append({'name':self.frameTierName,'frames':self.frames_canvas,
+							   'frames-label':frames_label})
+
 		self.frames_canvas.bind("<Button-1>", self.getClickedFrame)
 
 	def getFrameTierName(self):
@@ -1194,7 +1198,9 @@ class SpectrogramModule(object):
 
 	def reset(self):
 		'''
-
+		Adapted with permission from
+		https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
+		by Mark Hasegawa-Johnson
 		'''
 		p_data, p_fs = sf.read(self.app.Audio.current) ## NOTE: reads audio again even when zooming
 
@@ -1219,9 +1225,11 @@ class SpectrogramModule(object):
 		self.drawInterval()
 
 	def enframe(self,x,S,L):
-   # w = 0.54*np.ones(L)
-        #for n in range(0,L):
-         #   w[n] = w[n] - 0.46*math.cos(2*math.pi*n/(L-1))
+		'''
+		Adapted with permission from
+		https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
+		by Mark Hasegawa-Johnson
+		'''
 		w = np.hamming(L)
 		frames = []
 		nframes = 1+int((len(x)-L)/S)
@@ -1230,6 +1238,11 @@ class SpectrogramModule(object):
 		return(frames)
 
 	def sgram(self,x,frame_skip,frame_length,fft_length, fs, max_freq):
+		'''
+		Adapted with permission from
+		https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
+		by Mark Hasegawa-Johnson
+		'''
 		frames = self.enframe(x,frame_skip,frame_length)
 		(spectra, freq_axis) = self.stft(frames, fft_length, fs)
 		sgram = stft2level(np.array(spectra).astype('float64'), int(max_freq*fft_length/fs))
@@ -1238,13 +1251,20 @@ class SpectrogramModule(object):
 		return(sgram, max_time, max_freq)
 
 	def stft(self,frames,N,Fs):
+		'''
+		Adapted with permission from
+		https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
+		by Mark Hasegawa-Johnson
+		'''
 		stft_frames = [ fftpack.fft(x,N) for x in frames]
 		freq_axis = np.linspace(0,Fs,N)
 		return(stft_frames, freq_axis)
 
 	def drawInterval(self):
 		'''
-
+		Adapted with permission from
+		https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
+		by Mark Hasegawa-Johnson
 		'''
 		if self.app.TextGrid.selectedItem:
 			widg = self.app.TextGrid.selectedItem[0]
@@ -1270,6 +1290,9 @@ class SpectrogramModule(object):
 		self.canvas.grid(row=0, column=0, sticky=W)
 
 	def update(self):
+		'''
+		Removes and redraws lines on top of Spectrogram corresponding to selected interval(s)
+		'''
 		self.canvas.delete('line')
 		self.drawInterval()
 
@@ -2371,7 +2394,7 @@ class App(Tk):
 		controls self.framesPrevBtn for panning between frames
 		'''
 		if self.Dicom.isLoaded and self.frame > 1:
-			self.frame -= 1
+				self.frame -= 1
 			# if len(self.TextGrid.selectedTierFrames) != 0:
 			# 	while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame > self.TextGrid.last_frame:
 			# 		if self.frame <= int(self.TextGrid.selectedTierFrames[0]):
