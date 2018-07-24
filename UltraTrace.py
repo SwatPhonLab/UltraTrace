@@ -674,7 +674,7 @@ class TextGridModule(object):
 		makes frame widget
 		'''
 		self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray')
-		frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height)
+		frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0)
 		test_frame = Frame(frames_label)
 		self.TkWidgets.append({'name':self.frameTierName,'frames':self.frames_canvas,
 							   'frames-label':frames_label})
@@ -1147,7 +1147,7 @@ class TextGridModule(object):
 		self.wipeFill()
 		#if selected frame outside selected interval, select interval on same tier containing frame
 		if self.selectedItem:
-			if "frame"+str(self.app.frame) not in self.selectedItem[0].gettags(self.selectedItem[1]):
+			if "frame"+str(self.app.frame) not in self.selectedItem[0].gettags(self.selectedItem[1]): #FIXME should also detect if on label canvas
 				new_interval = self.selectedItem[0].find_withtag("frame"+str(self.app.frame))[0]
 				self.selectedItem = (self.selectedItem[0], new_interval)
 
