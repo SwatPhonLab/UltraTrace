@@ -654,7 +654,7 @@ class TextGridModule(object):
 		if type(shift) == float:
 			diff = shift - self.app.Data.data['offset']
 			for point in self.TextGrid.getFirst(self.frameTierName):
-				point.time += decimal.Decimal(diff/100) ## NOTE: currently 100th of second
+				point.time += decimal.Decimal(diff/1000) ## NOTE: currently in ms
 			self.app.Data.data['offset'] = shift
 			self.frame_shift.set(shift)
 			self.app.Data.write()
@@ -675,18 +675,18 @@ class TextGridModule(object):
 		'''
 		self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray')
 		frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height)
+		test_frame = Frame(frames_label)
 		self.TkWidgets.append({'name':self.frameTierName,'frames':self.frames_canvas,
 							   'frames-label':frames_label})
-		frames_label.create_text(self.label_width,self.canvas_height/2, anchor=E, justify=CENTER,
+		frames_label.create_text(self.label_width,0, anchor=NE, justify=CENTER,
 								 text='frames: ', width=self.label_width, activefill='blue')
 
 		self.frame_shift = DoubleVar()
-		self.frame_shift.set(self.app.Data.data['offset'])
-		go_btn = Button(self.frame, text='Go', command=self.shiftFrames)
-		txtbox = Entry(self.frame, textvariable=self.frame_shift, width=40)
-		window = frames_label.create_window(self.canvas_width/4,self.canvas_height/2, anchor=E, window=txtbox, width=40)
-		self.TkWidgets[-1]['entry'] = txtbox
-		self.TkWidgets[-1]['button'] = go_btn
+		go_btn = Button(test_frame, text='Go', command=self.shiftFrames)
+		txtbox = Spinbox(test_frame, textvariable=self.frame_shift, from_=-1000, to=1000)
+		go_btn.grid(row=0, column=0, sticky=E)
+		txtbox.grid(row=0, column=1, sticky=E)
+		window = frames_label.create_window(self.label_width/2,self.canvas_height/3, anchor=NW, window=test_frame)
 
 		# num.trace("w", self.shiftFrames())
 		self.frames_canvas.bind("<Button-1>", self.getClickedFrame)
@@ -1171,8 +1171,6 @@ class TextGridModule(object):
 				tierWidgets['canvas'].grid(row=t, column=2, sticky=W)
 				tierWidgets['canvas-label'].grid(row=t, column=0, sticky=W)
 				self.tier_pairs[tierWidgets['canvas-label']] = tierWidgets['canvas']
-			if 'entry' in tierWidgets:
-				tierWidgets['button'].grid(row=t, column=0)
 			if 'times' in tierWidgets:
 				tierWidgets['times'].grid(row=t, column=2, sticky=S)
 
