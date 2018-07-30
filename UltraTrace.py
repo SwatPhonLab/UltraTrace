@@ -7,6 +7,7 @@ from tkinter import filedialog
 # import numpy as np
 # import scipy.fftpack as fftpack
 # import urllib.request as request
+from tempfile import NamedTemporaryFile
 import argparse, datetime, json, \
 	math, os, random, shutil, warnings, decimal, \
 	soundfile as sf, scipy.fftpack as fftpack, urllib.request as request #FIXME should I put these with non-critical dependencies?
@@ -81,7 +82,7 @@ class ZoomFrame(Frame):
 		self.canvas.bind('<Configure>', self.showImage ) # on canvas resize events
 		self.canvas.bind('<Control-Button-1>', self.moveFrom )
 		self.canvas.bind('<Control-B1-Motion>', self.moveTo )
-		self.canvas.bind('<MouseWheel>', self.wheel ) # Windows & OSX
+		# self.canvas.bind('<MouseWheel>', self.wheel ) # Windows & Linux FIXME
 		self.canvas.bind('<Button-4>', self.wheel )   # Linux scroll up
 		self.canvas.bind('<Button-5>', self.wheel )   # Linux scroll down
 
@@ -1663,6 +1664,7 @@ class PlaybackModule(object):
 			print( ' - initializing module: Audio' )
 			self.mixer = pygame.mixer
 			self.mixer.init()
+			self.sfile = None
 			self.isPaused = False
 
 			# widget management
@@ -1695,7 +1697,9 @@ class PlaybackModule(object):
 		audiofile = self.app.Data.getFileLevel( codec )
 		if audiofile != None:
 			try:
-				self.mixer.music.load( audiofile )
+				# self.mixer.music.load( audiofile )
+				# self.sfile = sf.SoundFile( audiofile )
+				self.sfile = NamedTemporaryFile("w+b", suffix=codec)
 				self.current = audiofile
 				self.isPaused = False
 				return True
@@ -1707,6 +1711,11 @@ class PlaybackModule(object):
 		'''
 		play/pause/stop
 		'''
+		#this should be put in a separate function
+		os.system('ffmpeg -i {} -ss {} -t {} -c copy {}'.format(self.current,self.app.TextGrid.start,self.app.TextGrid.end - self.app.TextGrid.start,self.sfile.name))
+		# currentaudio = sf.read(self.current, start=self.app.TextGrid.start, stop=self.app.TextGrid.end)
+		self.mixer.music.load(self.sfile.name)
+
 		if self.current != None:
 			if self.isPaused:
 				self.mixer.music.unpause()
@@ -1715,6 +1724,7 @@ class PlaybackModule(object):
 				self.mixer.music.pause()
 				self.isPaused = True
 			else:
+				print('playing', 1728)
 				self.mixer.music.play()
 				self.isPaused = False
 
