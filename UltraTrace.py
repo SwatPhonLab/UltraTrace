@@ -7,7 +7,6 @@ from tkinter import filedialog
 # import numpy as np
 # import scipy.fftpack as fftpack
 # import urllib.request as request
-from tempfile import NamedTemporaryFile
 import argparse, datetime, json, \
 	math, os, random, shutil, warnings, decimal, \
 	soundfile as sf, scipy.fftpack as fftpack, urllib.request as request #FIXME should I put these with non-critical dependencies?
@@ -31,8 +30,11 @@ except (ImportError):
 	warnings.warn('Dicom library failed to load')
 	_DICOM_LIBS_INSTALLED = False
 try:
-	import pygame 	# sudo -H pip3 install pygame pygame.mixer && brew install sdl sdl_mixer
-	assert("pygame.mixer" in sys.modules)
+	# import pygame 	# sudo -H pip3 install pygame pygame.mixer && brew install sdl sdl_mixer
+	# assert("pygame.mixer" in sys.modules)
+	from pydub import AudioSegment
+	from pydub.playback import play
+	import pyaudio
 	_AUDIO_LIBS_INSTALLED = True
 except (ImportError, AssertionError):
 	warnings.warn('Audio library failed to load')
@@ -63,16 +65,22 @@ class ZoomFrame(Frame):
 	at https://stackoverflow.com/questions/41656176/tkinter-canvas-zoom-move-pan ...
 	Could probably be cleaned up and slimmed down
 	'''
-	def __init__(self, master, delta, ):
+	def __init__(self, master, delta, app):
 		Frame.__init__(self, master)
 		self.resetCanvas(master)
 
 		self.delta = delta
 		self.maxZoom = 5
 
-	def resetCanvas(self, master):
+		self.app = app
+		self.app.bind('<Command-=>', self.wheel )
+		self.app.bind('<Command-minus>', self.wheel )
 
-		self.canvas = Canvas( master,  bg='grey', width=800, height=600 )
+	def resetCanvas(self, master):
+		self.canvas_width = 800
+		self.canvas_height = 600
+
+		self.canvas = Canvas( master,  bg='grey', width=self.canvas_width, height=self.canvas_height )
 		self.canvas.grid(row=0, column=0, sticky='news')
 		self.canvas.update() # do i need
 
@@ -130,19 +138,23 @@ class ZoomFrame(Frame):
 
 	def wheel(self, event):
 		if self.image != None:
-			x = self.canvas.canvasx(event.x)
-			y = self.canvas.canvasy(event.y)
+			if event.keysym == 'equal' or event.keysym == 'minus':
+				x = self.canvas_width/2
+				y = self.canvas_height/2
+			else:
+				x = self.canvas.canvasx(event.x)
+				y = self.canvas.canvasy(event.y)
 			scale = 1.0
 
 			# Respond to Linux (event.num) or Windows (event.delta) wheel event
-			if event.num == 5 or event.delta < 0:  # zoom in
+			if event.num == 5 or event.delta < 0 or event.keysym == 'minus':  # zoom in
 				if self.zoom < self.maxZoom:
 					self.zoom += 1
 					self.imgscale /= self.delta
 					scale         /= self.delta
 					self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
 
-			if event.num == 4 or event.delta > 0:  # zoom out
+			elif event.num == 4 or event.delta > 0:  # zoom out
 				if self.zoom > self.maxZoom * -1:
 					self.zoom -= 1
 					self.imgscale *= self.delta
@@ -159,7 +171,7 @@ class ZoomFrame(Frame):
 		self.canvas.scan_mark( event.x, event.y )
 
 	def moveTo(self, event):
-		self.canvas.scan_dragto( event.x, event.y, gain=4 )
+		self.canvas.scan_dragto( event.x, event.y, gain=1 )
 		self.showImage()
 
 class Header(Label):
@@ -676,7 +688,7 @@ class TextGridModule(object):
 		'''
 		#make regular frame stuff -- label and tier
 		self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray')
-		frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0)
+		frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0, background='gray')
 		frames_label.create_text(self.label_width,0, anchor=NE, justify=CENTER,
 								 text='frames: ', width=self.label_width, activefill='blue')
 
@@ -689,7 +701,7 @@ class TextGridModule(object):
 		go_btn.grid(row=0, column=0, sticky=E)
 		txtbox.grid(row=0, column=1, sticky=E)
 		# put subframe on canvas
-		window = frames_label.create_window(self.label_width/2,self.canvas_height/3, anchor=NW, window=sbframe)
+		window = frames_label.create_window(self.label_width*.3,self.canvas_height/3, anchor=NW, window=sbframe)
 
 		self.TkWidgets.append({'name':self.frameTierName,'frames':self.frames_canvas,
 							   'frames-label':frames_label})
@@ -726,6 +738,7 @@ class TextGridModule(object):
 
 		self.app.Trace.frame.update()
 		self.label_width=self.app.Trace.frame.winfo_width()-self.label_padx
+		print(self.label_width, 739)
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
 		self.first_frame = 1
 		self.last_frame = self.TextGrid.getFirst(self.frameTierName)[-1].mark
@@ -845,6 +858,19 @@ class TextGridModule(object):
 				self.update()
 				self.app.Spectrogram.update()
 
+	def getMinMaxTime(self):
+		'''
+
+		'''
+		start=None
+		for tag in self.selectedItem[0].gettags(self.selectedItem[1]):
+			if tag[:7] == 'minTime':
+				start = decimal.Decimal(tag[7:])
+			elif tag[:7] == 'maxTime':
+				end = decimal.Decimal(tag[7:])
+
+		if start:
+			return (start,end)
 
 	def getBounds(self, event):
 		'''
@@ -860,11 +886,13 @@ class TextGridModule(object):
 		old_end = self.end
 
 		if event.keysym == 'n':
-			for tag in self.selectedItem[0].gettags(self.selectedItem[1]):
-				if tag[:7] == 'minTime':
-					self.start = decimal.Decimal(tag[7:])
-				elif tag[:7] == 'maxTime':
-					self.end = decimal.Decimal(tag[7:])
+			if self.selectedItem:
+				self.start, self.end = self.getMinMaxTime()
+			# for tag in self.selectedItem[0].gettags(self.selectedItem[1]):
+			# 	if tag[:7] == 'minTime':
+			# 		self.start = decimal.Decimal(tag[7:])
+			# 	elif tag[:7] == 'maxTime':
+			# 		self.end = decimal.Decimal(tag[7:])
 		if event.keysym == 'a':
 			self.start = 0
 			self.end = self.TextGrid.maxTime
@@ -1662,15 +1690,16 @@ class PlaybackModule(object):
 		self.current = None
 		if _AUDIO_LIBS_INSTALLED:
 			print( ' - initializing module: Audio' )
-			self.mixer = pygame.mixer
-			self.mixer.init()
+			# self.mixer = pygame.mixer
+			# self.mixer.init()
 			self.sfile = None
 			self.isPaused = False
 
 			# widget management
 			self.frame = Frame(self.app.BOTTOM)
-			self.playBtn = Button(self.frame, text="Play/Pause", command=self.toggleAudio, state=DISABLED)
-			self.app.bind('<space>', self.toggleAudio )
+			self.playBtn = Button(self.frame, text="Play/Pause", command=self.playSeg, state=DISABLED)
+			self.app.bind('<space>', self.playSeg )
+			self.app.bind('<Command-space>', self.pauseSeg )
 
 	def update(self):
 		'''
@@ -1699,7 +1728,7 @@ class PlaybackModule(object):
 			try:
 				# self.mixer.music.load( audiofile )
 				# self.sfile = sf.SoundFile( audiofile )
-				self.sfile = NamedTemporaryFile("w+b", suffix=codec)
+				self.sfile = AudioSegment.from_file( audiofile )
 				self.current = audiofile
 				self.isPaused = False
 				return True
@@ -1707,14 +1736,53 @@ class PlaybackModule(object):
 				print('Unable to load audio file: `%s`' % audiofile)
 				return False
 
+	# def _play_with_pyaudio(seg):
+	# '''
+	# copied from pydub: https://github.com/jiaaro/pydub/blob/master/pydub/playback.py
+	# '''
+    # 	p = pyaudio.PyAudio()
+    # 	stream = p.open(format=p.get_format_from_width(seg.sample_width),
+    #                 channels=seg.channels,
+    #                 rate=seg.frame_rate,
+    #                 output=True)
+	#
+    # # break audio into half-second chunks (to allows keyboard interrupts)
+    # for chunk in make_chunks(seg, 500):
+    #     stream.write(chunk._data)
+	#
+    # stream.stop_stream()
+    # stream.close()
+	#
+    # p.terminate()
+
+	def playSeg(self, event=None):
+		'''
+
+		'''
+		# start = round(self.app.TextGrid.start*1000)
+		# end = round(self.app.TextGrid.end*1000)
+		if self.app.TextGrid.selectedItem:
+			start, end = self.app.TextGrid.getMinMaxTime()
+		else:
+			start = self.app.TextGrid.start
+			end = self.app.TextGrid.end
+		start = round(float(start)*1000)
+		end = round(float(end)*1000)
+		seg = self.sfile[start:end]
+		# print(start, end)
+		play(seg)
+
+	def pauseSeg(self,event):
+		pass
+
 	def toggleAudio(self, event=None):
 		'''
 		play/pause/stop
 		'''
-		#this should be put in a separate function
-		os.system('ffmpeg -i {} -ss {} -t {} -c copy {}'.format(self.current,self.app.TextGrid.start,self.app.TextGrid.end - self.app.TextGrid.start,self.sfile.name))
-		# currentaudio = sf.read(self.current, start=self.app.TextGrid.start, stop=self.app.TextGrid.end)
-		self.mixer.music.load(self.sfile.name)
+		# #this should be put in a separate function
+		# os.system('ffmpeg -i {} -ss {} -t {} -c copy {}'.format(self.current,self.app.TextGrid.start,self.app.TextGrid.end - self.app.TextGrid.start,self.sfile.name))
+		# # currentaudio = sf.read(self.current, start=self.app.TextGrid.start, stop=self.app.TextGrid.end)
+		# self.mixer.music.load(self.sfile.name)
 
 		if self.current != None:
 			if self.isPaused:
@@ -1724,7 +1792,6 @@ class PlaybackModule(object):
 				self.mixer.music.pause()
 				self.isPaused = True
 			else:
-				print('playing', 1728)
 				self.mixer.music.play()
 				self.isPaused = False
 
@@ -1769,7 +1836,7 @@ class DicomModule(object):
 			self.loadBtn.grid()
 
 			# zoom frame (contains our tracing canvas)
-			self.zframe = ZoomFrame(self.app.RIGHT, 1.3)
+			self.zframe = ZoomFrame(self.app.RIGHT, 1.3, app)
 
 			# reset zoom button
 			self.zoomResetBtn = Button(self.app.LEFT, text='Reset image', command=self.zoomReset, pady=7 )
