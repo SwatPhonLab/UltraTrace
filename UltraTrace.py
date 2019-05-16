@@ -73,8 +73,10 @@ class ZoomFrame(Frame):
 		self.maxZoom = 5
 
 		self.app = app
-		self.app.bind('<Command-=>', self.wheel )
-		self.app.bind('<Command-minus>', self.wheel )
+		#self.app.bind('<Command-equal>', self.wheel )
+		#self.app.bind('<Command-minus>', self.wheel )
+		self.app.bind('<Control-equal>', self.wheel )
+		self.app.bind('<Control-minus>', self.wheel )
 
 	def resetCanvas(self, master):
 		self.canvas_width = 800
@@ -121,13 +123,16 @@ class ZoomFrame(Frame):
 				bbox = ( bbox1[0], bbox[1], bbox1[2], bbox[3] )
 			if bbox[1] == bbox1[1] and bbox[3] == bbox1[3]:
 				bbox = ( bbox[0], bbox1[1], bbox[2], bbox1[3] )
+			if bbox[0] == 0 and bbox[1] == 0:
+				bbox = ( 1, 1, bbox[2], bbox[3] )
+				#canvas.configure( (0,0,x,y) ) seems to result in a canvas with bounding box (-1,-1,x,y)
 			self.canvas.configure(scrollregion=bbox)
 			x1 = max(bbox2[0] - bbox1[0], 0)
 			y1 = max(bbox2[1] - bbox1[1], 0)
 			x2 = min(bbox2[2], bbox1[2]) - bbox1[0]
 			y2 = min(bbox2[3], bbox1[3]) - bbox1[1]
-
-			if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # show image if it in the visible area
+			
+			if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # show image if it is in the visible area
 				x = min(int(x2 / self.imgscale), self.width)   # sometimes it is larger on 1 pixel...
 				y = min(int(y2 / self.imgscale), self.height)  # ...and sometimes not
 				image = self.image.crop((int(x1 / self.imgscale), int(y1 / self.imgscale), x, y))
@@ -147,14 +152,14 @@ class ZoomFrame(Frame):
 			scale = 1.0
 
 			# Respond to Linux (event.num) or Windows (event.delta) wheel event
-			if event.num == 5 or event.delta < 0 or event.keysym == 'minus':  # zoom in
+			if event.num == 5 or event.delta < 0 or event.keysym == 'minus':  # zoom out
 				if self.zoom < self.maxZoom:
 					self.zoom += 1
 					self.imgscale /= self.delta
 					scale         /= self.delta
 					self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
 
-			elif event.num == 4 or event.delta > 0:  # zoom out
+			elif event.num == 4 or event.delta > 0 or event.keysym == 'equal':  # zoom in
 				if self.zoom > self.maxZoom * -1:
 					self.zoom -= 1
 					self.imgscale *= self.delta
@@ -1164,6 +1169,10 @@ class TextGridModule(object):
 		'''
 
 		'''
+		try:
+			bloop = self.frames_canvas
+		except AttributeError:
+			self.reset()
 		#create list of displayed frames' tags
 		itrobj = []
 		for itm in self.frames_canvas.find_all():
@@ -2200,6 +2209,7 @@ class App(Tk):
 		print( ' - loading widgets' )
 
 		self.filesUpdate()
+		self.framesUpdate()
 
 		print()
 
