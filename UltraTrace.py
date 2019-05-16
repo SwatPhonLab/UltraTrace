@@ -11,7 +11,7 @@ import argparse, datetime, json, \
 	math, os, random, shutil, warnings, decimal, \
 	soundfile as sf, scipy.fftpack as fftpack, urllib.request as request #FIXME should I put these with non-critical dependencies?
 
-from stft2level import stft2level
+import parselmouth
 
 # monkeypatch the warnings module
 warnings.showwarning = lambda msg, *args : print( 'WARNING: %s' % msg )
@@ -24,7 +24,7 @@ getMIMEType = Magic(mime=True).from_file
 try:
 	import numpy as np				# sudo -H pip3 install -U numpy
 	import pydicom as dicom 		# sudo -H pip3 install -U pydicom
-	from PIL import Image, ImageTk  # sudo -H pip3 install -U pillow
+	from PIL import Image, ImageTk, ImageEnhance  # sudo -H pip3 install -U pillow
 	_DICOM_LIBS_INSTALLED = True
 except (ImportError):
 	warnings.warn('Dicom library failed to load')
@@ -73,10 +73,8 @@ class ZoomFrame(Frame):
 		self.maxZoom = 5
 
 		self.app = app
-		#self.app.bind('<Command-equal>', self.wheel )
-		#self.app.bind('<Command-minus>', self.wheel )
-		self.app.bind('<Control-equal>', self.wheel )
-		self.app.bind('<Control-minus>', self.wheel )
+		self.app.bind('<Command-equal>', self.wheel )
+		self.app.bind('<Command-minus>', self.wheel )
 
 	def resetCanvas(self, master):
 		self.canvas_width = 800
@@ -1243,16 +1241,19 @@ class SpectrogramModule(object):
 		https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
 		by Mark Hasegawa-Johnson
 		'''
-		p_data, p_fs = sf.read(self.app.Audio.current) ## NOTE: reads audio again even when zooming
-
-		p_wav = p_data[int(self.app.TextGrid.start*p_fs):int(self.app.TextGrid.end*p_fs)]
-
-		(p_sgram,p_maxtime, p_maxfreq) = self.sgram(p_wav, int(0.001*p_fs), int(0.004*p_fs), 1024, p_fs, 5000)
-		self.spectrogram = np.transpose(np.array(p_sgram)) #for example file, is a 2d array, 106x1997
+		sound = parselmouth.Sound(self.app.Audio.current)
+		sound_clip = sound.extract_part(from_time=self.app.TextGrid.start, to_time=self.app.TextGrid.end)
+		ts = sound_clip.get_total_duration() / 10000.0
+		spec = sound_clip.to_spectrogram(window_length=0.0025, time_step=ts)
+		self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
+		self.spectrogram += self.spectrogram.min()
+		self.spectrogram *= (60.0 / self.spectrogram.max())
 
 		img = Image.fromarray(self.spectrogram)
 		if img.mode != 'RGB':
 			img = img.convert('RGB')
+		contrast = ImageEnhance.Contrast(img)
+		img = contrast.enhance(5)
 		self.canvas_height = img.height
 		img = img.resize((self.canvas_width, self.canvas_height))
 
@@ -1264,42 +1265,6 @@ class SpectrogramModule(object):
 
 		self.grid()
 		self.drawInterval()
-
-	def enframe(self,x,S,L):
-		'''
-		Adapted with permission from
-		https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
-		by Mark Hasegawa-Johnson
-		'''
-		w = np.hamming(L)
-		frames = []
-		nframes = 1+int((len(x)-L)/S)
-		for t in range(0,nframes):
-			frames.append(np.copy(x[(t*S):(t*S+L)])*w)
-		return(frames)
-
-	def sgram(self,x,frame_skip,frame_length,fft_length, fs, max_freq):
-		'''
-		Adapted with permission from
-		https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
-		by Mark Hasegawa-Johnson
-		'''
-		frames = self.enframe(x,frame_skip,frame_length)
-		(spectra, freq_axis) = self.stft(frames, fft_length, fs)
-		sgram = stft2level(np.array(spectra).astype('float64'), int(max_freq*fft_length/fs))
-		#sgram = self.stft2level(np.array(spectra).astype('float64'), int(max_freq*fft_length/fs))
-		max_time = len(frames)*frame_skip/fs
-		return(sgram, max_time, max_freq)
-
-	def stft(self,frames,N,Fs):
-		'''
-		Adapted with permission from
-		https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
-		by Mark Hasegawa-Johnson
-		'''
-		stft_frames = [ fftpack.fft(x,N) for x in frames]
-		freq_axis = np.linspace(0,Fs,N)
-		return(stft_frames, freq_axis)
 
 	def drawInterval(self):
 		'''
