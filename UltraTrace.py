@@ -12,6 +12,7 @@ import argparse, datetime, json, \
 	soundfile as sf, scipy.fftpack as fftpack, urllib.request as request #FIXME should I put these with non-critical dependencies?
 
 import parselmouth
+import copy
 
 # monkeypatch the warnings module
 warnings.showwarning = lambda msg, *args : print( 'WARNING: %s' % msg )
@@ -90,7 +91,7 @@ class ZoomFrame(Frame):
 		self.canvas.bind('<Configure>', self.showImage ) # on canvas resize events
 		self.canvas.bind('<Control-Button-1>', self.moveFrom )
 		self.canvas.bind('<Control-B1-Motion>', self.moveTo )
-		# self.canvas.bind('<MouseWheel>', self.wheel ) # Windows & Linux FIXME
+		self.canvas.bind('<MouseWheel>', self.wheel ) # Windows & Linux FIXME
 		self.canvas.bind('<Button-4>', self.wheel )   # Linux scroll up
 		self.canvas.bind('<Button-5>', self.wheel )   # Linux scroll down
 
@@ -140,6 +141,8 @@ class ZoomFrame(Frame):
 				self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
 
 	def wheel(self, event):
+		print(event)
+		print("HARGLE BARGLE")
 		if self.image != None:
 			if event.keysym == 'equal' or event.keysym == 'minus':
 				x = self.canvas_width/2
@@ -364,11 +367,11 @@ class MetadataModule(object):
 				'files': {} }
 
 			# we want each object to have entries for everything here
-			fileKeys = { '_prev', '_next', 'processed' } # and `processed`
+			fileKeys = { '_prev', '_next', 'processed', 'offset' } # and `processed`
 			MIMEs = {
 				'audio/x-wav'		:	['.wav'],
 				'audio/x-flac'		:	['.flac'],
-				'audio/wav'			:	['.wav'],
+				'audio/wav'		:	['.wav'],
 				'audio/flac'		:	['.flac'],
 				'application/dicom'	:	['.dicom'],
 				'text/plain'		:	['.TextGrid']
@@ -647,7 +650,7 @@ class TextGridModule(object):
 					# iterate the tiers
 					self.frameTierName = self.getFrameTierName()
 					for tier in self.TextGrid.getNames():
-						if tier != self.frameTierName:
+						if tier != self.frameTierName and tier != self.frameTierName + '.original':
 							# make some widgets for each tier
 							tierWidgets = self.makeTierWidgets( tier )
 							self.TkWidgets.append( tierWidgets )
@@ -669,12 +672,20 @@ class TextGridModule(object):
 		shift = self.frame_shift.get()
 		if type(shift) == float:
 			diff = shift - self.app.Data.data['offset']
+			if self.app.Data.getFileLevel( 'offset' ) == None:
+				orig = copy.deepcopy(self.TextGrid.getFirst(self.frameTierName))
+				orig.name += '.original'
+				self.TextGrid.append(orig)
+				self.app.Data.setFileLevel( 'offset', diff )
+			else:
+				diff -= self.app.Data.getFileLevel( 'offset' )
 			for point in self.TextGrid.getFirst(self.frameTierName):
 				point.time += decimal.Decimal(diff/1000) ## NOTE: currently in ms
-			self.app.Data.data['offset'] = shift
-			self.frame_shift.set(shift)
+			#self.app.Data.data['offset'] = shift
+			self.frame_shift.set(shift) # why is this necessary?
 			self.app.Data.write()
 			self.fillCanvases()
+			self.TextGrid.write(self.app.Data.getFileLevel( '.TextGrid' ))
 		#except ValueError:
 		else:
 			print('Not a float!')
@@ -699,8 +710,11 @@ class TextGridModule(object):
 		sbframe = Frame(frames_label)
 		#put new widgets onto subframe
 		self.frame_shift = DoubleVar()
+		offset = self.app.Data.getFileLevel( 'offset' )
+		if offset != None:
+			self.frame_shift.set(offset)
 		go_btn = Button(sbframe, text='Go', command=self.shiftFrames)
-		txtbox = Spinbox(sbframe, textvariable=self.frame_shift, from_=-1000, to=1000)
+		txtbox = Spinbox(sbframe, textvariable=self.frame_shift)#, from_=-1000, to=1000)
 		go_btn.grid(row=0, column=0, sticky=E)
 		txtbox.grid(row=0, column=1, sticky=E)
 		# put subframe on canvas
@@ -1815,6 +1829,9 @@ class DicomModule(object):
 			# reset zoom button
 			self.zoomResetBtn = Button(self.app.LEFT, text='Reset image', command=self.zoomReset, pady=7 )
 
+			# reset zoom keyboard shortcut
+			self.app.bind('<Command-0>', self.zoomReset )
+
 	def zoomReset(self, fromButton=True):
 		'''
 		reset zoom frame canvas and rebind it
@@ -2177,12 +2194,8 @@ class App(Tk):
 
 		self.filesUpdate()
 		self.framesUpdate()
-		self.filesUpdate()
-		#filesUpdate must be called before framesUpdate because framesUpdate can't run
-		#until filesUpdate has done its job, but then certain things (TextGrid)
-		#don't display properly until after framesUpdate has been run, so filesUpdate has to run twice
-		#(there's probably a better way to fix this) - DS 5/17/19
-
+		self.TextGrid.reset()
+		
 		print()
 
 	def setWidgetDefaults(self):
@@ -2652,6 +2665,13 @@ class CanvasTooltip:
 
 if __name__=='__main__':
 	app = App()
+	while True:
+		try:
+			app.mainloop()
+			break
+		except UnicodeDecodeError:
+			pass
+	
 	try:
 		app.mainloop()
 	except UnicodeDecodeError:
