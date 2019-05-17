@@ -1919,6 +1919,8 @@ class DicomModule(object):
 		self.app.Data.setFileLevel( 'processed', processedData )
 		self.app.lift()
 		self.load()
+		self.app.update()
+		self.app.framesUpdate()
 
 	# an attempt at making things parallel, but we get the following error:
 	# _pickle.PicklingError: Could not pickle the task to send it to the workers.
@@ -2175,6 +2177,11 @@ class App(Tk):
 
 		self.filesUpdate()
 		self.framesUpdate()
+		self.filesUpdate()
+		#filesUpdate must be called before framesUpdate because framesUpdate can't run
+		#until filesUpdate has done its job, but then certain things (TextGrid)
+		#don't display properly until after framesUpdate has been run, so filesUpdate has to run twice
+		#(there's probably a better way to fix this) - DS 5/17/19
 
 		print()
 
