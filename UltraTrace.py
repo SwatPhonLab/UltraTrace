@@ -713,8 +713,8 @@ class TextGridModule(object):
 		offset = self.app.Data.getFileLevel( 'offset' )
 		if offset != None:
 			self.frame_shift.set(offset)
-		go_btn = Button(sbframe, text='Go', command=self.shiftFrames)
-		txtbox = Spinbox(sbframe, textvariable=self.frame_shift)#, from_=-1000, to=1000)
+		go_btn = Button(sbframe, text='Offset', command=self.shiftFrames)
+		txtbox = Spinbox(sbframe, textvariable=self.frame_shift, width=7)#, from_=-1000, to=1000)
 		go_btn.grid(row=0, column=0, sticky=E)
 		txtbox.grid(row=0, column=1, sticky=E)
 		# put subframe on canvas
