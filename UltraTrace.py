@@ -14,6 +14,8 @@ import argparse, datetime, json, \
 import parselmouth
 import copy
 
+import base64
+
 # monkeypatch the warnings module
 warnings.showwarning = lambda msg, *args : print( 'WARNING: %s' % msg )
 
@@ -1328,6 +1330,17 @@ class TraceModule(object):
 
 		self.app = app
 
+		# some images for the buttons
+		# Adwaita 32x32 symbolic icons, just for testing
+		data_copy = base64_encodedString='''iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAIlJREFUWIXtlcEKgCAQRKeoQ9AHd+rQF/Sn1q2bnQJBI5y1hJgBQcTdebjsCkhSLE+sjTVrjbDmPAIQgAA6IqZhzVIq9QJVAJiJuZcEYBSVTwDVAVJt6IJ9D2B8E8DS056IOQAM4UH1Egjga4C5ZLLcMTyVNM8FuDVnvuNL7vkKAGABsBp8pJ/rBB1+OWYrt513AAAAAElFTkSuQmCC'''
+		data_paste = base64_encodedString='''iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAR9JREFUWIXtlstqwkAUhr+IUgpe2xfoy7p27UawlII7X8C+hWtxYV16o8WVcZMp8ehcTkxSkPxwIGROzv/NzCEzEK4vIPbEHHhS1FTJZ27iTVO0lnp+BcbAIVVskRG2K6D2wCTxsGrK9WzSAJoVkAAmPmzmdeC3BICdNDZb0ASebXQ5qi1f1C2JW6B3h9EWiJLn2JVYcw0KzQJy5sBaUfNPcs82WYpYJPvgQpoVKES2HkhrAXQy1H7JC6CbhFYRngaEYrcg8qdUABVABfDAAEPgqPnAdRhtCL+MxMCAy9k7D6O8AaR5qQC3zL0AIYfRPTcjr/79PlAB2HrANGXhMiuwB35K8FvaAE7AZwkA767BFjACvtH9+UJiBfSBhjQ9A/QhsPbP/iBuAAAAAElFTkSuQmCC'''
+
+		self.img_copy = PhotoImage(data=data_copy)
+		self.img_paste = PhotoImage(data=data_paste)
+
+		self.displayedColour = None
+		#self.app.Data.getCurrentTraceColor()
+
 		# array of trace names for this directory
 		self.available = self.app.Data.getTopLevel( 'traces' )
 		self.available = [] if self.available==None else self.available
@@ -1367,9 +1380,10 @@ class TraceModule(object):
 			self.getWidget( lbframe, row=10, column=0, rowspan=50 ),
 			self.getWidget( Button(self.frame, text='Set as default', command=self.setDefaultTraceName), row=10, column=2, columnspan=2 ),
 			self.getWidget( Button(self.frame, text='Select all', command=self.selectAll), row=11, column=2, columnspan=2 ),
-			self.getWidget( Button(self.frame, text='Copy', command=self.copy), row=12, column=2 ),
-			self.getWidget( Button(self.frame, text='Paste', command=self.paste), row=12, column=3 ),
-			self.getWidget( Button(self.frame, text='Recolor', command=self.recolor), row=13, column=2, columnspan=2 ),
+			self.getWidget( Button(self.frame, image=self.img_copy, command=self.copy), row=12, column=2 ), # FIXME: add tooltip for "Copy"
+			self.getWidget( Button(self.frame, image=self.img_paste, command=self.paste), row=12, column=3 ), # FIXME: add tooltip for "Paste"
+			self.getWidget( Entry( self.frame, width=8, textvariable=self.displayedColour), row=13, column=1, columnspan=2, sticky=W ),
+			self.getWidget( Button(self.frame, text='Recolor', command=self.recolor), row=13, column=3 ),
 			self.getWidget( Button(self.frame, text='Clear', command=self.clear), row=15, column=2, columnspan=2 ),
 			self.getWidget( Entry( self.frame, width=12, textvariable=self.traceSV), row=100, column=0, sticky=W ),
 			self.getWidget( Button(self.frame, text='New', command=self.newTrace), row=100, column=2 ),
@@ -1573,6 +1587,9 @@ class TraceModule(object):
 		if trace==None or color == None:
 			self.app.Control.push({ 'type':'recolor', 'trace':self.getCurrentTraceName(), 'color':oldColor })
 			self.redoQueue = []
+			# FIXME: get this to update the widget
+			self.app.Trace.displayedColour = newColor
+			# FIXME: also get the widget to update the colour!
 
 		return oldColor
 	def clear(self):
