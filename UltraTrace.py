@@ -116,7 +116,7 @@ class ZoomFrame(Frame):
 		self.container = self.canvas.create_rectangle(0,0,self.width,self.height,width=0)
 		for ev in self.movement:
 			if ev[0] == 'zoom':
-				self.canvas.scale('all', ev[1], ev[2], ev[3], ev[3])
+				self.wheel(ev[1], isFake=True)
 			elif ev[0] == 'pan':
 				self.canvas.move('all', ev[1], ev[2])
 		self.showImage()
@@ -151,7 +151,7 @@ class ZoomFrame(Frame):
 				self.canvas.lower(imageid)  # set image into background
 				self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
 
-	def wheel(self, event):
+	def wheel(self, event, isFake=False):
 		print(event)
 		print("HARGLE BARGLE")
 		if self.image != None:
@@ -178,7 +178,7 @@ class ZoomFrame(Frame):
 					scale         *= self.delta
 					self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
 
-			#self.movement.append(['zoom', x, y, scale])
+			if not isFake: self.movement.append(['zoom', event])
 			self.showImage()
 
 	def scrollY(self, *args, **kwargs):
