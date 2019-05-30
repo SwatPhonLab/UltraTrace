@@ -74,6 +74,7 @@ class ZoomFrame(Frame):
 
 		self.delta = delta
 		self.maxZoom = 5
+		self.movement = []
 
 		self.app = app
 		self.app.bind('<Command-equal>', self.wheel )
@@ -103,6 +104,9 @@ class ZoomFrame(Frame):
 		self.zoom = 0
 		self.imgscale = 1.0
 		self.image = None
+		self.movement = []
+		self.panStartX = 0
+		self.panStartY = 0
 
 	def setImage(self, image): # expect an Image() instance
 		self.zoom = 0
@@ -110,6 +114,11 @@ class ZoomFrame(Frame):
 		self.image = image
 		self.width, self.height = self.image.size
 		self.container = self.canvas.create_rectangle(0,0,self.width,self.height,width=0)
+		for ev in self.movement:
+			if ev[0] == 'zoom':
+				self.canvas.scale('all', ev[1], ev[2], ev[3], ev[3])
+			elif ev[0] == 'pan':
+				self.canvas.move('all', ev[1], ev[2])
 		self.showImage()
 
 	def showImage(self, event=None):
@@ -169,6 +178,7 @@ class ZoomFrame(Frame):
 					scale         *= self.delta
 					self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
 
+			#self.movement.append(['zoom', x, y, scale])
 			self.showImage()
 
 	def scrollY(self, *args, **kwargs):
@@ -176,10 +186,23 @@ class ZoomFrame(Frame):
 		self.showImage()
 
 	def moveFrom(self, event):
-		self.canvas.scan_mark( event.x, event.y )
+		self.panStartX = event.x
+		self.panStartY = event.y
+		#self.canvas.scan_mark( event.x, event.y )
 
 	def moveTo(self, event):
-		self.canvas.scan_dragto( event.x, event.y, gain=1 )
+		#self.canvas.scan_dragto( event.x, event.y, gain=1 )
+		#self.movement.append(['pan_end', event.x, event.y])
+		dx = event.x - self.panStartX
+		dy = event.y - self.panStartY
+		self.canvas.move('all', dx, dy)
+		if self.movement and self.movement[-1][0] == 'pan':
+			self.movement[-1][1] += dx
+			self.movement[-1][2] += dy
+		else:
+			self.movement.append(['pan', dx, dy])
+		self.panStartX = event.x
+		self.panStartY = event.y
 		self.showImage()
 
 class Header(Label):
