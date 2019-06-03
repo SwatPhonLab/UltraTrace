@@ -1355,7 +1355,7 @@ class TraceModule(object):
 
 		# some images for the buttons
 		# Source for icons: https://material.io/tools/icons/?style=outline
-		# License: Apache Version 2.0
+		# License: Apache Version 2.0 www.apache.org/licenses/LICENSE-2.0.txt
 		data_copy = '''R0lGODlhGAAYAPAAAAAAAAAAACH5BAEAAAEALAAAAAAYABgAAAJHjI+pCe3/1oHUSdOunmDvHFTWBYrjUnbMuWIqAqEqCMdt+HI25yrVTZMEcT3NMPXJEZckJdKorCWbU2H0JqvKTBErl+XZFAAAOw'''
 		data_paste = '''R0lGODlhGAAYAPAAAAAAAAAAACH5BAEAAAEALAAAAAAYABgAAAJBjI+pq+DAonlPToqza7rv9FlBeJCSOUJpd3EXm7piDKoi+nkqvnttPaMhUAzeiwJMapJDm8U44+kynCkmiM1qZwUAOw'''
 
