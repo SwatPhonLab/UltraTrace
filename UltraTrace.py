@@ -624,7 +624,7 @@ class TextGridModule(object):
 		print( ' - initializing module: TextGrid' )
 		self.app = app
 		self.frame = Frame(self.app.BOTTOM)
-		self.label_padx = 20
+		self.label_padx = -11
 		self.canvas_frame = Frame(self.app.BOTTOM, padx=self.label_padx)
 		self.frame.grid( row=1, column=0 )
 		self.canvas_frame.grid(row=1, column=1, sticky=E)
@@ -1269,11 +1269,15 @@ class SpectrogramModule(object):
 
 		self.frame = Frame(self.app.BOTTOM)
 		self.frame.grid( row=0, column=1 )
+		self.axis_frame = Frame(self.app.BOTTOM)
+		self.axis_frame.grid( row=0, column=2 )
 		self.canvas_width = self.app.TextGrid.canvas_width
-		self.canvas_height = 1
+		self.canvas_height = 60
 		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
 		self.spectrogram = None
 		self.spec_freq_max = 5000.0
+		self.freq_max_box = Entry(self.axis_frame, width=5, textvariable=str(self.spec_freq_max))
+		self.freq_min_label = Canvas(self.axis_frame, width=50, height=self.canvas_height, background='gray')
 
 	def reset(self):
 		'''
@@ -1333,9 +1337,11 @@ class SpectrogramModule(object):
 
 	def grid(self):
 		'''
-
+		Put tkinter items on app
 		'''
 		self.canvas.grid(row=0, column=0, sticky=W)
+		self.freq_max_box.grid(row=0,column=0,sticky=NE)
+		self.freq_min_label.grid(row=2,column=0,sticky=SE)
 
 	def update(self):
 		'''
