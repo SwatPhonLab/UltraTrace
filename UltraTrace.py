@@ -141,7 +141,7 @@ class ZoomFrame(Frame):
 			y1 = max(bbox2[1] - bbox1[1], 0)
 			x2 = min(bbox2[2], bbox1[2]) - bbox1[0]
 			y2 = min(bbox2[3], bbox1[3]) - bbox1[1]
-			
+
 			if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # show image if it is in the visible area
 				x = min(int(x2 / self.imgscale), self.width)   # sometimes it is larger on 1 pixel...
 				y = min(int(y2 / self.imgscale), self.height)  # ...and sometimes not
@@ -1354,9 +1354,10 @@ class TraceModule(object):
 		self.app = app
 
 		# some images for the buttons
-		# Adwaita 32x32 symbolic icons, just for testing
-		data_copy = base64_encodedString='''iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAIlJREFUWIXtlcEKgCAQRKeoQ9AHd+rQF/Sn1q2bnQJBI5y1hJgBQcTdebjsCkhSLE+sjTVrjbDmPAIQgAA6IqZhzVIq9QJVAJiJuZcEYBSVTwDVAVJt6IJ9D2B8E8DS056IOQAM4UH1Egjga4C5ZLLcMTyVNM8FuDVnvuNL7vkKAGABsBp8pJ/rBB1+OWYrt513AAAAAElFTkSuQmCC'''
-		data_paste = base64_encodedString='''iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAR9JREFUWIXtlstqwkAUhr+IUgpe2xfoy7p27UawlII7X8C+hWtxYV16o8WVcZMp8ehcTkxSkPxwIGROzv/NzCEzEK4vIPbEHHhS1FTJZ27iTVO0lnp+BcbAIVVskRG2K6D2wCTxsGrK9WzSAJoVkAAmPmzmdeC3BICdNDZb0ASebXQ5qi1f1C2JW6B3h9EWiJLn2JVYcw0KzQJy5sBaUfNPcs82WYpYJPvgQpoVKES2HkhrAXQy1H7JC6CbhFYRngaEYrcg8qdUABVABfDAAEPgqPnAdRhtCL+MxMCAy9k7D6O8AaR5qQC3zL0AIYfRPTcjr/79PlAB2HrANGXhMiuwB35K8FvaAE7AZwkA767BFjACvtH9+UJiBfSBhjQ9A/QhsPbP/iBuAAAAAElFTkSuQmCC'''
+		# Source for icons: https://material.io/tools/icons/?style=outline
+		# License: Apache Version 2.0
+		data_copy = '''R0lGODlhGAAYAPAAAAAAAAAAACH5BAEAAAEALAAAAAAYABgAAAJHjI+pCe3/1oHUSdOunmDvHFTWBYrjUnbMuWIqAqEqCMdt+HI25yrVTZMEcT3NMPXJEZckJdKorCWbU2H0JqvKTBErl+XZFAAAOw'''
+		data_paste = '''R0lGODlhGAAYAPAAAAAAAAAAACH5BAEAAAEALAAAAAAYABgAAAJBjI+pq+DAonlPToqza7rv9FlBeJCSOUJpd3EXm7piDKoi+nkqvnttPaMhUAzeiwJMapJDm8U44+kynCkmiM1qZwUAOw'''
 
 		self.img_copy = PhotoImage(data=data_copy)
 		self.img_paste = PhotoImage(data=data_paste)
@@ -2235,7 +2236,7 @@ class App(Tk):
 		self.filesUpdate()
 		self.framesUpdate()
 		self.TextGrid.reset()
-		
+
 		print()
 
 	def setWidgetDefaults(self):
@@ -2711,7 +2712,7 @@ if __name__=='__main__':
 			break
 		except UnicodeDecodeError:
 			pass
-	
+
 	try:
 		app.mainloop()
 	except UnicodeDecodeError:
