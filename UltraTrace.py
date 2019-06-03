@@ -780,7 +780,7 @@ class TextGridModule(object):
 
 		self.app.Trace.frame.update()
 		self.label_width=self.app.Trace.frame.winfo_width()-self.label_padx
-		print(self.label_width, 739)
+		# print(self.label_width, 739)
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
 		self.first_frame = 1
 		self.last_frame = self.TextGrid.getFirst(self.frameTierName)[-1].mark
@@ -1273,6 +1273,7 @@ class SpectrogramModule(object):
 		self.canvas_height = 1
 		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
 		self.spectrogram = None
+		self.spec_freq_max = 5000.0
 
 	def reset(self):
 		'''
@@ -1280,10 +1281,12 @@ class SpectrogramModule(object):
 		https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
 		by Mark Hasegawa-Johnson
 		'''
+		#is this still true? Is this the stuff Daniel redid with parselmouth?
+
 		sound = parselmouth.Sound(self.app.Audio.current)
 		sound_clip = sound.extract_part(from_time=self.app.TextGrid.start, to_time=self.app.TextGrid.end)
 		ts = sound_clip.get_total_duration() / 10000.0
-		spec = sound_clip.to_spectrogram(window_length=0.0025, time_step=ts)
+		spec = sound_clip.to_spectrogram(window_length=0.0025, time_step=ts, maximum_frequency=self.spec_freq_max)
 		self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
 		self.spectrogram += self.spectrogram.min()
 		self.spectrogram *= (60.0 / self.spectrogram.max())
