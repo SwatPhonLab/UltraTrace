@@ -2021,7 +2021,7 @@ class DicomModule(object):
 			arr = pixels[ f,:,:,: ] if RGB else pixels[ f,:,: ]
 			img = Image.fromarray( arr )
 
-			outputfilename = '%s_frame_%04d.png' % ( self.app.Data.getFileLevel('name'), f )
+			outputfilename = '%s_frame_%04d.png' % ( self.app.Data.getFileLevel('name'), f+1 )
 			outputfilepath = os.path.join( outputpath, outputfilename )
 			img.save( outputfilepath, format='PNG' )
 
