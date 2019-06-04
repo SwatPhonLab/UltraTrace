@@ -624,7 +624,7 @@ class TextGridModule(object):
 		print( ' - initializing module: TextGrid' )
 		self.app = app
 		self.frame = Frame(self.app.BOTTOM)
-		self.label_padx = -11
+		self.label_padx = -22
 		self.canvas_frame = Frame(self.app.BOTTOM, padx=self.label_padx)
 		self.frame.grid( row=1, column=0 )
 		self.canvas_frame.grid(row=1, column=1, sticky=E)
@@ -665,12 +665,14 @@ class TextGridModule(object):
 			self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
 			# the Data module will pass this filename=None if it can't find an appropriate .TextGrid file
 			filename = self.app.Data.getFileLevel( '.TextGrid' )
+			print(filename)
 			if filename:
 				try:
 					# try to load up our TextGrid using the textgrid lib
 					self.TextGrid = TextGrid.fromFile( filename )
 					# reset default Label to actually be useful
 					# self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
+
 					self.TkWidgets = []
 					# iterate the tiers
 					self.frameTierName = self.getFrameTierName()
@@ -690,27 +692,57 @@ class TextGridModule(object):
 
 	def shiftFrames(self):
 		'''
-
+		Replicate original TextGrid point tier (renamed [tiername].original)
+		Shift points on TextGrid tier in accordance with self.frame_shift
+			Shift value is relative to 0, i.e. inputting the same shift amount a second time will not change the shift
+		Redisplay shifted points
 		'''
 		#try:
 		#	# float(self.frame_shift)
 		shift = self.frame_shift.get()
 		if type(shift) == float:
-			diff = shift - self.app.Data.data['offset']
-			if self.app.Data.getFileLevel( 'offset' ) == None:
-				orig = copy.deepcopy(self.TextGrid.getFirst(self.frameTierName))
+			self.app.Data.setFileLevel( 'offset', shift )
+			# diff = shift - self.app.Data.data['offset']
+			originalTier = self.TextGrid.getFirst(self.frameTierName+'.original')
+			# print(originalTier, 'line 707')
+			if originalTier: pass
+			# if self.app.Data.getFileLevel( 'offset' ) == None:
+			else:
+				orig = copy.deepcopy(self.frameTier)
 				orig.name += '.original'
 				self.TextGrid.append(orig)
-				self.app.Data.setFileLevel( 'offset', diff )
-			else:
-				diff -= self.app.Data.getFileLevel( 'offset' )
-			for point in self.TextGrid.getFirst(self.frameTierName):
-				point.time += decimal.Decimal(diff/1000) ## NOTE: currently in ms
-			#self.app.Data.data['offset'] = shift
-			self.frame_shift.set(shift) # why is this necessary?
+				originalTier = self.TextGrid.getFirst(self.frameTierName+'.original')
+
+			# for point in self.frameTier:
+			# 	new_time = point.time + decimal.Decimal(diff/1000) ## NOTE: currently in ms
+			# 	# point.time += decimal.Decimal(diff/1000) ## NOTE: currently in ms
+			# 	if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
+			# 		point.time = new_time
+			# 	else:
+			# 		self.frameTier.removePoint(point)
+
+			point_names = [x.mark for x in self.frameTier]
+			# print(point_names[-10:])
+			for point in originalTier:
+				new_time = point.time + decimal.Decimal(shift/1000) ## NOTE: currently in ms
+				try:
+					corresp_point = self.frameTier[point_names.index(point.mark)]
+					if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
+						# print(corresp_point)
+						corresp_point.time = new_time
+					else:
+						self.frameTier.removePoint(corresp_point)
+				except:
+					print(point.mark, 'line 735')
+					if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
+						self.frameTier.add(new_time, point.mark)
+
+			self.app.Data.data['offset'] = shift
 			self.app.Data.write()
-			self.fillCanvases()
+			# self.frameTier.write(self.TextGrid.getFirst(self.frameTierName))
 			self.TextGrid.write(self.app.Data.getFileLevel( '.TextGrid' ))
+			# print(self.TextGrid.getFirst(self.frameTierName).)
+			self.fillCanvases()
 		#except ValueError:
 		else:
 			print('Not a float!')
@@ -736,6 +768,7 @@ class TextGridModule(object):
 		#put new widgets onto subframe
 		self.frame_shift = DoubleVar()
 		offset = self.app.Data.getFileLevel( 'offset' )
+		print(offset,'line 745')
 		if offset != None:
 			self.frame_shift.set(offset)
 		go_btn = Button(sbframe, text='Offset', command=self.shiftFrames)
@@ -990,7 +1023,7 @@ class TextGridModule(object):
 		if self.selectedItem:
 			old_selected_tags = self.selectedItem[0].gettags(self.selectedItem[1])
 		duration = self.end - self.start
-		frametier = self.TextGrid.getFirst(self.frameTierName)
+		self.frameTier = self.TextGrid.getFirst(self.frameTierName)
 		for el in self.TkWidgets:
 			if 'name' in el:
 				tier = self.TextGrid.getFirst(el['name'])
@@ -1024,11 +1057,11 @@ class TextGridModule(object):
 					canvas.addtag_withtag(minTimetag, text)
 					canvas.addtag_withtag(maxTimetag, text)
 					#add containted frames to tags
-					while frame_i < len(frametier) and frametier[frame_i].time <= tier[i].maxTime:
-						if frametier[frame_i].time >= tier[i].minTime:
-							canvas.addtag_withtag("frame"+frametier[frame_i].mark, text)
+					while frame_i < len(self.frameTier) and self.frameTier[frame_i].time <= tier[i].maxTime:
+						if self.frameTier[frame_i].time >= tier[i].minTime:
+							canvas.addtag_withtag("frame"+self.frameTier[frame_i].mark, text)
 							if tier[i].mark != '':
-								el['canvas-label'].addtag_all("frame"+frametier[frame_i].mark)
+								el['canvas-label'].addtag_all("frame"+self.frameTier[frame_i].mark)
 						frame_i+=1
 					#pass on selected-ness
 					if self.selectedItem:
@@ -1210,6 +1243,8 @@ class TextGridModule(object):
 			bloop = self.frames_canvas
 		except AttributeError:
 			self.reset()
+
+		print(self.frames_canvas)
 		#create list of displayed frames' tags
 		itrobj = []
 		for itm in self.frames_canvas.find_all():
@@ -1272,12 +1307,12 @@ class SpectrogramModule(object):
 		self.axis_frame = Frame(self.app.BOTTOM)
 		self.axis_frame.grid( row=0, column=2 )
 		self.canvas_width = self.app.TextGrid.canvas_width
-		self.canvas_height = 60
+		self.canvas_height = 1
 		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
 		self.spectrogram = None
 		self.spec_freq_max = 5000.0
-		self.freq_max_box = Entry(self.axis_frame, width=5, textvariable=str(self.spec_freq_max))
-		self.freq_min_label = Canvas(self.axis_frame, width=50, height=self.canvas_height, background='gray')
+		# self.freq_max_box = Entry(self.axis_frame, width=5, textvariable=str(self.spec_freq_max))
+		# self.freq_min_label = Canvas(self.axis_frame, width=50, height=self.canvas_height, background='gray')
 
 	def reset(self):
 		'''
@@ -1308,6 +1343,16 @@ class SpectrogramModule(object):
 
 		self.canvas.create_image(0,0, anchor=NW, image=photo_img)
 		self.img = photo_img
+
+		self.axis_canvas = Canvas(self.axis_frame, width=50, height=self.canvas_height/2,background='gray')
+		self.floor = self.axis_canvas.create_text(5,self.canvas_height/2,anchor=SW,text='0')
+		self.axis_ceil = Spinbox(self.axis_frame, textvariable=self.spec_freq_max, width=7)
+
+		# ceil_frame = Frame(self.axis_canvas)
+		# ceiling = Spinbox(ceil_frame, textvariable=self.spec_freq_max, width=7)
+		# ceiling.grid(row=0,column=0,sticky=NW)
+		# window = self.axis_canvas.create_window(self.canvas_width,self.canvas_height/2,anchor=NW,window=ceil_axis)
+
 
 		self.grid()
 		self.drawInterval()
@@ -1340,8 +1385,8 @@ class SpectrogramModule(object):
 		Put tkinter items on app
 		'''
 		self.canvas.grid(row=0, column=0, sticky=W)
-		self.freq_max_box.grid(row=0,column=0,sticky=NE)
-		self.freq_min_label.grid(row=2,column=0,sticky=SE)
+		self.axis_ceil.grid(row=0,column=0,sticky=NW)
+		self.axis_canvas.grid(row=1,column=0,sticky=SW)
 
 	def update(self):
 		'''
@@ -1882,7 +1927,7 @@ class DicomModule(object):
 			# reset zoom keyboard shortcut
 			self.app.bind('<Command-0>', self.zoomReset )
 
-	def zoomReset(self, fromButton=True):
+	def zoomReset(self, fromButton=False):
 		'''
 		reset zoom frame canvas and rebind it
 		'''
