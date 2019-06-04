@@ -721,18 +721,23 @@ class TextGridModule(object):
 			# 	else:
 			# 		self.frameTier.removePoint(point)
 
-			newTier = PointTier(name=self.frameTierName, minTime=originalTier.minTime, maxTime=originalTier.maxTime)
+			oldTier = self.TextGrid.getFirst(self.frameTierName)
+			for point in oldTier:
+				oldTier.removePoint(point)
 
-			for point in originalTier:
-				new_time = point.time + decimal.Decimal(shift/1000) ## NOTE: currently in ms
-				if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
-					newTier.add(new_time, point.mark)
+			# for point in originalTier:
+			# 	new_time = point.time + decimal.Decimal(shift/1000) ## NOTE: currently in ms
+			# 	if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
+			# 		self.TextGrid.getFirst(self.frameTierName).add(new_time, point.mark)
 
 			self.app.Data.data['offset'] = shift
+			# self.frame_shift.set(shift)
 			self.app.Data.write()
-			self.newTier.write(self.TextGrid.getFirst(self.frameTierName))
-			self.TextGrid.write(self.app.Data.getFileLevel( '.TextGrid' ))
+			# newTier.write(self.TextGrid.getFirst(self.frameTierName))
 			self.fillCanvases()
+			self.TextGrid.write(self.app.Data.getFileLevel( '.TextGrid' ))
+
+
 		#except ValueError:
 		else:
 			print('Not a float!')
