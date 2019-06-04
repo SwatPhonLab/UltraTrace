@@ -708,7 +708,7 @@ class TextGridModule(object):
 			if originalTier: pass
 			# if self.app.Data.getFileLevel( 'offset' ) == None:
 			else:
-				orig = copy.deepcopy(self.frameTier)
+				orig = copy.deepcopy(self.TextGrid.getFirst(self.frameTierName))
 				orig.name += '.original'
 				self.TextGrid.append(orig)
 				originalTier = self.TextGrid.getFirst(self.frameTierName+'.original')
@@ -721,27 +721,17 @@ class TextGridModule(object):
 			# 	else:
 			# 		self.frameTier.removePoint(point)
 
-			point_names = [x.mark for x in self.frameTier]
-			# print(point_names[-10:])
+			newTier = PointTier(name=self.frameTierName, minTime=originalTier.minTime, maxTime=originalTier.maxTime)
+
 			for point in originalTier:
 				new_time = point.time + decimal.Decimal(shift/1000) ## NOTE: currently in ms
-				try:
-					corresp_point = self.frameTier[point_names.index(point.mark)]
-					if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
-						# print(corresp_point)
-						corresp_point.time = new_time
-					else:
-						self.frameTier.removePoint(corresp_point)
-				except:
-					print(point.mark, 'line 735')
-					if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
-						self.frameTier.add(new_time, point.mark)
+				if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
+					newTier.add(new_time, point.mark)
 
 			self.app.Data.data['offset'] = shift
 			self.app.Data.write()
-			# self.frameTier.write(self.TextGrid.getFirst(self.frameTierName))
+			self.newTier.write(self.TextGrid.getFirst(self.frameTierName))
 			self.TextGrid.write(self.app.Data.getFileLevel( '.TextGrid' ))
-			# print(self.TextGrid.getFirst(self.frameTierName).)
 			self.fillCanvases()
 		#except ValueError:
 		else:
