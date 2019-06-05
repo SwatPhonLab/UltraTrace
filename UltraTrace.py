@@ -666,7 +666,7 @@ class TextGridModule(object):
 			self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
 			# the Data module will pass this filename=None if it can't find an appropriate .TextGrid file
 			filename = self.app.Data.getFileLevel( '.TextGrid' )
-			print(filename)
+			# print(filename)
 			if filename:
 				try:
 					# try to load up our TextGrid using the textgrid lib
@@ -687,6 +687,9 @@ class TextGridModule(object):
 					self.makeTimeWidget()
 					#put items on canvases
 					self.fillCanvases()
+					#calculate first and last frames
+					self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark)
+					self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark)
 				except:
 					pass
 			self.grid()
@@ -698,29 +701,18 @@ class TextGridModule(object):
 			Shift value is relative to 0, i.e. inputting the same shift amount a second time will not change the shift
 		Redisplay shifted points
 		'''
-		#try:
-		#	# float(self.frame_shift)
+
 		shift = self.frame_shift.get()
 		if type(shift) == float:
 			self.app.Data.setFileLevel( 'offset', shift )
 			# diff = shift - self.app.Data.data['offset']
 			originalTier = self.TextGrid.getFirst(self.frameTierName+'.original')
-			# print(originalTier, 'line 707')
 			if originalTier: pass
-			# if self.app.Data.getFileLevel( 'offset' ) == None:
 			else:
 				orig = copy.deepcopy(self.TextGrid.getFirst(self.frameTierName))
 				orig.name += '.original'
 				self.TextGrid.append(orig)
 				originalTier = self.TextGrid.getFirst(self.frameTierName+'.original')
-
-			# for point in self.frameTier:
-			# 	new_time = point.time + decimal.Decimal(diff/1000) ## NOTE: currently in ms
-			# 	# point.time += decimal.Decimal(diff/1000) ## NOTE: currently in ms
-			# 	if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
-			# 		point.time = new_time
-			# 	else:
-			# 		self.frameTier.removePoint(point)
 
 			oldTier = self.TextGrid.getFirst(self.frameTierName)
 			allPoints = oldTier[:]
@@ -733,6 +725,8 @@ class TextGridModule(object):
 					self.TextGrid.getFirst(self.frameTierName).add(new_time, point.mark)
 
 			self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
+			self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark)
+			self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark)
 			self.app.Data.data['offset'] = shift
 			# self.frame_shift.set(shift)
 			self.app.Data.write()
@@ -766,7 +760,6 @@ class TextGridModule(object):
 		#put new widgets onto subframe
 		self.frame_shift = DoubleVar()
 		offset = self.app.Data.getFileLevel( 'offset' )
-		print(offset,'line 745')
 		if offset != None:
 			self.frame_shift.set(offset)
 		go_btn = Button(sbframe, text='Offset', command=self.shiftFrames)
@@ -2557,13 +2550,13 @@ class App(Tk):
 		self.Spectrogram.update()
 
 		# check if we can pan left/right
-		self.framesPrevBtn['state'] = DISABLED if self.frame==1 else NORMAL
-		self.framesNextBtn['state'] = DISABLED if self.frame==self.frames else NORMAL
+		self.framesPrevBtn['state'] = DISABLED if self.frame==self.TextGrid.firstFrame else NORMAL
+		self.framesNextBtn['state'] = DISABLED if self.frame==self.TextGrid.lastFrame else NORMAL
 	def framesPrev(self, event=None):
 		'''
 		controls self.framesPrevBtn for panning between frames
 		'''
-		if self.Dicom.isLoaded and self.frame > 1:
+		if self.Dicom.isLoaded and self.frame > self.TextGrid.firstFrame:
 			self.frame -= 1
 			# if len(self.TextGrid.selectedTierFrames) != 0:
 			# 	while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame > self.TextGrid.last_frame:
@@ -2576,7 +2569,7 @@ class App(Tk):
 		'''
 		controls self.framesNextBtn for panning between frames
 		'''
-		if self.Dicom.isLoaded and self.frame < self.frames:
+		if self.Dicom.isLoaded and self.frame < self.TextGrid.lastFrame:
 			self.frame += 1
 			# if len(self.TextGrid.selectedTierFrames) != 0:
 			# 	while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame < self.TextGrid.first_frame:
