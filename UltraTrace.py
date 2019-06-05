@@ -724,7 +724,7 @@ class TextGridModule(object):
 				if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
 					self.TextGrid.getFirst(self.frameTierName).add(new_time, point.mark)
 
-			self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
+			self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))			#FIXME I feel like I shouldn't have to run the getFirst function every time, but I'm not sure when I have to go back to the original textgrid, and when I can just use a variable...
 			self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark)
 			self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark)
 			self.app.Data.data['offset'] = shift
