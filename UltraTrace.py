@@ -653,6 +653,7 @@ class TextGridModule(object):
 		'''
 		Try to load a TextGrid file based on information stored in the metadata
 		'''
+		# print(self.pp)
 		self.selectedTierFrames = []
 		self.selectedItem = None
 		#destroy
@@ -724,7 +725,6 @@ class TextGridModule(object):
 			oldTier = self.TextGrid.getFirst(self.frameTierName)
 			allPoints = oldTier[:]
 			for point in allPoints:
-				print(point.mark)
 				oldTier.removePoint(point)
 
 			for point in originalTier:
@@ -732,6 +732,7 @@ class TextGridModule(object):
 				if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
 					self.TextGrid.getFirst(self.frameTierName).add(new_time, point.mark)
 
+			self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
 			self.app.Data.data['offset'] = shift
 			# self.frame_shift.set(shift)
 			self.app.Data.write()
@@ -1241,7 +1242,7 @@ class TextGridModule(object):
 		except AttributeError:
 			self.reset()
 
-		print(self.frames_canvas)
+		# print(self.frames_canvas)
 		#create list of displayed frames' tags
 		itrobj = []
 		for itm in self.frames_canvas.find_all():
@@ -2542,6 +2543,9 @@ class App(Tk):
 		'''
 		Changes to be executed every time we change frames
 		'''
+		# frameTier = self.TextGrid.TextGrid.getFirst(self.TextGrid.frameTierName)
+		# if
+
 		# update variables
 		self.frameSV.set( str(self.frame) )
 
