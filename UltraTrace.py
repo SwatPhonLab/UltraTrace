@@ -935,15 +935,14 @@ class TextGridModule(object):
 		'''
 
 		'''
-		start=None
+		# start=None
 		for tag in self.selectedItem[0].gettags(self.selectedItem[1]):
 			if tag[:7] == 'minTime':
 				start = decimal.Decimal(tag[7:])
 			elif tag[:7] == 'maxTime':
 				end = decimal.Decimal(tag[7:])
 
-		if start:
-			return (start,end)
+		return (start,end)
 
 	def getBounds(self, event):
 		'''
