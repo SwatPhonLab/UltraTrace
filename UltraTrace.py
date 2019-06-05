@@ -497,7 +497,7 @@ class MetadataModule(object):
 		frame = self.app.frame if _frame==None else _frame
 		processed = self.getFileLevel( 'processed' )
 		try:
-			return processed[str(frame-1)]
+			return processed[str(frame)]
 		except: # catches missing frames and missing preprocessed data
 			return None
 
