@@ -722,13 +722,15 @@ class TextGridModule(object):
 			# 		self.frameTier.removePoint(point)
 
 			oldTier = self.TextGrid.getFirst(self.frameTierName)
-			for point in oldTier:
+			allPoints = oldTier[:]
+			for point in allPoints:
+				print(point.mark)
 				oldTier.removePoint(point)
 
-			# for point in originalTier:
-			# 	new_time = point.time + decimal.Decimal(shift/1000) ## NOTE: currently in ms
-			# 	if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
-			# 		self.TextGrid.getFirst(self.frameTierName).add(new_time, point.mark)
+			for point in originalTier:
+				new_time = point.time + decimal.Decimal(shift/1000) ## NOTE: currently in ms
+				if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
+					self.TextGrid.getFirst(self.frameTierName).add(new_time, point.mark)
 
 			self.app.Data.data['offset'] = shift
 			# self.frame_shift.set(shift)
