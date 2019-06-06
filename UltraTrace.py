@@ -84,7 +84,7 @@ class ZoomFrame(Frame):
 		self.canvas_width = 800
 		self.canvas_height = 600
 
-		self.canvas = Canvas( master,  bg='grey', width=self.canvas_width, height=self.canvas_height )
+		self.canvas = Canvas( master,  bg='grey', width=self.canvas_width, height=self.canvas_height, highlightthickness=0 )
 		self.canvas.grid(row=0, column=0, sticky='news')
 		self.canvas.update() # do i need
 
@@ -624,7 +624,7 @@ class TextGridModule(object):
 		print( ' - initializing module: TextGrid' )
 		self.app = app
 		self.frame = Frame(self.app.BOTTOM)
-		self.label_padx = -22
+		self.label_padx = 14
 		self.canvas_frame = Frame(self.app.BOTTOM, padx=self.label_padx)
 		self.frame.grid( row=1, column=0 )
 		self.canvas_frame.grid(row=1, column=1, sticky=E)
@@ -660,7 +660,6 @@ class TextGridModule(object):
 		for wframe in [self.frame, self.canvas_frame]:
 			for child in wframe.winfo_children():
 				child.destroy()
-
 		if _TEXTGRID_LIBS_INSTALLED:
 			# default Label in case there are errors below
 			self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
@@ -673,7 +672,6 @@ class TextGridModule(object):
 					self.TextGrid = TextGrid.fromFile( filename )
 					# reset default Label to actually be useful
 					# self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
-
 					self.TkWidgets = []
 					# iterate the tiers
 					self.frameTierName = self.getFrameTierName()
@@ -740,7 +738,7 @@ class TextGridModule(object):
 			print('Not a float!')
 
 	def makeTimeWidget(self):
-		self.time_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height/3)
+		self.time_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height/3, highlightthickness=0)
 		s = self.time_canvas.create_text(3,0, anchor=NW, text=self.start)
 		e = self.time_canvas.create_text(self.canvas_width,0, anchor=NE, text=self.end)
 		self.TkWidgets.append({'times':self.time_canvas})
@@ -750,7 +748,7 @@ class TextGridModule(object):
 		makes frame widget
 		'''
 		#make regular frame stuff -- label and tier
-		self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray')
+		self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
 		frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0, background='gray')
 		frames_label.create_text(self.label_width,0, anchor=NE, justify=CENTER,
 								 text='frames: ', width=self.label_width, activefill='blue')
@@ -803,18 +801,19 @@ class TextGridModule(object):
 		self.tier_pairs = {} #ends up being format {label: canvas}
 
 		self.app.Trace.frame.update()
-		self.label_width=self.app.Trace.frame.winfo_width()-self.label_padx
+		self.label_width=self.app.Trace.frame.winfo_width()+self.label_padx
 		# print(self.label_width, 739)
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
-		self.first_frame = 1
-		self.last_frame = self.TextGrid.getFirst(self.frameTierName)[-1].mark
-
+		# self.first_frame = 1
+		# print('line 805')
+		# self.last_frame = self.TextGrid.getFirst(self.frameTierName)[-1].mark
+		# print('line 807')
 		tier_obj = self.TextGrid.getFirst(tier)
 		self.widgets = { 'name':tier,
 						 #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
-						 'canvas-label':Canvas(self.frame, width=self.label_width, height=self.canvas_height),
+						 'canvas-label':Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0),
 						 # 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
-						 'canvas':Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray')}
+						 'canvas':Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)}
 
 		canvas = self.widgets['canvas']
 		label = self.widgets['canvas-label']
@@ -986,7 +985,7 @@ class TextGridModule(object):
 				self.start = start
 				self.end = end
 
-
+		print(self.end-self.start, 'TextGrid time length (line 988)')
 		self.fillCanvases()
 
 	def getTracedFrames(self,frames):
@@ -1074,15 +1073,17 @@ class TextGridModule(object):
 				frames.delete(ALL)
 				first_frame_found = False
 				while i < len(tier) and tier[i].time <= self.end :
+					# print(tier[i].time, i,'frame time and frame number (line 1076)')
 					if tier[i].time >= self.start:
-						x_coord = (tier[i].time-self.start)/duration*self.canvas_width
+						# x_coord = (tier[i].time-self.start)/duration*self.canvas_width
+						x_coord = ((tier[i].time-self.start)*self.canvas_width)/duration
 						frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags="frame"+tier[i].mark)
 						if first_frame_found == False:
-							self.first_frame = int(tier[i].mark)
+							self.firstFrame = int(tier[i].mark)
 							first_frame_found = True
 						CanvasTooltip(frames, frame,text=tier[i].mark)
 					i+=1
-				self.last_frame = int(tier[i-1].mark)
+				self.lastFrame = int(tier[i-1].mark)
 
 		self.paintCanvases()
 		self.app.Spectrogram.reset()
@@ -1183,10 +1184,10 @@ class TextGridModule(object):
 		#automatically updates frame
 		if not str(self.app.frame) in self.selectedTierFrames:
 			new_frame = int(self.selectedTierFrames[0])
-			if self.first_frame > new_frame:
-				new_frame = self.first_frame
-			elif new_frame > self.last_frame:
-				new_frame = self.last_frame
+			if self.firstFrame > new_frame:
+				new_frame = self.firstFrame
+			elif new_frame > self.lastFrame:
+				new_frame = self.lastFrame
 			self.app.frame = new_frame
 			self.app.framesUpdate()
 		else:
@@ -1298,7 +1299,7 @@ class SpectrogramModule(object):
 		self.axis_frame.grid( row=0, column=2 )
 		self.canvas_width = self.app.TextGrid.canvas_width
 		self.canvas_height = 1
-		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray')
+		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
 		self.spectrogram = None
 		self.spec_freq_max = 5000.0
 		# self.freq_max_box = Entry(self.axis_frame, width=5, textvariable=str(self.spec_freq_max))
@@ -1313,9 +1314,17 @@ class SpectrogramModule(object):
 		#is this still true? Is this the stuff Daniel redid with parselmouth?
 
 		sound = parselmouth.Sound(self.app.Audio.current)
-		sound_clip = sound.extract_part(from_time=self.app.TextGrid.start, to_time=self.app.TextGrid.end)
-		ts = sound_clip.get_total_duration() / 10000.0
-		spec = sound_clip.to_spectrogram(window_length=0.0025, time_step=ts, maximum_frequency=self.spec_freq_max)
+
+		ts_fac = decimal.Decimal(10000.0)
+		wl = decimal.Decimal(0.0025)
+		duration = self.app.TextGrid.end - self.app.TextGrid.start
+		extra = (ts_fac*wl-duration)/(ts_fac+1)
+		print(extra, 'line 1325')
+		sound_clip = sound.extract_part(from_time=self.app.TextGrid.start-extra, to_time=self.app.TextGrid.end+extra)
+		# sound_clip = sound.extract_part(from_time=self.app.TextGrid.start, to_time=self.app.TextGrid.end)
+		ts = sound_clip.get_total_duration() / float(ts_fac)
+
+		spec = sound_clip.to_spectrogram(window_length=wl, time_step=ts, maximum_frequency=self.spec_freq_max)
 		self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
 		self.spectrogram += self.spectrogram.min()
 		self.spectrogram *= (60.0 / self.spectrogram.max())
@@ -1331,10 +1340,13 @@ class SpectrogramModule(object):
 		photo_img = ImageTk.PhotoImage(img)
 		self.canvas.config(height=self.canvas_height)
 
-		self.canvas.create_image(0,0, anchor=NW, image=photo_img)
+		# self.canvas.create_image(0,0, anchor=NW, image=photo_img)
+		# self.canvas.create_image(self.canvas_width/2,self.canvas_height/2, image=photo_img)
+		self.canvas.create_image(self.canvas_width, self.canvas_height, anchor=SE, image=photo_img)
 		self.img = photo_img
 
-		self.axis_canvas = Canvas(self.axis_frame, width=50, height=self.canvas_height/2,background='gray')
+		#adjusting displayed frequencies of spectrogram
+		self.axis_canvas = Canvas(self.axis_frame, width=50, height=self.canvas_height/2,background='gray', highlightthickness=0)
 		self.floor = self.axis_canvas.create_text(5,self.canvas_height/2,anchor=SW,text='0')
 		self.axis_ceil = Spinbox(self.axis_frame, textvariable=self.spec_freq_max, width=7)
 
@@ -2279,7 +2291,7 @@ class App(Tk):
 
 		self.filesUpdate()
 		self.framesUpdate()
-		self.TextGrid.reset()
+		self.TextGrid.reset() #NOTE why does TextGridModule have to reset a second time? Is there a more economical way to do this?
 
 		print()
 
