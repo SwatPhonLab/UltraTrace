@@ -926,14 +926,22 @@ class TextGridModule(object):
 
 	def getMinMaxTime(self):
 		'''
-
+		Returns minTime and maxTime tags from selected interval
+		If no minTime or maxTime, returns start or end time of viewed section of TextGrid
 		'''
-		# start=None
+		start=None
+		end=None
+
 		for tag in self.selectedItem[0].gettags(self.selectedItem[1]):
 			if tag[:7] == 'minTime':
 				start = decimal.Decimal(tag[7:])
 			elif tag[:7] == 'maxTime':
 				end = decimal.Decimal(tag[7:])
+
+		if start==None:
+			start=self.start
+		if end==None:
+			end=self.end
 
 		return (start,end)
 
@@ -1788,9 +1796,9 @@ class PlaybackModule(object):
 
 			# widget management
 			self.frame = Frame(self.app.BOTTOM)
-			self.playBtn = Button(self.frame, text="Play/Pause", command=self.playSeg, state=DISABLED)
+			self.playBtn = Button(self.frame, text="Play/Pause", command=self.playSeg, state=DISABLED) # NOTE: not currently appearing
 			self.app.bind('<space>', self.playSeg )
-			self.app.bind('<Control-space>', self.pauseSeg )
+			self.app.bind('<Escape>', self.pauseSeg )
 
 	def update(self):
 		'''
@@ -1827,25 +1835,6 @@ class PlaybackModule(object):
 				print('Unable to load audio file: `%s`' % audiofile)
 				return False
 
-	# def _play_with_pyaudio(seg):
-	# '''
-	# copied from pydub: https://github.com/jiaaro/pydub/blob/master/pydub/playback.py
-	# '''
-    # 	p = pyaudio.PyAudio()
-    # 	stream = p.open(format=p.get_format_from_width(seg.sample_width),
-    #                 channels=seg.channels,
-    #                 rate=seg.frame_rate,
-    #                 output=True)
-	#
-    # # break audio into half-second chunks (to allows keyboard interrupts)
-    # for chunk in make_chunks(seg, 500):
-    #     stream.write(chunk._data)
-	#
-    # stream.stop_stream()
-    # stream.close()
-	#
-    # p.terminate()
-
 	def playSeg(self, event=None):
 		'''
 
@@ -1853,6 +1842,7 @@ class PlaybackModule(object):
 		# start = round(self.app.TextGrid.start*1000)
 		# end = round(self.app.TextGrid.end*1000)
 		if self.app.TextGrid.selectedItem:
+			itm = self.app.TextGrid.selectedItem
 			start, end = self.app.TextGrid.getMinMaxTime()
 		else:
 			start = self.app.TextGrid.start
@@ -1865,26 +1855,6 @@ class PlaybackModule(object):
 
 	def pauseSeg(self,event):
 		self.playing.stop()
-
-	def toggleAudio(self, event=None):
-		'''
-		play/pause/stop
-		'''
-		# #this should be put in a separate function
-		# os.system('ffmpeg -i {} -ss {} -t {} -c copy {}'.format(self.current,self.app.TextGrid.start,self.app.TextGrid.end - self.app.TextGrid.start,self.sfile.name))
-		# # currentaudio = sf.read(self.current, start=self.app.TextGrid.start, stop=self.app.TextGrid.end)
-		# self.mixer.music.load(self.sfile.name)
-
-		if self.current != None:
-			if self.isPaused:
-				self.mixer.music.unpause()
-				self.isPaused = False
-			elif self.mixer.music.get_busy():
-				self.mixer.music.pause()
-				self.isPaused = True
-			else:
-				self.mixer.music.play()
-				self.isPaused = False
 
 	def grid(self):
 		''' grid widgets '''
