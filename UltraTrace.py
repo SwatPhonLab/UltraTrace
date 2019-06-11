@@ -624,7 +624,7 @@ class TextGridModule(object):
 		print( ' - initializing module: TextGrid' )
 		self.app = app
 		self.frame = Frame(self.app.BOTTOM)
-		self.label_padx = 14
+		self.label_padx = 17
 		self.canvas_frame = Frame(self.app.BOTTOM, padx=self.label_padx)
 		self.frame.grid( row=1, column=0 )
 		self.canvas_frame.grid(row=1, column=1, sticky=E)
@@ -1273,11 +1273,11 @@ class TextGridModule(object):
 			if 'label' in tierWidgets:
 				tierWidgets['label'].grid(row=t, column=0, sticky=W)
 			if 'frames' in tierWidgets:
-				tierWidgets['frames'].grid(row=t, column=2, sticky=W)
-				tierWidgets['frames-label'].grid(row=t, column=0, sticky=W)
+				tierWidgets['frames'].grid(row=t, column=2, sticky=W, pady=self.app.pady)
+				tierWidgets['frames-label'].grid(row=t, column=0, sticky=W, pady=self.app.pady)
 			if 'canvas' in tierWidgets:
-				tierWidgets['canvas'].grid(row=t, column=2, sticky=W)
-				tierWidgets['canvas-label'].grid(row=t, column=0, sticky=W)
+				tierWidgets['canvas'].grid(row=t, column=2, sticky=W, pady=self.app.pady/2)
+				tierWidgets['canvas-label'].grid(row=t, column=0, sticky=W, pady=self.app.pady/2)
 				self.tier_pairs[tierWidgets['canvas-label']] = tierWidgets['canvas']
 			if 'times' in tierWidgets:
 				tierWidgets['times'].grid(row=t, column=2, sticky=S)
@@ -1294,7 +1294,7 @@ class SpectrogramModule(object):
 		self.app = app
 
 		self.frame = Frame(self.app.BOTTOM)
-		self.frame.grid( row=0, column=1 )
+		self.frame.grid( row=0, column=1, pady=(self.app.pady*2,self.app.pady/2) )
 		self.axis_frame = Frame(self.app.BOTTOM)
 		self.axis_frame.grid( row=0, column=2 )
 		self.canvas_width = self.app.TextGrid.canvas_width
@@ -1319,12 +1319,17 @@ class SpectrogramModule(object):
 		wl = decimal.Decimal(0.0025)
 		duration = self.app.TextGrid.end - self.app.TextGrid.start
 		extra = (ts_fac*wl-duration)/(ts_fac+1)
-		print(extra, 'line 1325')
-		sound_clip = sound.extract_part(from_time=self.app.TextGrid.start-extra, to_time=self.app.TextGrid.end+extra)
+		extra += (duration+extra)/ts_fac
+		# print(extra, 'line 1325')
+		sound_clip = sound.extract_part(from_time=self.app.TextGrid.start-wl, to_time=self.app.TextGrid.end+wl)
+		# sound_clip = sound.extract_part(from_time=self.app.TextGrid.start-extra, to_time=self.app.TextGrid.end+extra)
 		# sound_clip = sound.extract_part(from_time=self.app.TextGrid.start, to_time=self.app.TextGrid.end)
 		ts = sound_clip.get_total_duration() / float(ts_fac)
+		print(ts, 'line1326')
 
 		spec = sound_clip.to_spectrogram(window_length=wl, time_step=ts, maximum_frequency=self.spec_freq_max)
+		# print(np.array(spec)[0])
+		# print(self.app.TextGrid.start, extra, self.app.TextGrid.start-extra)
 		self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
 		self.spectrogram += self.spectrogram.min()
 		self.spectrogram *= (60.0 / self.spectrogram.max())
@@ -2347,6 +2352,7 @@ class App(Tk):
 		self.LEFT.grid(   row=0, sticky=N )
 		self.RIGHT.grid(  row=0, column=1 )
 		self.BOTTOM.grid( row=1, column=0, columnspan=2 )
+		self.pady=3
 
 		# navigate between all available filenames in this directory
 		self.filesFrame = Frame(self.LEFT, pady=7)
