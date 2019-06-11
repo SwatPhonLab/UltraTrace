@@ -56,6 +56,13 @@ try:
 except (ImportError):
 	warnings.warn('TextGrid library failed to load')
 	_TEXTGRID_LIBS_INSTALLED = False
+try:
+	import vlc
+	import time
+	_VIDEO_LIBS_INSTALLED = True
+except (ImportError):
+	warnings.warn('VLC library failed to load')
+	_VIDEO_LIBS_INSTALLED = False
 
 # some globals
 _CROSSHAIR_DRAG_BUFFER = 20
@@ -1779,26 +1786,29 @@ class TraceModule(object):
 
 class PlaybackModule(object):
 	'''
-	Module to handle playback of audio files.
-
-	Note: this module is sparse b/c most of it needs to be rewritten to depend on
-		a more powerful audio manager
+	Module to handle playback of audio and video files.
 	'''
 	def __init__(self, app):
 		self.app = app
 		self.current = None
 		if _AUDIO_LIBS_INSTALLED:
 			print( ' - initializing module: Audio' )
-			# self.mixer = pygame.mixer
-			# self.mixer.init()
 			self.sfile = None
 			self.isPaused = False
 
+			#check for completion
+			self.ADone = False
+			self.VDone = False
+
 			# widget management
 			self.frame = Frame(self.app.BOTTOM)
-			self.playBtn = Button(self.frame, text="Play/Pause", command=self.playSeg, state=DISABLED) # NOTE: not currently appearing
-			self.app.bind('<space>', self.playSeg )
-			self.app.bind('<Escape>', self.pauseSeg )
+			self.playBtn = Button(self.frame, text="Play/Pause", command=self.playAudio, state=DISABLED) # NOTE: not currently appearing
+			self.app.bind('<space>', self.startEndAV )
+			self.app.bind('<Escape>', self.stopAudio )
+		if _VIDEO_LIBS_INSTALLED:
+			print( ' - initializing module: Video' )
+			self.app.bind('<space>', self.startEndAV ) # NOTE: if both audio and video, will this make it run twice?
+			# self.app.bind('<Escape>', self.pauseVideo )
 
 	def update(self):
 		'''
@@ -1835,26 +1845,78 @@ class PlaybackModule(object):
 				print('Unable to load audio file: `%s`' % audiofile)
 				return False
 
-	def playSeg(self, event=None):
+	def startEndAV(self, event):
 		'''
-
+		Get start and end point for audio/video generation
 		'''
-		# start = round(self.app.TextGrid.start*1000)
-		# end = round(self.app.TextGrid.end*1000)
 		if self.app.TextGrid.selectedItem:
-			itm = self.app.TextGrid.selectedItem
 			start, end = self.app.TextGrid.getMinMaxTime()
 		else:
 			start = self.app.TextGrid.start
 			end = self.app.TextGrid.end
-		start = round(float(start)*1000)
-		end = round(float(end)*1000)
-		seg = self.sfile[start:end]
 
+		if _VIDEO_LIBS_INSTALLED and _AUDIO_LIBS_INSTALLED:
+			seg = self.readyAudio(start,end)
+			framenums = self.readyVideo()
+			self.playAudio(seg) #so that they start at as close to the same time as possible
+			self.playVideo(start, end, framenums)
+		elif _AUDIO_LIBS_INSTALLED:
+			seg = self.readyAudio(start,end)
+			self.playAudio(seg)
+		elif _VIDEO_LIBS_INSTALLED:
+			framenums = self.readyVideo()
+			self.playVideo(start, end, framenums)
+
+	def readyAudio(self, start, end):
+		'''
+
+		'''
+		start_idx = round(float(start)*1000)
+		end_idx = round(float(end)*1000)
+		seg = self.sfile[start_idx:end_idx]
+
+		return(seg)
+
+	def playAudio(self,seg):
 		self.playing = sa.WaveObject(seg.raw_data, num_channels=seg.channels, bytes_per_sample=seg.sample_width, sample_rate=seg.frame_rate).play()
 
-	def pauseSeg(self,event):
+	def stopAudio(self,event):
 		self.playing.stop()
+
+	def readyVideo(self):
+		'''
+
+		'''
+		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
+		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
+		framenums = [str(int(framenums[0])-1)]+framenums #get one before to get frame in the middle of which the interval begins
+
+		# i = frameTier.index(framenums[0])
+		# #get one before and after to get frames in the middle of which the interval begins and ends
+		# frames = frameTier[i-1:i+len(framenums)+1]
+
+		return(framenums)
+
+	def playVideo(self, start, end, framenums):
+		#get frametimes
+		frameTier = self.app.TextGrid.TextGrid.getFirst(self.app.TextGrid.frameTierName)
+		i = [frame.mark for frame in frameTier].index(str(framenums[0]))
+		frames = [frameTier[i] for i in range(i,i+len(framenums))] #FIXME what does this do when selecting canvas labels? if int(frameTier[i].mark) in framenums? Is this too slow?
+		ftimes = [start]+[frame.time for frame in frames][1:]+[end] #take off the first frame, because interval starts after frametime of frame (because it's in between two frames)
+
+		# print(len(framenums), len(ftimes), len(frames),'line 1906')
+		# print(ftimes[0],'line 1908')
+
+		i=0
+		while i <= len(framenums) and self.playing.is_playing(): #should break when audio stops
+			#display current frame
+			self.app.Dicom.update(_frame=framenums[i])
+			# self.app.Dicom.update(_frame='3')
+			#wait until next frame
+			waittime = ftimes[i+1] - ftimes[i]
+			time.sleep(waittime)
+			i+=1
+		self.app.Dicom.update()
 
 	def grid(self):
 		''' grid widgets '''
@@ -1919,12 +1981,12 @@ class DicomModule(object):
 	 		# we want to go here only after a button press
 			if fromButton: self.app.framesUpdate()
 
-	def update(self):
+	def update(self, _frame=None):
 		'''
 		change the image on the zoom frame
 		'''
 		if self.isLoaded:
-			image = self.app.Data.getPreprocessedDicom()
+			image = self.app.Data.getPreprocessedDicom() if _frame==None else self.app.Data.getPreprocessedDicom(_frame=_frame)
 			image = Image.open( image )
 			self.zframe.setImage( image )
 
