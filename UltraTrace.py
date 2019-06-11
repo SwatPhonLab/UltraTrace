@@ -38,6 +38,7 @@ try:
 	from pydub import AudioSegment
 	from pydub.playback import play
 	import pyaudio
+	import simpleaudio as sa
 	_AUDIO_LIBS_INSTALLED = True
 except (ImportError, AssertionError):
 	warnings.warn('Audio library failed to load')
@@ -1789,7 +1790,7 @@ class PlaybackModule(object):
 			self.frame = Frame(self.app.BOTTOM)
 			self.playBtn = Button(self.frame, text="Play/Pause", command=self.playSeg, state=DISABLED)
 			self.app.bind('<space>', self.playSeg )
-			self.app.bind('<Command-space>', self.pauseSeg )
+			self.app.bind('<Control-space>', self.pauseSeg )
 
 	def update(self):
 		'''
@@ -1859,11 +1860,11 @@ class PlaybackModule(object):
 		start = round(float(start)*1000)
 		end = round(float(end)*1000)
 		seg = self.sfile[start:end]
-		# print(start, end)
-		play(seg)
+
+		self.playing = sa.WaveObject(seg.raw_data, num_channels=seg.channels, bytes_per_sample=seg.sample_width, sample_rate=seg.frame_rate).play()
 
 	def pauseSeg(self,event):
-		pass
+		self.playing.stop()
 
 	def toggleAudio(self, event=None):
 		'''
