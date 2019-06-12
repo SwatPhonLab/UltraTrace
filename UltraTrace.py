@@ -8,7 +8,7 @@ from tkinter import filedialog
 # import scipy.fftpack as fftpack
 # import urllib.request as request
 import argparse, datetime, json, \
-	math, os, random, shutil, warnings, decimal, \
+	math, os, sys, random, shutil, warnings, decimal, \
 	soundfile as sf, scipy.fftpack as fftpack, urllib.request as request #FIXME should I put these with non-critical dependencies?
 
 import parselmouth
@@ -58,7 +58,7 @@ except (ImportError):
 	_TEXTGRID_LIBS_INSTALLED = False
 try:
 	import vlc
-	import time
+	import tempfile
 	from multiprocessing import Process
 	_VIDEO_LIBS_INSTALLED = True
 except (ImportError):
@@ -1859,12 +1859,12 @@ class PlaybackModule(object):
 		if _VIDEO_LIBS_INSTALLED and _AUDIO_LIBS_INSTALLED:
 			seg = self.readyAudio(start,end)
 			framenums = self.readyVideo()
-			p1 = Process(target=self.playAudio, args=(seg,))
-			p1.start()
-			p2 = Process(target=self.playVideo, args=(start, end, framenums))
-			p2.start()
+			# p1 = Process(target=self.playAudio, args=(seg,))
+			# p1.start()
+			# p2 = Process(target=self.playVideo, args=(start, end, framenums))
+			# p2.start()
 			# self.playAudio(seg) #so that they start at as close to the same time as possible
-			# self.playVideo(start, end, framenums)
+			self.playVideo(start, end, framenums)
 		elif _AUDIO_LIBS_INSTALLED:
 			seg = self.readyAudio(start,end)
 			self.playAudio(seg)
@@ -1894,7 +1894,7 @@ class PlaybackModule(object):
 		'''
 		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
-		framenums = [str(int(framenums[0])-1)]+framenums #get one before to get frame in the middle of which the interval begins
+		# framenums = [str(int(framenums[0])-1)]+framenums #get one before to get frame in the middle of which the interval begins
 
 		# i = frameTier.index(framenums[0])
 		# #get one before and after to get frames in the middle of which the interval begins and ends
@@ -1902,26 +1902,62 @@ class PlaybackModule(object):
 
 		return(framenums)
 
+	def tempVPlay(self, _frame):
+		image = self.app.Data.getPreprocessedDicom(_frame=_frame)
+		image = Image.open( image )
+		imagetk = ImageTk.PhotoImage(image)
+		canvas = self.app.Dicom.zframe.canvas
+		imageid = canvas.create_image(0,0,anchor='nw',image=imagetk)
+		canvas.lower(imageid)
+		canvas.imagetk = imagetk
+
 	def playVideo(self, start, end, framenums):
 		#get frametimes
 		frameTier = self.app.TextGrid.TextGrid.getFirst(self.app.TextGrid.frameTierName)
 		i = [frame.mark for frame in frameTier].index(str(framenums[0]))
 		frames = [frameTier[i] for i in range(i,i+len(framenums))] #FIXME what does this do when selecting canvas labels? if int(frameTier[i].mark) in framenums? Is this too slow?
-		ftimes = [start]+[frame.time for frame in frames][1:]+[end] #take off the first frame, because interval starts after frametime of frame (because it's in between two frames)
+		# ftimes = [start]+[frame.time for frame in frames][1:]+[end] #take off the first frame, because interval starts after frametime of frame (because it's in between two frames)
+		ftimes = [frame.time for frame in frames]
+		frame_rate = len(ftimes)/(ftimes[-1] - ftimes[0])
+		ftimes = [start]+ftimes+[end]
 
-		# print(len(framenums), len(ftimes), len(frames),'line 1906')
-		# print(ftimes[0],'line 1908')
+		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
+		pngs = [Image.open(png) for png in png_locs]
 
-		i=0
-		while i <= len(framenums):# and self.playing.is_playing(): #should break when audio stops
-			#display current frame
-			self.app.Dicom.update(_frame=framenums[i])
-			# self.app.Dicom.update(_frame='3')
-			#wait until next frame
-			waittime = ftimes[i+1] - ftimes[i]
-			time.sleep(waittime)
-			i+=1
-		self.app.Dicom.update()
+
+
+		ffmpeg_line = 'ffmpeg -r '+str(frame_rate)+' -f image2 -s '+str(pngs[0].size[0])+'x'+str(pngs[0].size[1])+' -start_number '+str(framenums[0])+\
+						' -i '+os.path.split(png_locs[0])[0]+'/'+os.path.splitext(os.path.basename(png_locs[0]))[0][:-4]+'%04d'+os.path.splitext(png_locs[0])[1]+\
+						' -vframes '+str(int(framenums[-1])-int(framenums[0])+1)+' -vcodec libx264 -crf 25 ../test.mp4'
+		os.system(ffmpeg_line)
+
+		# self.app.Dicom.update(_frame='3')
+		# # self.tempVPlay('3')
+		# sys.stdout.flush()
+		# print('3')
+		# time.sleep(.5)
+		# self.app.Dicom.update(_frame='11')
+		# print('11')
+		# # self.tempVPlay('11')
+		# time.sleep(.5)
+		# self.app.Dicom.update(_frame='50')
+		# print('50')
+		# time.sleep(1)
+		# print('done')
+		# # self.tempVPlay('50')
+
+		# i=0
+		# while i <= len(framenums)-1:# and self.playing.is_playing(): #should break when audio stops
+		# 	print(i)
+		# 	#display current frame
+		# 	self.app.Dicom.update(_frame=str(framenums[i]))
+		# 	# self.app.Dicom.update(_frame='3')
+		# 	#wait until next frame
+		# 	waittime = ftimes[i+1] - ftimes[i]
+		# 	# print(waittime*50, type(waittime))
+		# 	time.sleep(.1)
+		# 	i+=1
+		# self.app.Dicom.update()
 
 	def grid(self):
 		''' grid widgets '''
