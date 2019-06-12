@@ -59,6 +59,7 @@ except (ImportError):
 try:
 	import vlc
 	import time
+	from multiprocessing import Process
 	_VIDEO_LIBS_INSTALLED = True
 except (ImportError):
 	warnings.warn('VLC library failed to load')
@@ -1858,8 +1859,12 @@ class PlaybackModule(object):
 		if _VIDEO_LIBS_INSTALLED and _AUDIO_LIBS_INSTALLED:
 			seg = self.readyAudio(start,end)
 			framenums = self.readyVideo()
-			self.playAudio(seg) #so that they start at as close to the same time as possible
-			self.playVideo(start, end, framenums)
+			p1 = Process(target=self.playAudio, args=(seg,))
+			p1.start()
+			p2 = Process(target=self.playVideo, args=(start, end, framenums))
+			p2.start()
+			# self.playAudio(seg) #so that they start at as close to the same time as possible
+			# self.playVideo(start, end, framenums)
 		elif _AUDIO_LIBS_INSTALLED:
 			seg = self.readyAudio(start,end)
 			self.playAudio(seg)
@@ -1908,7 +1913,7 @@ class PlaybackModule(object):
 		# print(ftimes[0],'line 1908')
 
 		i=0
-		while i <= len(framenums) and self.playing.is_playing(): #should break when audio stops
+		while i <= len(framenums):# and self.playing.is_playing(): #should break when audio stops
 			#display current frame
 			self.app.Dicom.update(_frame=framenums[i])
 			# self.app.Dicom.update(_frame='3')
