@@ -61,6 +61,7 @@ try:
 	# import tempfile
 	# from multiprocessing import Process
 	import threading
+	import time
 	_VIDEO_LIBS_INSTALLED = True
 except (ImportError):
 	warnings.warn('VLC library failed to load')
@@ -1905,14 +1906,6 @@ class PlaybackModule(object):
 
 		return(framenums)
 
-	def tempVPlay(self, _frame):
-		image = self.app.Data.getPreprocessedDicom(_frame=_frame)
-		image = Image.open( image )
-		imagetk = ImageTk.PhotoImage(image)
-		canvas = self.app.Dicom.zframe.canvas
-		imageid = canvas.create_image(0,0,anchor='nw',image=imagetk)
-		canvas.lower(imageid)
-		canvas.imagetk = imagetk
 
 	def playVideo(self, start, end, framenums):
 		#get frametimes
@@ -1925,41 +1918,26 @@ class PlaybackModule(object):
 		ftimes = [start]+ftimes+[end]
 
 		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
-		pngs = [Image.open(png) for png in png_locs]
+		pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
+		canvas = self.app.Dicom.zframe.canvas
 
-
-		#
 		# ffmpeg_line = 'ffmpeg -r '+str(frame_rate)+' -f image2 -s '+str(pngs[0].size[0])+'x'+str(pngs[0].size[1])+' -start_number '+str(framenums[0])+\
 		# 				' -i '+os.path.split(png_locs[0])[0]+'/'+os.path.splitext(os.path.basename(png_locs[0]))[0][:-4]+'%04d'+os.path.splitext(png_locs[0])[1]+\
 		# 				' -vframes '+str(int(framenums[-1])-int(framenums[0])+1)+' -vcodec libx264 -crf 25 ../test.mp4'
 		# os.system(ffmpeg_line)
 
-		# self.app.Dicom.update(_frame='3')
-		# # self.tempVPlay('3')
-		# sys.stdout.flush()
-		# print('3')
-		# time.sleep(.5)
-		# self.app.Dicom.update(_frame='11')
-		# print('11')
-		# # self.tempVPlay('11')
-		# time.sleep(.5)
-		# self.app.Dicom.update(_frame='50')
-		# print('50')
-		# time.sleep(1)
-		# print('done')
-		# # self.tempVPlay('50')
-
 		i=0
 		while i <= len(framenums)-1:# and self.playing.is_playing(): #should break when audio stops
 			print(i)
-			#display current frame
-			# self.app.Dicom.update(_frame=str(framenums[i]))
-			self.tempVPlay(framenums[i])
-			# self.app.Dicom.update(_frame='3')
-			# #wait until next frame
-			# waittime = ftimes[i+1] - ftimes[i]
-			# # print(waittime*50, type(waittime))
+			img = canvas.create_image(0,0,anchor='nw',image=pngs[i])
+			canvas.imagetk = pngs[i]
+			t = time.perf_counter()+.002
+			print(time.perf_counter(), t, 'before')
+			while time.perf_counter() < t:
+				pass
+			print(time.perf_counter(), 'after')
 			i+=1
+			canvas.delete(img)
 		self.app.Dicom.update()
 
 	def grid(self):
