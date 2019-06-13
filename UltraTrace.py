@@ -1100,6 +1100,7 @@ class TextGridModule(object):
 						if first_frame_found == False:
 							self.firstFrame = int(tier[i].mark)
 							first_frame_found = True
+							self.frame_len = tier[i+1].time - tier[i].time
 						CanvasTooltip(frames, frame,text=tier[i].mark)
 					i+=1
 				self.lastFrame = int(tier[i-1].mark)
@@ -1859,16 +1860,18 @@ class PlaybackModule(object):
 			end = self.app.TextGrid.end
 
 		if _VIDEO_LIBS_INSTALLED and _AUDIO_LIBS_INSTALLED:
-			seg = self.readyAudio(start,end)
 			framenums = self.readyVideo()
-			thread1 = threading.Thread(target=self.playAudio, args=(seg,))
-			thread1.daemon = 1
-			thread1.start()
-			thread2 = threading.Thread(target=self.playVideo, args=(start, end, framenums))
-			thread2.daemon = 1
-			thread2.start()
-			# self.playAudio(seg) #so that they start at as close to the same time as possible
+			segs = self.readyAudio(start, end, framenums)
+			# thread1 = threading.Thread(target=self.playAudio, args=(segs,))
+			# thread1.daemon = 1
+			# thread1.start()
+			# thread2 = threading.Thread(target=self.playVideo, args=(start, end, framenums))
+			# thread2.daemon = 1
+			# thread2.start()
+			for seg in segs:
+				self.playAudio(seg)
 			# self.playVideo(start, end, framenums)
+
 		elif _AUDIO_LIBS_INSTALLED:
 			seg = self.readyAudio(start,end)
 			self.playAudio(seg)
@@ -1876,18 +1879,23 @@ class PlaybackModule(object):
 			framenums = self.readyVideo()
 			self.playVideo(start, end, framenums)
 
-	def readyAudio(self, start, end):
+	def readyAudio(self, start, end, fnums):
 		'''
 
 		'''
 		start_idx = round(float(start)*1000)
 		end_idx = round(float(end)*1000)
-		seg = self.sfile[start_idx:end_idx]
+		flen = round(self.app.TextGrid.frame_len*1000)
 
-		return(seg)
+		seg = self.sfile[start_idx:end_idx]
+		segs = [seg[flen*i:flen*(i+1)] for i in range(len(fnums))]
+		# segs = [self.sfile[flen*i+start_idx:flen*(i+1)+start_idx] for i in range(len(fnums))]
+		segs_WO = [sa.WaveObject(seg.raw_data, num_channels=seg.channels, bytes_per_sample=seg.sample_width, sample_rate=seg.frame_rate) for seg in segs]
+		return(segs_WO)
 
 	def playAudio(self,seg):
-		self.playing = sa.WaveObject(seg.raw_data, num_channels=seg.channels, bytes_per_sample=seg.sample_width, sample_rate=seg.frame_rate).play()
+		# self.playing = sa.WaveObject(seg.raw_data, num_channels=seg.channels, bytes_per_sample=seg.sample_width, sample_rate=seg.frame_rate).play()
+		self.playing = seg.play()
 
 	def stopAudio(self,event):
 		self.playing.stop()
@@ -1896,26 +1904,28 @@ class PlaybackModule(object):
 		'''
 
 		'''
+		# frameTier = self.app.TextGrid.TextGrid.getFirst(self.app.TextGrid.frameTierName)
 		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
-		# framenums = [str(int(framenums[0])-1)]+framenums #get one before to get frame in the middle of which the interval begins
-
-		# i = frameTier.index(framenums[0])
-		# #get one before and after to get frames in the middle of which the interval begins and ends
-		# frames = frameTier[i-1:i+len(framenums)+1]
+		# frames = [frameTier[i] for i in range(i,i+len(framenums))] #FIXME what does this do when selecting canvas labels? if int(frameTier[i].mark) in framenums? Is this too slow?
+		# i = [frame.mark for frame in frameTier].index(framenums[0])
+		# frames = (frameTier[i], frameTier[i+len(framenums)-1])
+		# ftimes = [frame.time for frame in frames]
+		# frame_rate = len(ftimes)/(ftimes[-1] - ftimes[0])
+		# print(1/frame_rate)
+		# ftimes = [start]+ftimes+[end]
 
 		return(framenums)
 
 
 	def playVideo(self, start, end, framenums):
 		#get frametimes
-		frameTier = self.app.TextGrid.TextGrid.getFirst(self.app.TextGrid.frameTierName)
-		i = [frame.mark for frame in frameTier].index(str(framenums[0]))
-		frames = [frameTier[i] for i in range(i,i+len(framenums))] #FIXME what does this do when selecting canvas labels? if int(frameTier[i].mark) in framenums? Is this too slow?
-		# ftimes = [start]+[frame.time for frame in frames][1:]+[end] #take off the first frame, because interval starts after frametime of frame (because it's in between two frames)
-		ftimes = [frame.time for frame in frames]
-		frame_rate = len(ftimes)/(ftimes[-1] - ftimes[0])
-		ftimes = [start]+ftimes+[end]
+		# frameTier = self.app.TextGrid.TextGrid.getFirst(self.app.TextGrid.frameTierName)
+		# i = [frame.mark for frame in frameTier].index(str(framenums[0]))
+		# frames = [frameTier[i] for i in range(i,i+len(framenums))] #FIXME what does this do when selecting canvas labels? if int(frameTier[i].mark) in framenums? Is this too slow?
+		# ftimes = [frame.time for frame in frames]
+		# frame_rate = len(ftimes)/(ftimes[-1] - ftimes[0])
+		# ftimes = [start]+ftimes+[end]
 
 		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
 		pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
@@ -1928,10 +1938,10 @@ class PlaybackModule(object):
 
 		i=0
 		while i <= len(framenums)-1:# and self.playing.is_playing(): #should break when audio stops
-			print(i)
+			print(i, 'line 1933')
 			img = canvas.create_image(0,0,anchor='nw',image=pngs[i])
 			canvas.imagetk = pngs[i]
-			t = time.perf_counter()+.002
+			t = time.perf_counter()+.002#int(1/frame_rate)
 			print(time.perf_counter(), t, 'before')
 			while time.perf_counter() < t:
 				pass
