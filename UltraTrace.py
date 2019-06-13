@@ -36,8 +36,9 @@ try:
 	# import pygame 	# sudo -H pip3 install pygame pygame.mixer && brew install sdl sdl_mixer
 	# assert("pygame.mixer" in sys.modules)
 	from pydub import AudioSegment
-	from pydub.playback import play
+	# from pydub.playback import play
 	import pyaudio
+	import wave
 	import simpleaudio as sa
 	_AUDIO_LIBS_INSTALLED = True
 except (ImportError, AssertionError):
@@ -1860,17 +1861,18 @@ class PlaybackModule(object):
 			end = self.app.TextGrid.end
 
 		if _VIDEO_LIBS_INSTALLED and _AUDIO_LIBS_INSTALLED:
-			framenums = self.readyVideo()
-			segs = self.readyAudio(start, end, framenums)
+			# framenums = self.readyVideo()
+			# segs = self.readyAudio(start, end, framenums)
 			# thread1 = threading.Thread(target=self.playAudio, args=(segs,))
 			# thread1.daemon = 1
 			# thread1.start()
 			# thread2 = threading.Thread(target=self.playVideo, args=(start, end, framenums))
 			# thread2.daemon = 1
 			# thread2.start()
-			for seg in segs:
-				self.playAudio(seg)
+			# for seg in segs:
+			# 	self.playAudio(seg)
 			# self.playVideo(start, end, framenums)
+			self.playAudio_withPyAudio(start, end)
 
 		elif _AUDIO_LIBS_INSTALLED:
 			seg = self.readyAudio(start,end)
@@ -1878,6 +1880,73 @@ class PlaybackModule(object):
 		elif _VIDEO_LIBS_INSTALLED:
 			framenums = self.readyVideo()
 			self.playVideo(start, end, framenums)
+
+	# define callback (2)
+	def callback(self, in_data, frame_count, time_info, status):
+		data = b''.join([self.seg.get_frame(i) for i in range(self.currentframe, self.currentframe+frame_count)])
+		self.currentframe+=frame_count
+
+		#check & update video frame
+		callbacklen = frame_count/self.seg.frame_rate
+		self.dicomframe_timer += callbacklen
+		if self.dicomframe_timer >= self.flen:
+			self.dicomframe_timer = self.dicomframe_timer-self.flen
+			# print('here1')
+			# canvas.delete(canvas.imagetk)
+			print('here2')
+			img = self.app.Dicom.zframe.canvas.create_image(0,0,anchor='nw',image=self.pngs[self.dicomframe_num])
+			print('here3')
+			self.app.Dicom.zframe.canvas.imagetk = img #prevents garbage collection?
+			self.dicomframe_num+=1
+
+		return (data, pyaudio.paContinue)
+
+	def playAudio_withPyAudio(self, start, end):
+		'''
+
+		'''
+		#video stuff
+		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
+		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
+		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
+		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
+		canvas = self.app.Dicom.zframe.canvas
+
+		#audio stuff
+		start_idx = round(float(start)*1000)
+		end_idx = round(float(end)*1000)
+		# flen = round(self.app.TextGrid.frame_len*1000)
+		self.flen = float(self.app.TextGrid.frame_len)
+
+		self.seg = self.sfile[start_idx:end_idx]
+		self.dicomframe_timer = 0
+		self.dicomframe_num = 0
+
+		# instantiate PyAudio (1)
+		p = pyaudio.PyAudio()
+		self.currentframe = 0
+
+		# open stream using callback (3)
+		stream = p.open(format=p.get_format_from_width(self.seg.sample_width),
+		                channels=self.seg.channels,
+		                rate=self.seg.frame_rate,
+		                output=True,
+		                stream_callback=self.callback)
+
+		# start the stream (4)
+		stream.start_stream()
+
+		# wait for stream to finish (5)
+		while stream.is_active():
+		    time.sleep(0.1)
+
+		# stop stream (6)
+		stream.stop_stream()
+		stream.close()
+		self.seg.close()
+
+		# close PyAudio (7)
+		p.terminate()
 
 	def readyAudio(self, start, end, fnums):
 		'''
