@@ -57,9 +57,10 @@ except (ImportError):
 	warnings.warn('TextGrid library failed to load')
 	_TEXTGRID_LIBS_INSTALLED = False
 try:
-	import vlc
-	import tempfile
-	from multiprocessing import Process
+	# import vlc
+	# import tempfile
+	# from multiprocessing import Process
+	import threading
 	_VIDEO_LIBS_INSTALLED = True
 except (ImportError):
 	warnings.warn('VLC library failed to load')
@@ -1859,12 +1860,14 @@ class PlaybackModule(object):
 		if _VIDEO_LIBS_INSTALLED and _AUDIO_LIBS_INSTALLED:
 			seg = self.readyAudio(start,end)
 			framenums = self.readyVideo()
-			# p1 = Process(target=self.playAudio, args=(seg,))
-			# p1.start()
-			# p2 = Process(target=self.playVideo, args=(start, end, framenums))
-			# p2.start()
+			thread1 = threading.Thread(target=self.playAudio, args=(seg,))
+			thread1.daemon = 1
+			thread1.start()
+			thread2 = threading.Thread(target=self.playVideo, args=(start, end, framenums))
+			thread2.daemon = 1
+			thread2.start()
 			# self.playAudio(seg) #so that they start at as close to the same time as possible
-			self.playVideo(start, end, framenums)
+			# self.playVideo(start, end, framenums)
 		elif _AUDIO_LIBS_INSTALLED:
 			seg = self.readyAudio(start,end)
 			self.playAudio(seg)
@@ -1925,11 +1928,11 @@ class PlaybackModule(object):
 		pngs = [Image.open(png) for png in png_locs]
 
 
-
-		ffmpeg_line = 'ffmpeg -r '+str(frame_rate)+' -f image2 -s '+str(pngs[0].size[0])+'x'+str(pngs[0].size[1])+' -start_number '+str(framenums[0])+\
-						' -i '+os.path.split(png_locs[0])[0]+'/'+os.path.splitext(os.path.basename(png_locs[0]))[0][:-4]+'%04d'+os.path.splitext(png_locs[0])[1]+\
-						' -vframes '+str(int(framenums[-1])-int(framenums[0])+1)+' -vcodec libx264 -crf 25 ../test.mp4'
-		os.system(ffmpeg_line)
+		#
+		# ffmpeg_line = 'ffmpeg -r '+str(frame_rate)+' -f image2 -s '+str(pngs[0].size[0])+'x'+str(pngs[0].size[1])+' -start_number '+str(framenums[0])+\
+		# 				' -i '+os.path.split(png_locs[0])[0]+'/'+os.path.splitext(os.path.basename(png_locs[0]))[0][:-4]+'%04d'+os.path.splitext(png_locs[0])[1]+\
+		# 				' -vframes '+str(int(framenums[-1])-int(framenums[0])+1)+' -vcodec libx264 -crf 25 ../test.mp4'
+		# os.system(ffmpeg_line)
 
 		# self.app.Dicom.update(_frame='3')
 		# # self.tempVPlay('3')
@@ -1946,18 +1949,18 @@ class PlaybackModule(object):
 		# print('done')
 		# # self.tempVPlay('50')
 
-		# i=0
-		# while i <= len(framenums)-1:# and self.playing.is_playing(): #should break when audio stops
-		# 	print(i)
-		# 	#display current frame
-		# 	self.app.Dicom.update(_frame=str(framenums[i]))
-		# 	# self.app.Dicom.update(_frame='3')
-		# 	#wait until next frame
-		# 	waittime = ftimes[i+1] - ftimes[i]
-		# 	# print(waittime*50, type(waittime))
-		# 	time.sleep(.1)
-		# 	i+=1
-		# self.app.Dicom.update()
+		i=0
+		while i <= len(framenums)-1:# and self.playing.is_playing(): #should break when audio stops
+			print(i)
+			#display current frame
+			# self.app.Dicom.update(_frame=str(framenums[i]))
+			self.tempVPlay(framenums[i])
+			# self.app.Dicom.update(_frame='3')
+			# #wait until next frame
+			# waittime = ftimes[i+1] - ftimes[i]
+			# # print(waittime*50, type(waittime))
+			i+=1
+		self.app.Dicom.update()
 
 	def grid(self):
 		''' grid widgets '''
