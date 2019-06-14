@@ -161,7 +161,11 @@ class ZoomFrame(Frame):
 				imagetk = ImageTk.PhotoImage( image.resize((int(x2 - x1), int(y2 - y1))) )
 				imageid = self.canvas.create_image(max(bbox2[0], bbox1[0]), max(bbox2[1], bbox1[1]), anchor='nw', image=imagetk)
 				self.canvas.lower(imageid)  # set image into background
+				if len(self.canvas.find_all()) > 2:
+					for itm in self.canvas.find_all()[1:-1]: #leaves most recent items (uppermost and lowermost items)
+						self.canvas.delete(itm) #deletes old items
 				self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
+			print([self.canvas.type(i) for i in self.canvas.find_all()])
 
 	def wheel(self, event, isFake=False):
 		print(event)
@@ -1929,9 +1933,12 @@ class PlaybackModule(object):
 		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
 		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
-		# self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
-		self.pngs = [Image.open(png) for png in png_locs]
+		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
+		# self.pngs = [Image.open(png) for png in png_locs]
 		# self.app.Dicom.zframe.canvas.delete(ALL)
+		canvas = self.app.Dicom.zframe.canvas
+		print(canvas.find_all())
+		# canvas.itemconfig(canvas.find_all()[0], image = self.pngs[-1])
 		# img = self.app.Dicom.zframe.canvas.create_image(0,0,anchor='nw',image=self.pngs[-1])
 		# self.app.Dicom.zframe.canvas.imagetk = img #prevents garbage collection?
 
