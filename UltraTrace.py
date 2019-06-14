@@ -1800,6 +1800,7 @@ class PlaybackModule(object):
 			print( ' - initializing module: Audio' )
 			self.sfile = None
 			self.isPaused = False
+			self.p = pyaudio.PyAudio()
 
 			#check for completion
 			self.ADone = False
@@ -1881,6 +1882,12 @@ class PlaybackModule(object):
 			framenums = self.readyVideo()
 			self.playVideo(start, end, framenums)
 
+	# def getOut(self, stream):
+	# 	while stream.is_active():
+	# 		if self.dicomframe_timer >= self.flen:
+	# 			print(self.dicomframe_num)
+	# 			self.app.Dicom.zframe.canvas.delete(ALL)
+
 	# define callback (2)
 	def callback(self, in_data, frame_count, time_info, status):
 		data = b''.join([self.seg.get_frame(i) for i in range(self.currentframe, self.currentframe+frame_count)])
@@ -1889,17 +1896,30 @@ class PlaybackModule(object):
 		#check & update video frame
 		callbacklen = frame_count/self.seg.frame_rate
 		self.dicomframe_timer += callbacklen
-		if self.dicomframe_timer >= self.flen:
-			self.dicomframe_timer = self.dicomframe_timer-self.flen
+		if self.dicomframe_timer % self.flen != self.dicomframe_timer:
+			print(self.dicomframe_num, 'callback')
+			# self.getOut2()
+			floor = math.floor(self.dicomframe_timer/self.flen)
+			self.dicomframe_timer = self.dicomframe_timer-self.flen*floor
+			# print(self.dicomframe_timer, 'callback')
 			# print('here1')
-			# canvas.delete(canvas.imagetk)
-			print('here2')
-			img = self.app.Dicom.zframe.canvas.create_image(0,0,anchor='nw',image=self.pngs[self.dicomframe_num])
-			print('here3')
-			self.app.Dicom.zframe.canvas.imagetk = img #prevents garbage collection?
-			self.dicomframe_num+=1
+			# self.app.Dicom.zframe.canvas.delete(ALL)
+			# print('here2')
+			# img = self.app.Dicom.zframe.canvas.create_image(0,0,anchor='nw',image=self.pngs[self.dicomframe_num])
+			# print('here3')
+			# self.app.Dicom.zframe.canvas.imagetk = img #prevents garbage collection?
+			self.dicomframe_num+=floor
 
 		return (data, pyaudio.paContinue)
+
+	def getOut2(self):
+		self.app.Dicom.zframe.canvas.delete(ALL)
+		# pass
+
+	def getOut(self):
+		thread = threading.Thread(target=self.getOut2)
+		thread.daemon = 1
+		thread.start()
 
 	def playAudio_withPyAudio(self, start, end):
 		'''
@@ -1909,8 +1929,11 @@ class PlaybackModule(object):
 		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
 		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
-		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
-		canvas = self.app.Dicom.zframe.canvas
+		# self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
+		self.pngs = [Image.open(png) for png in png_locs]
+		# self.app.Dicom.zframe.canvas.delete(ALL)
+		# img = self.app.Dicom.zframe.canvas.create_image(0,0,anchor='nw',image=self.pngs[-1])
+		# self.app.Dicom.zframe.canvas.imagetk = img #prevents garbage collection?
 
 		#audio stuff
 		start_idx = round(float(start)*1000)
@@ -1922,12 +1945,10 @@ class PlaybackModule(object):
 		self.dicomframe_timer = 0
 		self.dicomframe_num = 0
 
-		# instantiate PyAudio (1)
-		p = pyaudio.PyAudio()
 		self.currentframe = 0
 
 		# open stream using callback (3)
-		stream = p.open(format=p.get_format_from_width(self.seg.sample_width),
+		stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
 		                channels=self.seg.channels,
 		                rate=self.seg.frame_rate,
 		                output=True,
@@ -1937,16 +1958,23 @@ class PlaybackModule(object):
 		stream.start_stream()
 
 		# wait for stream to finish (5)
+		checker = -1
 		while stream.is_active():
-		    time.sleep(0.1)
+			# pass
+			# self.getOut()
+			# if checker != self.dicomframe_num:
+			# 	print(self.dicomframe_num, 'while')
+			# checker = self.dicomframe_num
+			# if self.dicomframe_timer % self.flen != self.dicomframe_timer:
+			# 	print(self.dicomframe_num, 'while')
+			time.sleep(0.1)
 
 		# stop stream (6)
 		stream.stop_stream()
 		stream.close()
-		self.seg.close()
 
 		# close PyAudio (7)
-		p.terminate()
+		# self.p.terminate() # NOTE: needs to be removed in order to play multiple audio files in a row
 
 	def readyAudio(self, start, end, fnums):
 		'''
