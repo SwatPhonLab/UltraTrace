@@ -38,8 +38,8 @@ try:
 	from pydub import AudioSegment
 	# from pydub.playback import play
 	import pyaudio
-	import wave
-	import simpleaudio as sa
+	# import wave
+	# import simpleaudio as sa
 	_AUDIO_LIBS_INSTALLED = True
 except (ImportError, AssertionError):
 	warnings.warn('Audio library failed to load')
@@ -1885,12 +1885,6 @@ class PlaybackModule(object):
 		elif _VIDEO_LIBS_INSTALLED:
 			framenums = self.readyVideo()
 			self.playVideo(start, end, framenums)
-
-	# def getOut(self, stream):
-	# 	while stream.is_active():
-	# 		if self.dicomframe_timer >= self.flen:
-	# 			print(self.dicomframe_num)
-	# 			self.app.Dicom.zframe.canvas.delete(ALL)
 
 	# define callback (2)
 	def callback(self, in_data, frame_count, time_info, status):
