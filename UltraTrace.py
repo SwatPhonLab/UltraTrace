@@ -1892,6 +1892,7 @@ class PlaybackModule(object):
 		self.currentframe+=frame_count
 
 		#check & update video frame
+		canvas = self.app.Dicom.zframe.canvas
 		callbacklen = frame_count/self.seg.frame_rate
 		self.dicomframe_timer += callbacklen
 		if self.dicomframe_timer % self.flen != self.dicomframe_timer:
@@ -1902,9 +1903,10 @@ class PlaybackModule(object):
 			# print(self.dicomframe_timer, 'callback')
 			# print('here1')
 			# self.app.Dicom.zframe.canvas.delete(ALL)
-			# print('here2')
+			print('here2')
+			canvas.itemconfig(canvas.find_all()[0], image=self.pngs[self.dicomframe_num])
 			# img = self.app.Dicom.zframe.canvas.create_image(0,0,anchor='nw',image=self.pngs[self.dicomframe_num])
-			# print('here3')
+			print('here3')
 			# self.app.Dicom.zframe.canvas.imagetk = img #prevents garbage collection?
 			self.dicomframe_num+=floor
 
