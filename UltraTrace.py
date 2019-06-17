@@ -1923,7 +1923,7 @@ class PlaybackModule(object):
 		while not self.stoprequest.isSet():
 		# while self.dicomframeQ.empty()==False:
 			print(self.dicomframeQ.get(), 'received frame in Q')
-			# self.app.Dicom.zframe.canvas.itemconfig( self.app.Dicom.zframe.canvas.find_all()[0], image=self.dicomframeQ.get() )
+			self.app.Dicom.zframe.canvas.itemconfig( self.app.Dicom.zframe.canvas.find_all()[0], image=self.dicomframeQ.get() )
 
 	# def getOut(self):
 	# 	thread = threading.Thread(target=self.getOut2)
