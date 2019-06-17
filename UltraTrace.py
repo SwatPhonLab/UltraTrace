@@ -61,8 +61,8 @@ try:
 	# import vlc
 	# import tempfile
 	# from multiprocessing import Process
-	import threading
-	import time
+	import threading, queue
+	# import time
 	_VIDEO_LIBS_INSTALLED = True
 except (ImportError):
 	warnings.warn('VLC library failed to load')
@@ -1888,38 +1888,48 @@ class PlaybackModule(object):
 
 	# define callback (2)
 	def callback(self, in_data, frame_count, time_info, status):
-		data = b''.join([self.seg.get_frame(i) for i in range(self.currentframe, self.currentframe+frame_count)])
-		self.currentframe+=frame_count
+		data = b''.join([self.seg.get_frame(i) for i in range(self.audioframe, self.audioframe+frame_count)])
+
+		if self.audioframe == 0:
+			print('1 putting frame into Q')
+			self.dicomframeQ.put(self.pngs[0])
+		self.audioframe+=frame_count
 
 		#check & update video frame
 		canvas = self.app.Dicom.zframe.canvas
 		callbacklen = frame_count/self.seg.frame_rate
 		self.dicomframe_timer += callbacklen
-		if self.dicomframe_timer % self.flen != self.dicomframe_timer:
-			print(self.dicomframe_num, 'callback')
-			# self.getOut2()
+
+		#go to next frame
+		if self.dicomframe_timer % self.flen != self.dicomframe_timer and self.dicomframe_num < len(self.pngs):
 			floor = math.floor(self.dicomframe_timer/self.flen)
 			self.dicomframe_timer = self.dicomframe_timer-self.flen*floor
-			# print(self.dicomframe_timer, 'callback')
-			# print('here1')
-			# self.app.Dicom.zframe.canvas.delete(ALL)
-			print('here2')
-			canvas.itemconfig(canvas.find_all()[0], image=self.pngs[self.dicomframe_num])
-			# img = self.app.Dicom.zframe.canvas.create_image(0,0,anchor='nw',image=self.pngs[self.dicomframe_num])
-			print('here3')
-			# self.app.Dicom.zframe.canvas.imagetk = img #prevents garbage collection?
+			print(self.dicomframe_num+1, 'putting frame into Q')
+			self.dicomframeQ.put(self.pngs[self.dicomframe_num])
 			self.dicomframe_num+=floor
+
+		if self.dicomframe_num==len(self.pngs):
+			self.stoprequest.set()
+
+			# if self.dicomframe_num >= len(self.pngs)-1:
+			# 	self.stoprequest.set()
 
 		return (data, pyaudio.paContinue)
 
 	def getOut2(self):
-		self.app.Dicom.zframe.canvas.delete(ALL)
-		# pass
+		'''
 
-	def getOut(self):
-		thread = threading.Thread(target=self.getOut2)
-		thread.daemon = 1
-		thread.start()
+		'''
+		while not self.stoprequest.isSet():
+		# while self.dicomframeQ.empty()==False:
+			print(self.dicomframeQ.get(), 'received frame in Q')
+			# self.app.Dicom.zframe.canvas.itemconfig( self.app.Dicom.zframe.canvas.find_all()[0], image=self.dicomframeQ.get() )
+
+	# def getOut(self):
+	# 	thread = threading.Thread(target=self.getOut2)
+	# 	thread.daemon = 1
+	# 	thread.start()
+	# 	thread.join()
 
 	def playAudio_withPyAudio(self, start, end):
 		'''
@@ -1930,6 +1940,7 @@ class PlaybackModule(object):
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
 		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
 		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
+		# print(len(self.pngs),'line1938')
 		# self.pngs = [Image.open(png) for png in png_locs]
 		# self.app.Dicom.zframe.canvas.delete(ALL)
 		canvas = self.app.Dicom.zframe.canvas
@@ -1946,9 +1957,10 @@ class PlaybackModule(object):
 
 		self.seg = self.sfile[start_idx:end_idx]
 		self.dicomframe_timer = 0
-		self.dicomframe_num = 0
-
-		self.currentframe = 0
+		self.dicomframe_num = 1
+		self.dicomframeQ = queue.Queue()
+		self.stoprequest = threading.Event()
+		self.audioframe = 0
 
 		# open stream using callback (3)
 		stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
@@ -1961,8 +1973,12 @@ class PlaybackModule(object):
 		stream.start_stream()
 
 		# wait for stream to finish (5)
-		checker = -1
-		while stream.is_active():
+		thread = threading.Thread(target=self.getOut2)
+		thread.daemon = 1
+		thread.start()
+		thread.join()
+		# checker = -1
+		# while stream.is_active():
 			# pass
 			# self.getOut()
 			# if checker != self.dicomframe_num:
@@ -1970,7 +1986,7 @@ class PlaybackModule(object):
 			# checker = self.dicomframe_num
 			# if self.dicomframe_timer % self.flen != self.dicomframe_timer:
 			# 	print(self.dicomframe_num, 'while')
-			time.sleep(0.1)
+			# time.sleep(0.1)
 
 		# stop stream (6)
 		stream.stop_stream()
