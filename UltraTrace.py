@@ -165,7 +165,7 @@ class ZoomFrame(Frame):
 					for itm in self.canvas.find_all()[1:-1]: #leaves most recent items (uppermost and lowermost items)
 						self.canvas.delete(itm) #deletes old items
 				self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
-			print([self.canvas.type(i) for i in self.canvas.find_all()])
+			print([self.canvas.type(i) for i in self.canvas.find_all()], '168')
 
 	def wheel(self, event, isFake=False):
 		print(event)
@@ -1818,7 +1818,23 @@ class PlaybackModule(object):
 		if _VIDEO_LIBS_INSTALLED:
 			print( ' - initializing module: Video' )
 			self.app.bind('<space>', self.startEndAV ) # NOTE: if both audio and video, will this make it run twice?
-			# self.app.bind('<Escape>', self.pauseVideo )
+			self.app.bind('<Escape>', self.testLabel )
+
+	def testLabel(self, event):
+		print('1824')
+
+		imgs = []
+		path = "/Volumes/ResearchAssistant/ultrasound/processed.git/P03/040_dicom_to_png"
+		for f in os.listdir(path):
+		    imgs.append(os.path.join(path,f))
+		img = ImageTk.PhotoImage(Image.open(imgs[3]))
+
+		canvas = self.app.Dicom.zframe.canvas
+		# img = self.app.Dicom.zframe.image
+		label = Label(canvas)
+		label.config(image=img)
+		label.image = img
+		label.grid()
 
 	def update(self):
 		'''
@@ -1911,25 +1927,28 @@ class PlaybackModule(object):
 		if self.dicomframe_num==len(self.pngs):
 			self.stoprequest.set()
 
-			# if self.dicomframe_num >= len(self.pngs)-1:
-			# 	self.stoprequest.set()
+		#resync to video
+		self.displayevent.wait()
+		self.displayevent.clear()
 
 		return (data, pyaudio.paContinue)
 
-	def getOut2(self):
+	def getOut2(self, canvas):
 		'''
 
 		'''
 		while not self.stoprequest.isSet():
 		# while self.dicomframeQ.empty()==False:
-			print(self.dicomframeQ.get(), 'received frame in Q')
-			self.app.Dicom.zframe.canvas.itemconfig( self.app.Dicom.zframe.canvas.find_all()[0], image=self.dicomframeQ.get() )
-
-	# def getOut(self):
-	# 	thread = threading.Thread(target=self.getOut2)
-	# 	thread.daemon = 1
-	# 	thread.start()
-	# 	thread.join()
+			pic = self.dicomframeQ.get()
+			print(pic, 'received frame in Q')
+			# print(canvas)
+			# print(canvas.find_all())
+			# pictk = canvas.create_image(0,0,anchor='nw',image=pic)
+			# print(pictk)
+			# canvas.imagetk = pictk
+			# canvas.itemconfig( canvas.find_all()[0], image=pic )
+			self.label.config(image=pic)
+			self.displayevent.set()
 
 	def playAudio_withPyAudio(self, start, end):
 		'''
@@ -1944,7 +1963,10 @@ class PlaybackModule(object):
 		# self.pngs = [Image.open(png) for png in png_locs]
 		# self.app.Dicom.zframe.canvas.delete(ALL)
 		canvas = self.app.Dicom.zframe.canvas
-		print(canvas.find_all())
+		self.label = Label(canvas)
+		self.label.grid()
+
+		# print(canvas.find_all())
 		# canvas.itemconfig(canvas.find_all()[0], image = self.pngs[-1])
 		# img = self.app.Dicom.zframe.canvas.create_image(0,0,anchor='nw',image=self.pngs[-1])
 		# self.app.Dicom.zframe.canvas.imagetk = img #prevents garbage collection?
@@ -1960,6 +1982,8 @@ class PlaybackModule(object):
 		self.dicomframe_num = 1
 		self.dicomframeQ = queue.Queue()
 		self.stoprequest = threading.Event()
+		self.displayevent = threading.Event()
+		self.displayevent.set()
 		self.audioframe = 0
 
 		# open stream using callback (3)
@@ -1973,7 +1997,7 @@ class PlaybackModule(object):
 		stream.start_stream()
 
 		# wait for stream to finish (5)
-		thread = threading.Thread(target=self.getOut2)
+		thread = threading.Thread(target=self.getOut2, args=(canvas,))
 		thread.daemon = 1
 		thread.start()
 		thread.join()
