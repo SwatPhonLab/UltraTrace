@@ -62,7 +62,7 @@ try:
 	# import tempfile
 	# from multiprocessing import Process
 	import threading, queue
-	# import time
+	import time
 	_VIDEO_LIBS_INSTALLED = True
 except (ImportError):
 	warnings.warn('VLC library failed to load')
@@ -165,7 +165,7 @@ class ZoomFrame(Frame):
 					for itm in self.canvas.find_all()[1:-1]: #leaves most recent items (uppermost and lowermost items)
 						self.canvas.delete(itm) #deletes old items
 				self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
-			print([self.canvas.type(i) for i in self.canvas.find_all()], '168')
+			print([self.canvas.type(i) for i in self.canvas.find_all()])
 
 	def wheel(self, event, isFake=False):
 		print(event)
@@ -1818,23 +1818,7 @@ class PlaybackModule(object):
 		if _VIDEO_LIBS_INSTALLED:
 			print( ' - initializing module: Video' )
 			self.app.bind('<space>', self.startEndAV ) # NOTE: if both audio and video, will this make it run twice?
-			self.app.bind('<Escape>', self.testLabel )
-
-	def testLabel(self, event):
-		print('1824')
-
-		imgs = []
-		path = "/Volumes/ResearchAssistant/ultrasound/processed.git/P03/040_dicom_to_png"
-		for f in os.listdir(path):
-		    imgs.append(os.path.join(path,f))
-		img = ImageTk.PhotoImage(Image.open(imgs[3]))
-
-		canvas = self.app.Dicom.zframe.canvas
-		# img = self.app.Dicom.zframe.image
-		label = Label(canvas)
-		label.config(image=img)
-		label.image = img
-		label.grid()
+			# self.app.bind('<Escape>', self.pauseVideo )
 
 	def update(self):
 		'''
@@ -1927,28 +1911,37 @@ class PlaybackModule(object):
 		if self.dicomframe_num==len(self.pngs):
 			self.stoprequest.set()
 
-		#resync to video
-		self.displayevent.wait()
-		self.displayevent.clear()
+			# if self.dicomframe_num >= len(self.pngs)-1:
+			# 	self.stoprequest.set()
 
 		return (data, pyaudio.paContinue)
 
-	def getOut2(self, canvas):
+	def playVideoNoThread(self):
 		'''
 
 		'''
-		while not self.stoprequest.isSet():
-		# while self.dicomframeQ.empty()==False:
-			pic = self.dicomframeQ.get()
+		# print('got here 1923')
+		# while not self.stoprequest.isSet():
+		# # while self.dicomframeQ.empty()==False:
+		# 	pic = self.dicomframeQ.get()
+		# 	canvas = self.app.Dicom.zframe.canvas
+		# 	print(pic, 'received frame in Q')
+		# 	# canvas.itemconfig( 2, image=pic )
+		# 	label.config(image = pic)
+		# 	label.image = pic
+		if not self.stoprequest.isSet():
+			canvas = self.app.Dicom.zframe.canvas
+			pic = self.dicomframeQ.get(block=True)
 			print(pic, 'received frame in Q')
-			# print(canvas)
-			# print(canvas.find_all())
-			# pictk = canvas.create_image(0,0,anchor='nw',image=pic)
-			# print(pictk)
-			# canvas.imagetk = pictk
-			# canvas.itemconfig( canvas.find_all()[0], image=pic )
-			self.label.config(image=pic)
-			self.displayevent.set()
+			canvas.itemconfig( canvas.find_all()[0], image=pic )
+			canvas.update()
+			self.playVideoNoThread()
+
+	# def getOut(self):
+	# 	thread = threading.Thread(target=self.getOut2)
+	# 	thread.daemon = 1
+	# 	thread.start()
+	# 	thread.join()
 
 	def playAudio_withPyAudio(self, start, end):
 		'''
@@ -1963,10 +1956,7 @@ class PlaybackModule(object):
 		# self.pngs = [Image.open(png) for png in png_locs]
 		# self.app.Dicom.zframe.canvas.delete(ALL)
 		canvas = self.app.Dicom.zframe.canvas
-		self.label = Label(canvas)
-		self.label.grid()
-
-		# print(canvas.find_all())
+		print(canvas.find_all())
 		# canvas.itemconfig(canvas.find_all()[0], image = self.pngs[-1])
 		# img = self.app.Dicom.zframe.canvas.create_image(0,0,anchor='nw',image=self.pngs[-1])
 		# self.app.Dicom.zframe.canvas.imagetk = img #prevents garbage collection?
@@ -1982,9 +1972,8 @@ class PlaybackModule(object):
 		self.dicomframe_num = 1
 		self.dicomframeQ = queue.Queue()
 		self.stoprequest = threading.Event()
-		self.displayevent = threading.Event()
-		self.displayevent.set()
 		self.audioframe = 0
+
 
 		# open stream using callback (3)
 		stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
@@ -1995,12 +1984,14 @@ class PlaybackModule(object):
 
 		# start the stream (4)
 		stream.start_stream()
+		self.playVideoNoThread()
 
 		# wait for stream to finish (5)
-		thread = threading.Thread(target=self.getOut2, args=(canvas,))
-		thread.daemon = 1
-		thread.start()
-		thread.join()
+		# thread = threading.Thread(target=self.getOut2)
+		# thread.daemon = 1
+		# thread.start()
+		# thread.join()
+
 		# checker = -1
 		# while stream.is_active():
 			# pass
