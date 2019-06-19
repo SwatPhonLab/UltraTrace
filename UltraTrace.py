@@ -1866,17 +1866,6 @@ class PlaybackModule(object):
 			end = self.app.TextGrid.end
 
 		if _VIDEO_LIBS_INSTALLED and _AUDIO_LIBS_INSTALLED:
-			# framenums = self.readyVideo()
-			# segs = self.readyAudio(start, end, framenums)
-			# thread1 = threading.Thread(target=self.playAudio, args=(segs,))
-			# thread1.daemon = 1
-			# thread1.start()
-			# thread2 = threading.Thread(target=self.playVideo, args=(start, end, framenums))
-			# thread2.daemon = 1
-			# thread2.start()
-			# for seg in segs:
-			# 	self.playAudio(seg)
-			# self.playVideo(start, end, framenums)
 			self.playAudio_withPyAudio(start, end)
 
 		elif _AUDIO_LIBS_INSTALLED:
@@ -1888,28 +1877,28 @@ class PlaybackModule(object):
 
 	# define callback (2)
 	def callback(self, in_data, frame_count, time_info, status):
+		'''
+		Called by pyaudio stream. Gets chunks of audio ready for playing
+		With video capabilities, also updates video frame information
+		'''
 		data = b''.join([self.seg.get_frame(i) for i in range(self.audioframe, self.audioframe+frame_count)])
-
-		if self.audioframe == 0:
-			print('1 putting frame into Q')
-			self.dicomframeQ.put(self.pngs[0])
 		self.audioframe+=frame_count
 
-		#check & update video frame
-		canvas = self.app.Dicom.zframe.canvas
-		callbacklen = frame_count/self.seg.frame_rate
-		self.dicomframe_timer += callbacklen
-
-		#go to next frame
-		if self.dicomframe_timer % self.flen != self.dicomframe_timer and self.dicomframe_num < len(self.pngs):
-			floor = math.floor(self.dicomframe_timer/self.flen)
-			self.dicomframe_timer = self.dicomframe_timer-self.flen*floor
-			print(self.dicomframe_num+1, 'putting frame into Q')
-			self.dicomframeQ.put(self.pngs[self.dicomframe_num])
-			self.dicomframe_num+=floor
-
-		if self.dicomframe_num==len(self.pngs):
-			self.stoprequest.set()
+		if _VIDEO_LIBS_INSTALLED:
+			#check & update video frame
+			canvas = self.app.Dicom.zframe.canvas
+			callbacklen = frame_count/self.seg.frame_rate
+			self.dicomframe_timer += callbacklen
+			#go to next frame
+			if self.dicomframe_timer % self.flen != self.dicomframe_timer and self.dicomframe_num < len(self.pngs):
+				floor = math.floor(self.dicomframe_timer/self.flen)
+				self.dicomframe_timer = self.dicomframe_timer-self.flen*floor
+				print(self.dicomframe_num+1, 'putting frame into Q')
+				self.dicomframeQ.put(self.pngs[self.dicomframe_num])
+				self.dicomframe_num+=floor
+			#stop video loop
+			if self.dicomframe_num==len(self.pngs):
+				self.stoprequest.set()
 
 		return (data, pyaudio.paContinue)
 
@@ -1919,11 +1908,11 @@ class PlaybackModule(object):
 		'''
 		canvas = self.app.Dicom.zframe.canvas
 		pic = self.dicomframeQ.get()
+		# pic = self.dicomframeQ.get(block=False)
 		canvas.itemconfig( canvas.find_all()[0], image=pic )
 		canvas.update()
 		print(pic, 'displayed')
-		#should this if be at the top?
-		if not self.stoprequest.isSet() or not self.dicomframeQ.empty():
+		if not self.stoprequest.isSet() or not self.dicomframeQ.empty(): #should this if be at the top?
 			self.playVideoNoThread()
 
 	def playAudio_withPyAudio(self, start, end):
@@ -1946,6 +1935,9 @@ class PlaybackModule(object):
 		self.dicomframe_timer = 0
 		self.dicomframe_num = 1
 		self.dicomframeQ = queue.Queue()
+		self.dicomframeQ.put(self.pngs[0]) #put now, because audio callback puts frames when audio segments end
+		# for i in range(len(self.pngs)):
+		# 	self.dicomframeQ.put(self.pngs[i])
 		self.stoprequest = threading.Event()
 		self.audioframe = 0
 
