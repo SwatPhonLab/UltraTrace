@@ -1896,9 +1896,52 @@ class PlaybackModule(object):
 				self.paused = False
 				self.playAudio()
 
+	def stopAV(self,event=None):
+		self.stoprequest.set()
+		if _AUDIO_LIBS_INSTALLED:
+			self.stream.stop_stream()
+			self.stream.close()
+		self.started = False
 
+	def readyAudio(self, start, end):
+		'''
 
-	# define callback (2)
+		'''
+		#audio stuff
+		start_idx = round(float(start)*1000)
+		end_idx = round(float(end)*1000)
+		self.flen = float(self.app.TextGrid.frame_len)
+		self.seg = self.sfile[start_idx:end_idx]
+		self.audioframe = 0
+
+		if _VIDEO_LIBS_INSTALLED:
+			#video w/audio stuff
+			self.dicomframe_timer = 0
+			self.dicomframe_num = 1
+			self.dicomframeQ = queue.Queue()
+			self.dicomframeQ.put(self.pngs[0]) #put now, because audio callback puts frames when audio segments end
+			# for i in range(len(self.pngs)):
+			# 	self.dicomframeQ.put(self.pngs[i])
+			self.stoprequest = threading.Event()
+
+		# open stream using callback (3)
+		self.stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
+		                channels=self.seg.channels,
+		                rate=self.seg.frame_rate,
+		                output=True,
+						start=False,
+		                stream_callback=self.callback)
+
+	def readyVideo(self):
+		'''
+
+		'''
+		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
+		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
+		self.framestart = int(framenums[0])
+		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
+		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
+
 	def callback(self, in_data, frame_count, time_info, status):
 		'''
 		Called by pyaudio stream. Gets chunks of audio ready for playing
@@ -1941,35 +1984,6 @@ class PlaybackModule(object):
 		if not self.stoprequest.is_set() or not self.dicomframeQ.empty(): #should this if be at the top?
 			self.playVideoWithAudio()
 
-	def readyAudio(self, start, end):
-		'''
-
-		'''
-		#audio stuff
-		start_idx = round(float(start)*1000)
-		end_idx = round(float(end)*1000)
-		self.flen = float(self.app.TextGrid.frame_len)
-		self.seg = self.sfile[start_idx:end_idx]
-		self.audioframe = 0
-
-		if _VIDEO_LIBS_INSTALLED:
-			#video w/audio stuff
-			self.dicomframe_timer = 0
-			self.dicomframe_num = 1
-			self.dicomframeQ = queue.Queue()
-			self.dicomframeQ.put(self.pngs[0]) #put now, because audio callback puts frames when audio segments end
-			# for i in range(len(self.pngs)):
-			# 	self.dicomframeQ.put(self.pngs[i])
-			self.stoprequest = threading.Event()
-
-		# open stream using callback (3)
-		self.stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
-		                channels=self.seg.channels,
-		                rate=self.seg.frame_rate,
-		                output=True,
-						start=False,
-		                stream_callback=self.callback)
-
 	def playAudio(self):
 		self.stream.start_stream()
 		self.started = True
@@ -1988,23 +2002,6 @@ class PlaybackModule(object):
 		# close PyAudio (7)
 		# self.p.terminate() # NOTE: needs to be removed in order to play multiple audio files in a row
 
-	def stopAV(self,event=None):
-		self.stoprequest.set()
-		if _AUDIO_LIBS_INSTALLED:
-			self.stream.stop_stream()
-			self.stream.close()
-		self.started = False
-
-	def readyVideo(self):
-		'''
-
-		'''
-		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
-		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
-		self.framestart = int(framenums[0])
-		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
-		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
-
 	def playVideoNoAudio(self):
 		'''
 
@@ -2016,12 +2013,6 @@ class PlaybackModule(object):
 		canvas.update()
 		if not self.dicomframeQ.empty() and self.stoprequest.is_set() == False: #should this if be at the top?
 			self.playVideoNoAudio()
-
-	# def stopVideo(self, event):
-	# 	'''
-	#
-	# 	'''
-	# 	self.breakFlag.set()
 
 	def grid(self):
 		''' grid widgets '''
