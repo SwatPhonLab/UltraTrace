@@ -1863,19 +1863,31 @@ class PlaybackModule(object):
 				start = self.app.TextGrid.start
 				end = self.app.TextGrid.end
 
-			if _VIDEO_LIBS_INSTALLED and _AUDIO_LIBS_INSTALLED:
+			# if _VIDEO_LIBS_INSTALLED and _AUDIO_LIBS_INSTALLED:
+			# 	self.readyVideo()
+			# 	self.readyAudio(start, end)
+			# 	self.playAudio()
+			# elif _AUDIO_LIBS_INSTALLED:
+			# 	self.readyAudio(start, end)
+			# 	self.playAudio()
+			# elif _VIDEO_LIBS_INSTALLED:
+			# 	self.readyVideo()
+			# 	self.dicomframeQ = queue.Queue()
+			# 	for i in range(len(self.pngs)):
+			# 		self.dicomframeQ.put(self.pngs[i])
+			# 	self.playVideoNoAudio()
+
+			if _VIDEO_LIBS_INSTALLED:
 				self.readyVideo()
-				self.readyAudio(start, end)
-				self.playAudio()
-			elif _AUDIO_LIBS_INSTALLED:
+			if _AUDIO_LIBS_INSTALLED:
 				self.readyAudio(start, end)
 				self.playAudio()
 			elif _VIDEO_LIBS_INSTALLED:
-				self.readyVideo()
 				self.dicomframeQ = queue.Queue()
 				for i in range(len(self.pngs)):
 					self.dicomframeQ.put(self.pngs[i])
 				self.playVideoNoAudio()
+
 		elif self.started == True:
 			if self.paused == False:
 				self.paused = True
