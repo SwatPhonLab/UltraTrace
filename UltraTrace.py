@@ -1895,11 +1895,10 @@ class PlaybackModule(object):
 			if self.dicomframe_timer % self.flen != self.dicomframe_timer and self.dicomframe_num < len(self.pngs):
 				floor = math.floor(self.dicomframe_timer/self.flen)
 				self.dicomframe_timer = self.dicomframe_timer-self.flen*floor
-				print(self.dicomframe_num+1, 'putting frame into Q')
+				print(self.dicomframe_num+self.framestart, 'putting frame into Q')
 				self.dicomframeQ.put(self.pngs[self.dicomframe_num])
 				self.dicomframe_num+=floor
-			#stop video loop
-			if self.dicomframe_num==len(self.pngs):
+			else: #stop video loop
 				self.stoprequest.set()
 
 		return (data, pyaudio.paContinue)
@@ -1909,11 +1908,12 @@ class PlaybackModule(object):
 
 		'''
 		canvas = self.app.Dicom.zframe.canvas
-		# pic = self.dicomframeQ.get(blecok=False)
 		pic = self.dicomframeQ.get()
+		# pic = self.dicomframeQ.get()
 		canvas.itemconfig( canvas.find_all()[0], image=pic )
 		canvas.update()
-		print(pic, 'displayed')
+		# print(pic, 'displayed')
+		print(self.dicomframe_num+self.framestart, 'displayed')
 		if not self.stoprequest.isSet() or not self.dicomframeQ.empty(): #should this if be at the top?
 			self.playVideoWithAudio()
 
@@ -1964,6 +1964,7 @@ class PlaybackModule(object):
 		'''
 		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
+		self.framestart = int(framenums[0])
 		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
 		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
 
