@@ -1975,10 +1975,7 @@ class PlaybackModule(object):
 			return
 		canvas = self.app.Dicom.zframe.canvas
 		pic = self.dicomframeQ.get()
-		# canvas.itemconfig( canvas.find_all()[0], image=pic )
-		imgid = canvas.create_image(0,0,anchor='nw',image=pic)
-		canvas.img = imgid
-		canvas.update()
+		canvas.itemconfig( canvas.find_all()[0], image=pic )
 		# print(pic, 'displayed')
 		print(self.dicomframe_num+self.framestart, 'displayed')
 		# if (not self.stoprequest.isSet() or not self.dicomframeQ.empty()) and self.breakFlag.is_set() == False: #should this if be at the top?
