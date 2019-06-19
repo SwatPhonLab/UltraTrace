@@ -1911,37 +1911,20 @@ class PlaybackModule(object):
 		if self.dicomframe_num==len(self.pngs):
 			self.stoprequest.set()
 
-			# if self.dicomframe_num >= len(self.pngs)-1:
-			# 	self.stoprequest.set()
-
 		return (data, pyaudio.paContinue)
 
 	def playVideoNoThread(self):
 		'''
 
 		'''
-		# print('got here 1923')
-		# while not self.stoprequest.isSet():
-		# # while self.dicomframeQ.empty()==False:
-		# 	pic = self.dicomframeQ.get()
-		# 	canvas = self.app.Dicom.zframe.canvas
-		# 	print(pic, 'received frame in Q')
-		# 	# canvas.itemconfig( 2, image=pic )
-		# 	label.config(image = pic)
-		# 	label.image = pic
-		if not self.stoprequest.isSet():
-			canvas = self.app.Dicom.zframe.canvas
-			pic = self.dicomframeQ.get(block=True)
-			print(pic, 'received frame in Q')
-			canvas.itemconfig( canvas.find_all()[0], image=pic )
-			canvas.update()
+		canvas = self.app.Dicom.zframe.canvas
+		pic = self.dicomframeQ.get()
+		canvas.itemconfig( canvas.find_all()[0], image=pic )
+		canvas.update()
+		print(pic, 'displayed')
+		#should this if be at the top?
+		if not self.stoprequest.isSet() or not self.dicomframeQ.empty():
 			self.playVideoNoThread()
-
-	# def getOut(self):
-	# 	thread = threading.Thread(target=self.getOut2)
-	# 	thread.daemon = 1
-	# 	thread.start()
-	# 	thread.join()
 
 	def playAudio_withPyAudio(self, start, end):
 		'''
@@ -1952,19 +1935,11 @@ class PlaybackModule(object):
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
 		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
 		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
-		# print(len(self.pngs),'line1938')
-		# self.pngs = [Image.open(png) for png in png_locs]
-		# self.app.Dicom.zframe.canvas.delete(ALL)
 		canvas = self.app.Dicom.zframe.canvas
-		print(canvas.find_all())
-		# canvas.itemconfig(canvas.find_all()[0], image = self.pngs[-1])
-		# img = self.app.Dicom.zframe.canvas.create_image(0,0,anchor='nw',image=self.pngs[-1])
-		# self.app.Dicom.zframe.canvas.imagetk = img #prevents garbage collection?
 
 		#audio stuff
 		start_idx = round(float(start)*1000)
 		end_idx = round(float(end)*1000)
-		# flen = round(self.app.TextGrid.frame_len*1000)
 		self.flen = float(self.app.TextGrid.frame_len)
 
 		self.seg = self.sfile[start_idx:end_idx]
@@ -1985,23 +1960,6 @@ class PlaybackModule(object):
 		# start the stream (4)
 		stream.start_stream()
 		self.playVideoNoThread()
-
-		# wait for stream to finish (5)
-		# thread = threading.Thread(target=self.getOut2)
-		# thread.daemon = 1
-		# thread.start()
-		# thread.join()
-
-		# checker = -1
-		# while stream.is_active():
-			# pass
-			# self.getOut()
-			# if checker != self.dicomframe_num:
-			# 	print(self.dicomframe_num, 'while')
-			# checker = self.dicomframe_num
-			# if self.dicomframe_timer % self.flen != self.dicomframe_timer:
-			# 	print(self.dicomframe_num, 'while')
-			# time.sleep(0.1)
 
 		# stop stream (6)
 		stream.stop_stream()
