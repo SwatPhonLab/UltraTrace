@@ -1813,11 +1813,11 @@ class PlaybackModule(object):
 			# widget management
 			self.frame = Frame(self.app.BOTTOM)
 			self.playBtn = Button(self.frame, text="Play/Pause", command=self.playAudio, state=DISABLED) # NOTE: not currently appearing
-			self.app.bind('<space>', self.startEndAV )
+			self.app.bind('<space>', self.playAV )
 			self.app.bind('<Escape>', self.stopAudio )
 		if _VIDEO_LIBS_INSTALLED:
 			print( ' - initializing module: Video' )
-			self.app.bind('<space>', self.startEndAV ) # NOTE: if both audio and video, will this make it run twice?
+			self.app.bind('<space>', self.playAV ) # NOTE: if both audio and video, will this make it run twice?
 			# self.app.bind('<Escape>', self.pauseVideo )
 
 	def update(self):
@@ -1855,7 +1855,7 @@ class PlaybackModule(object):
 				print('Unable to load audio file: `%s`' % audiofile)
 				return False
 
-	def startEndAV(self, event):
+	def playAV(self, event):
 		'''
 		Get start and end point for audio/video generation
 		'''
@@ -1866,14 +1866,16 @@ class PlaybackModule(object):
 			end = self.app.TextGrid.end
 
 		if _VIDEO_LIBS_INSTALLED and _AUDIO_LIBS_INSTALLED:
-			self.playAudio_withPyAudio(start, end)
-
+			self.readyVideo()
+			self.playAudio(start, end)
 		elif _AUDIO_LIBS_INSTALLED:
-			seg = self.readyAudio(start,end)
-			self.playAudio(seg)
+			self.playAudio(start, end)
 		elif _VIDEO_LIBS_INSTALLED:
-			framenums = self.readyVideo()
-			self.playVideo(start, end, framenums)
+			self.readyVideo()
+			self.dicomframeQ = queue.Queue()
+			for i in range(len(self.pngs)):
+				self.dicomframeQ.put(self.pngs[i])
+			self.playVideoNoAudio()
 
 	# define callback (2)
 	def callback(self, in_data, frame_count, time_info, status):
@@ -1902,45 +1904,39 @@ class PlaybackModule(object):
 
 		return (data, pyaudio.paContinue)
 
-	def playVideoNoThread(self):
+	def playVideoWithAudio(self):
 		'''
 
 		'''
 		canvas = self.app.Dicom.zframe.canvas
+		# pic = self.dicomframeQ.get(blecok=False)
 		pic = self.dicomframeQ.get()
-		# pic = self.dicomframeQ.get(block=False)
 		canvas.itemconfig( canvas.find_all()[0], image=pic )
 		canvas.update()
 		print(pic, 'displayed')
 		if not self.stoprequest.isSet() or not self.dicomframeQ.empty(): #should this if be at the top?
-			self.playVideoNoThread()
+			self.playVideoWithAudio()
 
-	def playAudio_withPyAudio(self, start, end):
+	def playAudio(self, start, end):
 		'''
 
 		'''
-		#video stuff
-		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
-		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
-		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
-		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
-		canvas = self.app.Dicom.zframe.canvas
-
 		#audio stuff
 		start_idx = round(float(start)*1000)
 		end_idx = round(float(end)*1000)
 		self.flen = float(self.app.TextGrid.frame_len)
-
 		self.seg = self.sfile[start_idx:end_idx]
-		self.dicomframe_timer = 0
-		self.dicomframe_num = 1
-		self.dicomframeQ = queue.Queue()
-		self.dicomframeQ.put(self.pngs[0]) #put now, because audio callback puts frames when audio segments end
-		# for i in range(len(self.pngs)):
-		# 	self.dicomframeQ.put(self.pngs[i])
-		self.stoprequest = threading.Event()
 		self.audioframe = 0
 
+		if _VIDEO_LIBS_INSTALLED:
+			#video w/audio stuff
+			self.dicomframe_timer = 0
+			self.dicomframe_num = 1
+			self.dicomframeQ = queue.Queue()
+			self.dicomframeQ.put(self.pngs[0]) #put now, because audio callback puts frames when audio segments end
+			# for i in range(len(self.pngs)):
+			# 	self.dicomframeQ.put(self.pngs[i])
+			self.stoprequest = threading.Event()
 
 		# open stream using callback (3)
 		stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
@@ -1948,35 +1944,16 @@ class PlaybackModule(object):
 		                rate=self.seg.frame_rate,
 		                output=True,
 		                stream_callback=self.callback)
-
 		# start the stream (4)
 		stream.start_stream()
-		self.playVideoNoThread()
-
+		if _VIDEO_LIBS_INSTALLED:
+			self.playVideoWithAudio()
 		# stop stream (6)
 		stream.stop_stream()
 		stream.close()
 
 		# close PyAudio (7)
 		# self.p.terminate() # NOTE: needs to be removed in order to play multiple audio files in a row
-
-	def readyAudio(self, start, end, fnums):
-		'''
-
-		'''
-		start_idx = round(float(start)*1000)
-		end_idx = round(float(end)*1000)
-		flen = round(self.app.TextGrid.frame_len*1000)
-
-		seg = self.sfile[start_idx:end_idx]
-		segs = [seg[flen*i:flen*(i+1)] for i in range(len(fnums))]
-		# segs = [self.sfile[flen*i+start_idx:flen*(i+1)+start_idx] for i in range(len(fnums))]
-		segs_WO = [sa.WaveObject(seg.raw_data, num_channels=seg.channels, bytes_per_sample=seg.sample_width, sample_rate=seg.frame_rate) for seg in segs]
-		return(segs_WO)
-
-	def playAudio(self,seg):
-		# self.playing = sa.WaveObject(seg.raw_data, num_channels=seg.channels, bytes_per_sample=seg.sample_width, sample_rate=seg.frame_rate).play()
-		self.playing = seg.play()
 
 	def stopAudio(self,event):
 		self.playing.stop()
@@ -1985,51 +1962,22 @@ class PlaybackModule(object):
 		'''
 
 		'''
-		# frameTier = self.app.TextGrid.TextGrid.getFirst(self.app.TextGrid.frameTierName)
 		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
-		# frames = [frameTier[i] for i in range(i,i+len(framenums))] #FIXME what does this do when selecting canvas labels? if int(frameTier[i].mark) in framenums? Is this too slow?
-		# i = [frame.mark for frame in frameTier].index(framenums[0])
-		# frames = (frameTier[i], frameTier[i+len(framenums)-1])
-		# ftimes = [frame.time for frame in frames]
-		# frame_rate = len(ftimes)/(ftimes[-1] - ftimes[0])
-		# print(1/frame_rate)
-		# ftimes = [start]+ftimes+[end]
-
-		return(framenums)
-
-
-	def playVideo(self, start, end, framenums):
-		#get frametimes
-		# frameTier = self.app.TextGrid.TextGrid.getFirst(self.app.TextGrid.frameTierName)
-		# i = [frame.mark for frame in frameTier].index(str(framenums[0]))
-		# frames = [frameTier[i] for i in range(i,i+len(framenums))] #FIXME what does this do when selecting canvas labels? if int(frameTier[i].mark) in framenums? Is this too slow?
-		# ftimes = [frame.time for frame in frames]
-		# frame_rate = len(ftimes)/(ftimes[-1] - ftimes[0])
-		# ftimes = [start]+ftimes+[end]
-
 		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
-		pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
+		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
+
+	def playVideoNoAudio(self):
+		'''
+
+		'''
 		canvas = self.app.Dicom.zframe.canvas
-
-		# ffmpeg_line = 'ffmpeg -r '+str(frame_rate)+' -f image2 -s '+str(pngs[0].size[0])+'x'+str(pngs[0].size[1])+' -start_number '+str(framenums[0])+\
-		# 				' -i '+os.path.split(png_locs[0])[0]+'/'+os.path.splitext(os.path.basename(png_locs[0]))[0][:-4]+'%04d'+os.path.splitext(png_locs[0])[1]+\
-		# 				' -vframes '+str(int(framenums[-1])-int(framenums[0])+1)+' -vcodec libx264 -crf 25 ../test.mp4'
-		# os.system(ffmpeg_line)
-
-		i=0
-		while i <= len(framenums)-1:# and self.playing.is_playing(): #should break when audio stops
-			print(i, 'line 1933')
-			img = canvas.create_image(0,0,anchor='nw',image=pngs[i])
-			canvas.imagetk = pngs[i]
-			t = time.perf_counter()+.002#int(1/frame_rate)
-			print(time.perf_counter(), t, 'before')
-			while time.perf_counter() < t:
-				pass
-			print(time.perf_counter(), 'after')
-			i+=1
-			canvas.delete(img)
-		self.app.Dicom.update()
+		# pic = self.dicomframeQ.get()
+		pic = self.dicomframeQ.get(block=False)
+		canvas.itemconfig( canvas.find_all()[0], image=pic )
+		canvas.update()
+		if not self.dicomframeQ.empty(): #should this if be at the top?
+			self.playVideoNoAudio()
 
 	def grid(self):
 		''' grid widgets '''
