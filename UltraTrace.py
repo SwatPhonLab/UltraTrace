@@ -1865,9 +1865,11 @@ class PlaybackModule(object):
 
 			if _VIDEO_LIBS_INSTALLED and _AUDIO_LIBS_INSTALLED:
 				self.readyVideo()
-				self.playAudio(start, end)
+				self.readyAudio(start, end)
+				self.playAudio()
 			elif _AUDIO_LIBS_INSTALLED:
-				self.playAudio(start, end)
+				self.readyAudio(start, end)
+				self.playAudio()
 			elif _VIDEO_LIBS_INSTALLED:
 				self.readyVideo()
 				self.dicomframeQ = queue.Queue()
@@ -1880,9 +1882,8 @@ class PlaybackModule(object):
 				self.stream.stop_stream()
 			else:
 				self.paused = False
-				self.stream.start_stream()
-				if _VIDEO_LIBS_INSTALLED:
-					self.playVideoWithAudio()
+				self.playAudio()
+
 
 
 	# define callback (2)
@@ -1928,7 +1929,7 @@ class PlaybackModule(object):
 		if not self.stoprequest.is_set() or not self.dicomframeQ.empty(): #should this if be at the top?
 			self.playVideoWithAudio()
 
-	def playAudio(self, start, end):
+	def readyAudio(self, start, end):
 		'''
 
 		'''
@@ -1954,25 +1955,33 @@ class PlaybackModule(object):
 		                channels=self.seg.channels,
 		                rate=self.seg.frame_rate,
 		                output=True,
+						start=False,
 		                stream_callback=self.callback)
-		# start the stream (4)
+
+	def playAudio(self):
 		self.stream.start_stream()
 		self.started = True
 		if _VIDEO_LIBS_INSTALLED:
 			self.playVideoWithAudio()
+		else:
+			pass #write a loop that keeps audio playing
 		# stop stream (6)
-		self.stream.stop_stream()
 		if self.stoprequest.is_set():
-			self.stream.close()
-			self.started = False
+			self.stopAV()
+		# self.stream.stop_stream()
+		# if self.stoprequest.is_set():
+		# 	self.stream.close()
+		# 	self.started = False
 
 		# close PyAudio (7)
 		# self.p.terminate() # NOTE: needs to be removed in order to play multiple audio files in a row
 
-	def stopAV(self,event):
+	def stopAV(self,event=None):
 		self.stoprequest.set()
 		if _AUDIO_LIBS_INSTALLED:
 			self.stream.stop_stream()
+			self.stream.close()
+		self.started = False
 
 	def readyVideo(self):
 		'''
