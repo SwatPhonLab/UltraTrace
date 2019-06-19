@@ -1809,11 +1809,11 @@ class PlaybackModule(object):
 			self.frame = Frame(self.app.BOTTOM)
 			self.playBtn = Button(self.frame, text="Play/Pause", command=self.playpauseAV, state=DISABLED) # NOTE: not currently appearing
 			self.app.bind('<space>', self.playpauseAV )
-			self.app.bind('<Escape>', self.stopAudio )
+			self.app.bind('<Escape>', self.stopAV )
 		if _VIDEO_LIBS_INSTALLED:
 			print( ' - initializing module: Video' )
-			self.app.bind('<space>', self.playpauseAV ) # NOTE: if both audio and video, will this make it run twice?
-			self.app.bind('<Escape>', self.stopVideo )
+			self.app.bind('<space>', self.playpauseAV )
+			self.app.bind('<Escape>', self.stopAV )
 
 	def update(self):
 		'''
@@ -1855,6 +1855,7 @@ class PlaybackModule(object):
 		'''
 
 		'''
+		print(self.started, self.paused, '1858')
 		if self.started == False:
 			if self.app.TextGrid.selectedItem:
 				start, end = self.app.TextGrid.getMinMaxTime()
@@ -1875,8 +1876,10 @@ class PlaybackModule(object):
 				self.playVideoNoAudio()
 		elif self.started == True:
 			if self.paused == False:
+				self.paused = True
 				self.stream.stop_stream()
 			else:
+				self.paused = False
 				self.stream.start_stream()
 				if _VIDEO_LIBS_INSTALLED:
 					self.playVideoWithAudio()
@@ -1912,6 +1915,8 @@ class PlaybackModule(object):
 		'''
 
 		'''
+		if self.paused == True:
+			return
 		canvas = self.app.Dicom.zframe.canvas
 		pic = self.dicomframeQ.get()
 		# pic = self.dicomframeQ.get()
@@ -1919,7 +1924,8 @@ class PlaybackModule(object):
 		canvas.update()
 		# print(pic, 'displayed')
 		print(self.dicomframe_num+self.framestart, 'displayed')
-		if (not self.stoprequest.isSet() or not self.dicomframeQ.empty()) and self.breakFlag.is_set() == False: #should this if be at the top?
+		# if (not self.stoprequest.isSet() or not self.dicomframeQ.empty()) and self.breakFlag.is_set() == False: #should this if be at the top?
+		if not self.stoprequest.is_set() or not self.dicomframeQ.empty(): #should this if be at the top?
 			self.playVideoWithAudio()
 
 	def playAudio(self, start, end):
@@ -1956,15 +1962,17 @@ class PlaybackModule(object):
 			self.playVideoWithAudio()
 		# stop stream (6)
 		self.stream.stop_stream()
-		self.stream.close()
-		self.started = False
+		if self.stoprequest.is_set():
+			self.stream.close()
+			self.started = False
 
 		# close PyAudio (7)
 		# self.p.terminate() # NOTE: needs to be removed in order to play multiple audio files in a row
 
-	def stopAudio(self,event):
-		self.stream.stop_stream()
-		self.stream.close()
+	def stopAV(self,event):
+		self.stoprequest.set()
+		if _AUDIO_LIBS_INSTALLED:
+			self.stream.stop_stream()
 
 	def readyVideo(self):
 		'''
@@ -1975,7 +1983,6 @@ class PlaybackModule(object):
 		self.framestart = int(framenums[0])
 		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
 		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
-		self.breakFlag = threading.Event()
 
 	def playVideoNoAudio(self):
 		'''
@@ -1986,14 +1993,14 @@ class PlaybackModule(object):
 		pic = self.dicomframeQ.get(block=False)
 		canvas.itemconfig( canvas.find_all()[0], image=pic )
 		canvas.update()
-		if not self.dicomframeQ.empty() and self.breakFlag.is_set() == False: #should this if be at the top?
+		if not self.dicomframeQ.empty() and self.stoprequest.is_set() == False: #should this if be at the top?
 			self.playVideoNoAudio()
 
-	def stopVideo(self, event):
-		'''
-
-		'''
-		self.breakFlag.set()
+	# def stopVideo(self, event):
+	# 	'''
+	#
+	# 	'''
+	# 	self.breakFlag.set()
 
 	def grid(self):
 		''' grid widgets '''
