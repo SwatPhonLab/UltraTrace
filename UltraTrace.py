@@ -1913,7 +1913,10 @@ class PlaybackModule(object):
 		self.flen = float(self.app.TextGrid.frame_len)
 		fpb = 256
 		extrafs = (end_idx-start_idx)%fpb
-		self.seg = self.sfile[start_idx:end_idx]+[0]*extrafs
+		extrasecs = extrafs/self.sfile.frame_rate
+		pad = AudioSegment.silent(duration=round(extrasecs*1000))
+		seg_nopad = self.sfile[start_idx:end_idx]
+		self.seg = seg_nopad + pad
 		# seg.append()
 		self.audioframe = 0
 
@@ -1957,7 +1960,7 @@ class PlaybackModule(object):
 		# self.sync.clear()
 		# self.chunkcount+=1
 		data = b''.join([self.seg.get_frame(i) for i in range(self.audioframe, self.audioframe+frame_count)])
-		print(len(data), 'line 1960')
+		# print(len(data), 'line 1960')
 		self.audioframe+=frame_count
 
 		if _VIDEO_LIBS_INSTALLED:
