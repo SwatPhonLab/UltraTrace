@@ -68,6 +68,17 @@ try:
 except (ImportError):
 	warnings.warn('VLC library failed to load')
 	_VIDEO_LIBS_INSTALLED = False
+try:
+	#print('checking OS')
+	import platform
+	_PLATFORM = platform.system()
+	print('Loading platform-specific enhancements for ' + _PLATFORM)
+	if _PLATFORM == 'Linux':
+		import xrp  # pip3 install xparser
+except (ImportError):
+	warnings.warn('Can\'t load platform-specific enhancements')
+	_PLATFORM = 'generic'
+
 
 # some globals
 _CROSSHAIR_DRAG_BUFFER = 20
@@ -2412,7 +2423,7 @@ class ControlModule(object):
 		self.undoBtn.grid_remove()
 		self.redoBtn.grid_remove()
 
-class App(Tk):
+class App(ThemedTk):
 	'''
 	This class is neatly wraps all the functionality of our application.  By itself,
 	it's is responsible for handling command line input, navigating between files,
