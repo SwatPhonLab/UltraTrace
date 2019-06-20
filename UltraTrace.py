@@ -1911,19 +1911,24 @@ class PlaybackModule(object):
 		start_idx = round(float(start)*1000)
 		end_idx = round(float(end)*1000)
 		self.flen = float(self.app.TextGrid.frame_len)
+		fpb = 256
+		extrafs = (end_idx-start_idx)%fpb
 		self.seg = self.sfile[start_idx:end_idx]
+		# seg.append()
 		self.audioframe = 0
 
 		# open stream using callback (3)
 		self.stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
 		                channels=self.seg.channels,
 		                rate=self.seg.frame_rate,
-						# frames_per_buffer=8192,
+						frames_per_buffer=fpb,
 		                output=True,
 						start=False,
 		                stream_callback=self.callback)
 
-		print(self.seg.frame_count()%8192, 'unplayed audio frames')
+		# print(self.seg.frame_count()/fpb, 'number of chunks')
+		# print(self.seg.frame_count()%fpb, 'last chunk size')
+		# self.chunkcount = 0
 
 	def readyVideo(self):
 		'''
@@ -1950,7 +1955,9 @@ class PlaybackModule(object):
 		With video capabilities, also updates video frame information
 		'''
 		# self.sync.clear()
+		# self.chunkcount+=1
 		data = b''.join([self.seg.get_frame(i) for i in range(self.audioframe, self.audioframe+frame_count)])
+		print(len(data), 'line 1960')
 		self.audioframe+=frame_count
 
 		if _VIDEO_LIBS_INSTALLED:
@@ -1994,7 +2001,7 @@ class PlaybackModule(object):
 		# if self.stoprequest.is_set():
 		# 	self.stream.close()
 		# 	self.started = False
-
+		# print(self.chunkcount)
 		# close PyAudio (7)
 		# self.p.terminate() # NOTE: needs to be removed in order to play multiple audio files in a row
 
