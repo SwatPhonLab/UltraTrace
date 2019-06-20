@@ -1917,7 +1917,7 @@ class PlaybackModule(object):
 		self.stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
 		                channels=self.seg.channels,
 		                rate=self.seg.frame_rate,
-						frames_per_buffer=2048,
+						# frames_per_buffer=2048,
 		                output=True,
 						start=False,
 		                stream_callback=self.callback)
@@ -1960,10 +1960,13 @@ class PlaybackModule(object):
 				floor = math.floor(self.dicomframe_timer/self.flen)
 				# print(floor, 'line 1961')
 				self.dicomframe_timer = self.dicomframe_timer-self.flen*floor
-				for i in range(floor-1):
-					# print(self.dicomframe_num+self.framestart+i, 'putting frame into Q')
-					if self.dicomframe_num+i < len(self.pngs):
-						self.dicomframeQ.put(self.pngs[self.dicomframe_num+i])
+				if floor > 1:
+					for i in range(floor-1):
+						# print(self.dicomframe_num+self.framestart+i, 'putting frame into Q')
+						if self.dicomframe_num+i < len(self.pngs):
+							self.dicomframeQ.put(self.pngs[self.dicomframe_num+i])
+				else:
+					self.dicomframeQ.put(self.pngs[self.dicomframe_num])
 				# self.sync.set()
 				self.dicomframe_num+=floor
 
@@ -2000,19 +2003,14 @@ class PlaybackModule(object):
 		if self.paused == True:
 			return
 		canvas = self.app.Dicom.zframe.canvas
-		# print(self.dicomframeQ.qsize(),'line 1991')
+		print(self.dicomframeQ.qsize(),'line 1991')
 		try:
 			pic = self.dicomframeQ.get(timeout=.5)
 			canvas.itemconfig( canvas.find_all()[0], image=pic )
 			# canvas.lift(pic)
 			# canvas.img = pic
 			canvas.update()
-		except:
-			if self.stoprequest.is_set():
-				print('done done done')
-				return
-			else:
-				pass
+		except: pass
 		# print(pic, 'displayed')
 		# print(self.dicomframe_num+self.framestart, 'displayed')
 		if not self.stoprequest.is_set() or not self.dicomframeQ.empty(): #should this if be at the top?
