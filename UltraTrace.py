@@ -1840,10 +1840,9 @@ class PlaybackModule(object):
 		audiofile = self.app.Data.getFileLevel( codec )
 		if audiofile != None:
 			try:
-				# self.mixer.music.load( audiofile )
-				# self.sfile = sf.SoundFile( audiofile )
 				self.sfile = AudioSegment.from_file( audiofile )
 				self.current = audiofile
+				self.currentInterval = self.app.TextGrid.selectedItem
 				self.started = False
 				self.paused = False
 				return True
@@ -1855,8 +1854,13 @@ class PlaybackModule(object):
 		'''
 
 		'''
-		print(self.started, self.paused, '1858')
-		if self.started == False:
+		# print(self.started, self.paused, '1858')
+		if self.started == False or self.currentInterval != self.app.TextGrid.selectedItem: #if we haven't started playing or we're in a new interval
+			#reset monitoring variables
+			self.currentInterval = self.app.TextGrid.selectedItem
+			self.started = False
+			self.paused = False
+
 			if self.app.TextGrid.selectedItem:
 				start, end = self.app.TextGrid.getMinMaxTime()
 			else:
@@ -1895,13 +1899,6 @@ class PlaybackModule(object):
 			else:
 				self.paused = False
 				self.playAudio()
-
-	def stopAV(self,event=None):
-		self.stoprequest.set()
-		if _AUDIO_LIBS_INSTALLED:
-			self.stream.stop_stream()
-			self.stream.close()
-		self.started = False
 
 	def readyAudio(self, start, end):
 		'''
@@ -2012,6 +2009,14 @@ class PlaybackModule(object):
 		canvas.update()
 		if not self.dicomframeQ.empty() and self.stoprequest.is_set() == False: #should this if be at the top?
 			self.playVideoNoAudio()
+
+	def stopAV(self,event=None):
+		self.stoprequest.set()
+		if _AUDIO_LIBS_INSTALLED:
+			self.stream.stop_stream()
+			self.stream.close()
+		self.started = False
+		self.paused = False
 
 	def grid(self):
 		''' grid widgets '''
