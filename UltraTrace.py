@@ -3,6 +3,7 @@
 # core libs
 from tkinter import *
 from tkinter.ttk import *
+from ttkthemes import ThemedTk
 from tkinter import filedialog
 # import soundfile as sf
 # import numpy as np
@@ -75,6 +76,7 @@ try:
 	print('Loading platform-specific enhancements for ' + _PLATFORM)
 	if _PLATFORM == 'Linux':
 		import xrp  # pip3 install xparser
+		from pathlib import Path
 except (ImportError):
 	warnings.warn('Can\'t load platform-specific enhancements')
 	_PLATFORM = 'generic'
@@ -1922,7 +1924,7 @@ class PlaybackModule(object):
 		start_idx = round(float(start)*1000)
 		end_idx = round(float(end)*1000)
 		self.flen = float(self.app.TextGrid.frame_len)
-		fpb = 256
+		fpb = 8192
 		extrafs = (end_idx-start_idx)%fpb
 		extrasecs = extrafs/self.sfile.frame_rate
 		pad = AudioSegment.silent(duration=round(extrasecs*1000))
@@ -2446,7 +2448,15 @@ class App(ThemedTk):
 		print( 'initializing UltraTrace' )
 
 		# do the normal Tk init stuff
-		super().__init__()
+		if _PLATFORM=='Linux':
+			try:
+				ttktheme = xrp.parse_file(os.path.join(str(Path.home()), '.Xresources')).resources['*TtkTheme']
+				super().__init__(theme=ttktheme)
+			except Exception as e:
+				print("exception: ", e)
+				super().__init__()
+		else:
+			super().__init__()
 
 		# check if we were passed a command line argument
 		parser = argparse.ArgumentParser()
