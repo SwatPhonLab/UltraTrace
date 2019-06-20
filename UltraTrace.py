@@ -2,6 +2,7 @@
 
 # core libs
 from tkinter import *
+from tkinter.ttk import *
 from tkinter import filedialog
 # import soundfile as sf
 # import numpy as np
@@ -641,7 +642,7 @@ class TextGridModule(object):
 		self.app = app
 		self.frame = Frame(self.app.BOTTOM)
 		self.label_padx = 17
-		self.canvas_frame = Frame(self.app.BOTTOM, padx=self.label_padx)
+		self.canvas_frame = Frame(self.app.BOTTOM)#, padx=self.label_padx)
 		self.frame.grid( row=1, column=0 )
 		self.canvas_frame.grid(row=1, column=1, sticky=E)
 		self.TextGrid = None
@@ -1467,7 +1468,7 @@ class TraceModule(object):
 		self.traceSV.set( '' )
 
 		# frame for (most of) our widgets
-		self.frame = Frame(self.app.LEFT, pady=7, padx=7)
+		self.frame = Frame(self.app.LEFT)#, pady=7, padx=7)
 		self.frame.grid( row=4 )
 
 		# listbox to contain all of our traces
@@ -2074,7 +2075,7 @@ class DicomModule(object):
 
 		if _DICOM_LIBS_INSTALLED:
 			# grid load button
-			self.frame = Frame(self.app.LEFT, pady=7)
+			self.frame = Frame(self.app.LEFT)#, pady=7)
 			self.frame.grid( row=2 )
 			self.loadBtn = Button(self.frame, text='Load DICOM', command=self.process)
 			self.loadBtn.grid()
@@ -2083,7 +2084,7 @@ class DicomModule(object):
 			self.zframe = ZoomFrame(self.app.RIGHT, 1.3, app)
 
 			# reset zoom button
-			self.zoomResetBtn = Button(self.app.LEFT, text='Reset image', command=self.zoomReset, pady=7 )
+			self.zoomResetBtn = Button(self.app.LEFT, text='Reset image', command=self.zoomReset)#, pady=7 )
 
 			# reset zoom keyboard shortcut
 			self.app.bind('<Command-0>', self.zoomReset )
@@ -2289,7 +2290,7 @@ class ControlModule(object):
 		self.app.bind('<Control-z>', self.undo )
 		self.app.bind('<Control-Z>', self.redo )
 		# also make some buttons and bind them
-		self.frame = Frame(self.app.LEFT, pady=7)
+		self.frame = Frame(self.app.LEFT)#, pady=7)
 		self.frame.grid( row=5 )
 		self.undoBtn = Button(self.frame, text='Undo', command=self.undo)
 		self.redoBtn = Button(self.frame, text='Redo', command=self.redo)
@@ -2509,7 +2510,7 @@ class App(Tk):
 		self.pady=3
 
 		# navigate between all available filenames in this directory
-		self.filesFrame = Frame(self.LEFT, pady=7)
+		self.filesFrame = Frame(self.LEFT)#, pady=7)
 		self.filesPrevBtn = Button(self.filesFrame, text='<', command=self.filesPrev)
 		self.filesJumpToMenu = OptionMenu(self.filesFrame, self.currentFileSV, *self.Data.files, command=self.filesJumpTo)
 		self.filesNextBtn= Button(self.filesFrame, text='>', command=self.filesNext)
@@ -2520,7 +2521,7 @@ class App(Tk):
 		Header(self.filesFrame, text="Choose a file:").grid( row=0, column=0, columnspan=3 )
 
 		# navigate between frames
-		self.framesFrame = Frame(self.LEFT, pady=7)
+		self.framesFrame = Frame(self.LEFT)#, pady=7)
 		self.framesSubframe = Frame(self.framesFrame)
 		self.framesPrevBtn = Button(self.framesSubframe, text='<', command=self.framesPrev)
 		self.framesEntryText = Entry(self.framesSubframe, width=5, textvariable=self.frameSV)
