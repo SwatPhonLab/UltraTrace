@@ -1917,7 +1917,7 @@ class PlaybackModule(object):
 		self.stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
 		                channels=self.seg.channels,
 		                rate=self.seg.frame_rate,
-						# frames_per_buffer=2048,
+						frames_per_buffer=2048,
 		                output=True,
 						start=False,
 		                stream_callback=self.callback)
@@ -1946,7 +1946,7 @@ class PlaybackModule(object):
 		Called by pyaudio stream. Gets chunks of audio ready for playing
 		With video capabilities, also updates video frame information
 		'''
-		self.sync.clear()
+		# self.sync.clear()
 		data = b''.join([self.seg.get_frame(i) for i in range(self.audioframe, self.audioframe+frame_count)])
 		self.audioframe+=frame_count
 
@@ -1958,14 +1958,19 @@ class PlaybackModule(object):
 			#go to next frame
 			if self.dicomframe_timer % self.flen != self.dicomframe_timer and self.dicomframe_num < len(self.pngs):
 				floor = math.floor(self.dicomframe_timer/self.flen)
+				# print(floor, 'line 1961')
 				self.dicomframe_timer = self.dicomframe_timer-self.flen*floor
-				# print(self.dicomframe_num+self.framestart, 'putting frame into Q')
-				for i in range(floor):
-					self.dicomframeQ.put(self.pngs[self.dicomframe_num+i])
-				self.sync.set()
+				for i in range(floor-1):
+					# print(self.dicomframe_num+self.framestart+i, 'putting frame into Q')
+					if self.dicomframe_num+i < len(self.pngs):
+						self.dicomframeQ.put(self.pngs[self.dicomframe_num+i])
+				# self.sync.set()
 				self.dicomframe_num+=floor
-			else: #stop video loop
-				self.stoprequest.set()
+
+				# print(self.dicomframe_num, len(self.pngs), 'line 1968')
+			# else: #stop video loop
+				if self.dicomframe_num >= len(self.pngs):
+					self.stoprequest.set()
 
 		return (data, pyaudio.paContinue)
 
@@ -1995,17 +2000,21 @@ class PlaybackModule(object):
 		if self.paused == True:
 			return
 		canvas = self.app.Dicom.zframe.canvas
-		print(self.dicomframeQ.qsize(),'line 1991')
+		# print(self.dicomframeQ.qsize(),'line 1991')
 		try:
 			pic = self.dicomframeQ.get(timeout=.5)
 			canvas.itemconfig( canvas.find_all()[0], image=pic )
 			# canvas.lift(pic)
 			# canvas.img = pic
 			canvas.update()
-		except: pass
+		except:
+			if self.stoprequest.is_set():
+				print('done done done')
+				return
+			else:
+				pass
 		# print(pic, 'displayed')
 		# print(self.dicomframe_num+self.framestart, 'displayed')
-		# if (not self.stoprequest.isSet() or not self.dicomframeQ.empty()) and self.breakFlag.is_set() == False: #should this if be at the top?
 		if not self.stoprequest.is_set() or not self.dicomframeQ.empty(): #should this if be at the top?
 			self.playVideoWithAudio()
 			# canvas.after(10, self.playVideoWithAudio)
