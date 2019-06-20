@@ -1917,10 +1917,12 @@ class PlaybackModule(object):
 		self.stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
 		                channels=self.seg.channels,
 		                rate=self.seg.frame_rate,
-						# frames_per_buffer=2048,
+						# frames_per_buffer=8192,
 		                output=True,
 						start=False,
 		                stream_callback=self.callback)
+
+		print(self.seg.frame_count()%8192, 'unplayed audio frames')
 
 	def readyVideo(self):
 		'''
@@ -2003,7 +2005,7 @@ class PlaybackModule(object):
 		if self.paused == True:
 			return
 		canvas = self.app.Dicom.zframe.canvas
-		print(self.dicomframeQ.qsize(),'line 1991')
+		# print(self.dicomframeQ.qsize(),'line 1991')
 		try:
 			pic = self.dicomframeQ.get(timeout=.5)
 			canvas.itemconfig( canvas.find_all()[0], image=pic )
