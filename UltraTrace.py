@@ -1845,6 +1845,7 @@ class PlaybackModule(object):
 				self.currentInterval = self.app.TextGrid.selectedItem
 				self.started = False
 				self.paused = False
+				self.sync = threading.Event()
 				return True
 			except:
 				print('Unable to load audio file: `%s`' % audiofile)
@@ -1915,6 +1916,7 @@ class PlaybackModule(object):
 		self.stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
 		                channels=self.seg.channels,
 		                rate=self.seg.frame_rate,
+						# frames_per_buffer=2048,
 		                output=True,
 						start=False,
 		                stream_callback=self.callback)
@@ -1943,6 +1945,7 @@ class PlaybackModule(object):
 		Called by pyaudio stream. Gets chunks of audio ready for playing
 		With video capabilities, also updates video frame information
 		'''
+		self.sync.clear()
 		data = b''.join([self.seg.get_frame(i) for i in range(self.audioframe, self.audioframe+frame_count)])
 		self.audioframe+=frame_count
 
@@ -1956,7 +1959,9 @@ class PlaybackModule(object):
 				floor = math.floor(self.dicomframe_timer/self.flen)
 				self.dicomframe_timer = self.dicomframe_timer-self.flen*floor
 				# print(self.dicomframe_num+self.framestart, 'putting frame into Q')
-				self.dicomframeQ.put(self.pngs[self.dicomframe_num])
+				for i in range(floor):
+					self.dicomframeQ.put(self.pngs[self.dicomframe_num+i])
+				self.sync.set()
 				self.dicomframe_num+=floor
 			else: #stop video loop
 				self.stoprequest.set()
@@ -1985,17 +1990,22 @@ class PlaybackModule(object):
 		'''
 
 		'''
+		# self.sync.wait()
 		if self.paused == True:
 			return
 		canvas = self.app.Dicom.zframe.canvas
-		pic = self.dicomframeQ.get()
-		canvas.itemconfig( canvas.find_all()[0], image=pic )
-		canvas.update()
+		print(self.dicomframeQ.qsize(),'line 1991')
+		try:
+			pic = self.dicomframeQ.get(timeout=.5)
+			canvas.itemconfig( canvas.find_all()[0], image=pic )
+			canvas.update()
+		except: pass
 		# print(pic, 'displayed')
 		# print(self.dicomframe_num+self.framestart, 'displayed')
 		# if (not self.stoprequest.isSet() or not self.dicomframeQ.empty()) and self.breakFlag.is_set() == False: #should this if be at the top?
 		if not self.stoprequest.is_set() or not self.dicomframeQ.empty(): #should this if be at the top?
-			self.playVideoWithAudio()
+			# self.playVideoWithAudio()
+			canvas.after(10, self.playVideoWithAudio)
 
 	def playVideoNoAudio(self):
 		'''
