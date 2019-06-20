@@ -165,7 +165,7 @@ class ZoomFrame(Frame):
 					for itm in self.canvas.find_all()[1:-1]: #leaves most recent items (uppermost and lowermost items)
 						self.canvas.delete(itm) #deletes old items
 				self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
-			print([self.canvas.type(i) for i in self.canvas.find_all()])
+			# print([self.canvas.type(i) for i in self.canvas.find_all()])
 
 	def wheel(self, event, isFake=False):
 		print(event)
@@ -1911,16 +1911,6 @@ class PlaybackModule(object):
 		self.seg = self.sfile[start_idx:end_idx]
 		self.audioframe = 0
 
-		if _VIDEO_LIBS_INSTALLED:
-			#video w/audio stuff
-			self.dicomframe_timer = 0
-			self.dicomframe_num = 1
-			self.dicomframeQ = queue.Queue()
-			self.dicomframeQ.put(self.pngs[0]) #put now, because audio callback puts frames when audio segments end
-			# for i in range(len(self.pngs)):
-			# 	self.dicomframeQ.put(self.pngs[i])
-			self.stoprequest = threading.Event()
-
 		# open stream using callback (3)
 		self.stream = self.p.open(format=self.p.get_format_from_width(self.seg.sample_width),
 		                channels=self.seg.channels,
@@ -1939,6 +1929,15 @@ class PlaybackModule(object):
 		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
 		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
 
+		#video w/audio stuff
+		self.dicomframe_timer = 0
+		self.dicomframe_num = 1
+		self.dicomframeQ = queue.Queue()
+		self.dicomframeQ.put(self.pngs[0]) #put now, because audio callback puts frames when audio segments end
+		# for i in range(len(self.pngs)):
+		# 	self.dicomframeQ.put(self.pngs[i])
+		self.stoprequest = threading.Event()
+
 	def callback(self, in_data, frame_count, time_info, status):
 		'''
 		Called by pyaudio stream. Gets chunks of audio ready for playing
@@ -1956,29 +1955,13 @@ class PlaybackModule(object):
 			if self.dicomframe_timer % self.flen != self.dicomframe_timer and self.dicomframe_num < len(self.pngs):
 				floor = math.floor(self.dicomframe_timer/self.flen)
 				self.dicomframe_timer = self.dicomframe_timer-self.flen*floor
-				print(self.dicomframe_num+self.framestart, 'putting frame into Q')
+				# print(self.dicomframe_num+self.framestart, 'putting frame into Q')
 				self.dicomframeQ.put(self.pngs[self.dicomframe_num])
 				self.dicomframe_num+=floor
 			else: #stop video loop
 				self.stoprequest.set()
 
 		return (data, pyaudio.paContinue)
-
-	def playVideoWithAudio(self):
-		'''
-
-		'''
-		if self.paused == True:
-			return
-		canvas = self.app.Dicom.zframe.canvas
-		pic = self.dicomframeQ.get()
-		canvas.itemconfig( canvas.find_all()[0], image=pic )
-		canvas.update()
-		# print(pic, 'displayed')
-		print(self.dicomframe_num+self.framestart, 'displayed')
-		# if (not self.stoprequest.isSet() or not self.dicomframeQ.empty()) and self.breakFlag.is_set() == False: #should this if be at the top?
-		if not self.stoprequest.is_set() or not self.dicomframeQ.empty(): #should this if be at the top?
-			self.playVideoWithAudio()
 
 	def playAudio(self):
 		self.stream.start_stream()
@@ -1997,6 +1980,22 @@ class PlaybackModule(object):
 
 		# close PyAudio (7)
 		# self.p.terminate() # NOTE: needs to be removed in order to play multiple audio files in a row
+
+	def playVideoWithAudio(self):
+		'''
+
+		'''
+		if self.paused == True:
+			return
+		canvas = self.app.Dicom.zframe.canvas
+		pic = self.dicomframeQ.get()
+		canvas.itemconfig( canvas.find_all()[0], image=pic )
+		canvas.update()
+		# print(pic, 'displayed')
+		# print(self.dicomframe_num+self.framestart, 'displayed')
+		# if (not self.stoprequest.isSet() or not self.dicomframeQ.empty()) and self.breakFlag.is_set() == False: #should this if be at the top?
+		if not self.stoprequest.is_set() or not self.dicomframeQ.empty(): #should this if be at the top?
+			self.playVideoWithAudio()
 
 	def playVideoNoAudio(self):
 		'''
