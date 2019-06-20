@@ -649,6 +649,7 @@ class TextGridModule(object):
 		self.tg_zoom_factor = 1.5
 		self.canvas_width=800
 		self.canvas_height=60
+		self.selectedItem = None
 
 		self.start = 0
 		self.end = 0
@@ -1804,6 +1805,10 @@ class PlaybackModule(object):
 			print( ' - initializing module: Audio' )
 			self.sfile = None
 			self.p = pyaudio.PyAudio()
+			self.currentInterval = None
+			self.started = False
+			self.paused = False
+			self.sync = threading.Event()
 
 			# widget management
 			self.frame = Frame(self.app.BOTTOM)
@@ -1842,10 +1847,6 @@ class PlaybackModule(object):
 			try:
 				self.sfile = AudioSegment.from_file( audiofile )
 				self.current = audiofile
-				self.currentInterval = self.app.TextGrid.selectedItem
-				self.started = False
-				self.paused = False
-				self.sync = threading.Event()
 				return True
 			except:
 				print('Unable to load audio file: `%s`' % audiofile)
@@ -1998,14 +1999,16 @@ class PlaybackModule(object):
 		try:
 			pic = self.dicomframeQ.get(timeout=.5)
 			canvas.itemconfig( canvas.find_all()[0], image=pic )
+			# canvas.lift(pic)
+			# canvas.img = pic
 			canvas.update()
 		except: pass
 		# print(pic, 'displayed')
 		# print(self.dicomframe_num+self.framestart, 'displayed')
 		# if (not self.stoprequest.isSet() or not self.dicomframeQ.empty()) and self.breakFlag.is_set() == False: #should this if be at the top?
 		if not self.stoprequest.is_set() or not self.dicomframeQ.empty(): #should this if be at the top?
-			# self.playVideoWithAudio()
-			canvas.after(10, self.playVideoWithAudio)
+			self.playVideoWithAudio()
+			# canvas.after(10, self.playVideoWithAudio)
 
 	def playVideoNoAudio(self):
 		'''
