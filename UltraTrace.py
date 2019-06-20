@@ -1913,7 +1913,7 @@ class PlaybackModule(object):
 		self.flen = float(self.app.TextGrid.frame_len)
 		fpb = 256
 		extrafs = (end_idx-start_idx)%fpb
-		self.seg = self.sfile[start_idx:end_idx]
+		self.seg = self.sfile[start_idx:end_idx]+[0]*extrafs
 		# seg.append()
 		self.audioframe = 0
 
