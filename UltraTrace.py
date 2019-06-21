@@ -1323,11 +1323,6 @@ class TextGridModule(object):
 				tierWidgets['times'].grid(row=t, column=2, sticky=S)
 
 class SpectrogramModule(object):
-	'''
-	much material in functions other than __init__ and grid borrowed or adapted
-	from Mark Hasegawa-Johnson and his online course materials at:
-	https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
-	'''
 	def __init__(self,app):
 		print( ' - initializing module: Spectrogram' )
 
@@ -1346,30 +1341,25 @@ class SpectrogramModule(object):
 		# self.freq_min_label = Canvas(self.axis_frame, width=50, height=self.canvas_height, background='gray')
 
 	def reset(self):
-		'''
-		Adapted with permission from
-		https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
-		by Mark Hasegawa-Johnson
-		'''
-		#is this still true? Is this the stuff Daniel redid with parselmouth?
-
 		sound = parselmouth.Sound(self.app.Audio.current)
 
 		ts_fac = decimal.Decimal(10000.0)
 		wl = decimal.Decimal(0.0025)
-		duration = self.app.TextGrid.end - self.app.TextGrid.start
-		extra = (ts_fac*wl-duration)/(ts_fac+1)
-		extra += (duration+extra)/ts_fac
-		# print(extra, 'line 1325')
-		sound_clip = sound.extract_part(from_time=self.app.TextGrid.start-wl, to_time=self.app.TextGrid.end+wl)
-		# sound_clip = sound.extract_part(from_time=self.app.TextGrid.start-extra, to_time=self.app.TextGrid.end+extra)
-		# sound_clip = sound.extract_part(from_time=self.app.TextGrid.start, to_time=self.app.TextGrid.end)
-		ts = sound_clip.get_total_duration() / float(ts_fac)
-		print(ts, 'line1326')
+		start_time = self.app.TextGrid.start
+		end_time = self.app.TextGrid.end
+		duration = end_time - start_time
+		ts = duration / ts_fac
+		# the amount taken off in spectrogram creation seems to be
+		# ( 2 * ts * floor( wl / ts ) ) + ( duration % ts )
+		# but we've defined ts as duration / 10000, so duration % ts = 0
+		# so the amount to increase the length by is ts * floor( wl / ts )
+		# at either end - D.S.
+		extra = ts * math.floor( wl / ts )
+		start_time = max(0, start_time - extra)
+		end_time = min(end_time + extra, sound.get_total_duration())
+		sound_clip = sound.extract_part(from_time=start_time, to_time=end_time)
 
 		spec = sound_clip.to_spectrogram(window_length=wl, time_step=ts, maximum_frequency=self.spec_freq_max)
-		# print(np.array(spec)[0])
-		# print(self.app.TextGrid.start, extra, self.app.TextGrid.start-extra)
 		self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
 		self.spectrogram += self.spectrogram.min()
 		self.spectrogram *= (60.0 / self.spectrogram.max())
