@@ -654,10 +654,11 @@ class TextGridModule(object):
 		print( ' - initializing module: TextGrid' )
 		self.app = app
 		self.frame = Frame(self.app.BOTTOM)
-		self.label_padx = 17
+		self.label_padx = 0#17
 		self.canvas_frame = Frame(self.app.BOTTOM)#, padx=self.label_padx)
-		self.frame.grid( row=1, column=0 )
-		self.canvas_frame.grid(row=1, column=1, sticky=E)
+		self.frame.grid( row=1, column=0 , sticky=N)
+		self.canvas_frame.grid(row=1, column=1, sticky=W)
+		# self.canvas_frame.grid(row=1, column=1, sticky=E)
 		self.TextGrid = None
 		self.selectedTier = StringVar()
 		self.tg_zoom_factor = 1.5
@@ -1024,7 +1025,6 @@ class TextGridModule(object):
 				self.start = start
 				self.end = end
 
-		print(self.end-self.start, 'TextGrid time length (line 988)')
 		self.fillCanvases()
 
 	def getTracedFrames(self,frames):
@@ -1331,7 +1331,7 @@ class SpectrogramModule(object):
 		self.frame = Frame(self.app.BOTTOM)
 		self.frame.grid( row=0, column=1, pady=(self.app.pady*2,self.app.pady/2) )
 		self.axis_frame = Frame(self.app.BOTTOM)
-		self.axis_frame.grid( row=0, column=2 )
+		self.axis_frame.grid( row=0, column=0, sticky=E, pady=(self.app.pady*2,self.app.pady/2) )
 		self.canvas_width = self.app.TextGrid.canvas_width
 		self.canvas_height = 1
 		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
@@ -1381,14 +1381,16 @@ class SpectrogramModule(object):
 		self.img = photo_img
 
 		#adjusting displayed frequencies of spectrogram
-		self.axis_canvas = Canvas(self.axis_frame, width=50, height=self.canvas_height/2,background='gray', highlightthickness=0)
-		self.floor = self.axis_canvas.create_text(5,self.canvas_height/2,anchor=SW,text='0')
-		self.axis_ceil = Spinbox(self.axis_frame, textvariable=self.spec_freq_max, width=7)
+		wwidth=100
+		self.axis_canvas = Canvas(self.axis_frame, width=wwidth, height=self.canvas_height,background='gray', highlightthickness=0)
+		# self.floor = self.axis_canvas.create_text(self.canvas_width,self.canvas_height/2,anchor=SE,text='0')
+		self.floor = self.axis_canvas.create_text(wwidth,self.canvas_height,anchor=SE,text='0')
 
-		# ceil_frame = Frame(self.axis_canvas)
-		# ceiling = Spinbox(ceil_frame, textvariable=self.spec_freq_max, width=7)
-		# ceiling.grid(row=0,column=0,sticky=NW)
-		# window = self.axis_canvas.create_window(self.canvas_width,self.canvas_height/2,anchor=NW,window=ceil_axis)
+		self.spinwin = Frame(self.axis_frame)
+		self.axis_ceil = Spinbox(self.spinwin, textvariable=self.spec_freq_max, width=7)
+		# self.axis_ceil = Spinbox(self.axis_frame, textvariable=self.spec_freq_max, width=7)
+		self.axis_canvas.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor=NE)
+		self.axis_ceil.grid(sticky=NE)
 
 
 		self.grid()
@@ -1422,8 +1424,10 @@ class SpectrogramModule(object):
 		Put tkinter items on app
 		'''
 		self.canvas.grid(row=0, column=0, sticky=W)
-		self.axis_ceil.grid(row=0,column=0,sticky=NW)
-		self.axis_canvas.grid(row=1,column=0,sticky=SW)
+		self.spinwin.grid(row=0,column=0,sticky=NE)
+		# self.axis_ceil.grid(row=0,column=0,sticky=NE)
+		self.axis_canvas.grid(row=0,column=0,sticky=SE)
+		# self.axis_canvas.grid(row=1,column=0,sticky=SE)
 
 	def update(self):
 		'''
@@ -1914,7 +1918,7 @@ class PlaybackModule(object):
 		start_idx = round(float(start)*1000)
 		end_idx = round(float(end)*1000)
 		self.flen = float(self.app.TextGrid.frame_len)
-		fpb = 8192
+		fpb = 512
 		extrafs = (end_idx-start_idx)%fpb
 		extrasecs = extrafs/self.sfile.frame_rate
 		pad = AudioSegment.silent(duration=round(extrasecs*1000))
@@ -2514,8 +2518,8 @@ class App(ThemedTk):
 		|	    							     |
 		| .____________________________________. |
 		| |           BOTTOM*                  | |
+		| |           - spectrogram~           | |
 		| |           - textgrid~              | |
-		| |           - audio~                 | |
 		| \____________________________________/ |
 		\________________________________________/
 		'''
@@ -2527,7 +2531,8 @@ class App(ThemedTk):
 		self.TOP.grid(    row=0, column=0)
 		self.LEFT.grid(   row=0, sticky=N )
 		self.RIGHT.grid(  row=0, column=1 )
-		self.BOTTOM.grid( row=1, column=0, columnspan=2 )
+		self.BOTTOM.grid( row=1, column=0 )
+		# self.BOTTOM.grid( row=1, column=0, columnspan=2 )
 		self.pady=3
 
 		# navigate between all available filenames in this directory
