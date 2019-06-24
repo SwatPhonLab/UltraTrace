@@ -793,7 +793,8 @@ class TextGridModule(object):
 		if offset != None:
 			self.frame_shift.set(offset)
 		go_btn = Button(sbframe, text='Offset', command=self.shiftFrames)
-		txtbox = Spinbox(sbframe, textvariable=self.frame_shift, width=7)#, from_=-1000, to=1000)
+		minmax = len(self.app.Audio.sfile)*1000
+		txtbox = Spinbox(sbframe, textvariable=self.frame_shift, width=7, from_=-minmax, to=minmax)
 		go_btn.grid(row=0, column=0, sticky=E)
 		txtbox.grid(row=0, column=1, sticky=E)
 		# put subframe on canvas
@@ -1336,7 +1337,8 @@ class SpectrogramModule(object):
 		self.canvas_height = 1
 		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
 		self.spectrogram = None
-		self.spec_freq_max = 5000.0
+		self.spec_freq_max = DoubleVar()
+		self.spec_freq_max.set(5000.0)
 		# self.freq_max_box = Entry(self.axis_frame, width=5, textvariable=str(self.spec_freq_max))
 		# self.freq_min_label = Canvas(self.axis_frame, width=50, height=self.canvas_height, background='gray')
 
@@ -1359,7 +1361,7 @@ class SpectrogramModule(object):
 		end_time = min(end_time + extra, sound.get_total_duration())
 		sound_clip = sound.extract_part(from_time=start_time, to_time=end_time)
 
-		spec = sound_clip.to_spectrogram(window_length=wl, time_step=ts, maximum_frequency=self.spec_freq_max)
+		spec = sound_clip.to_spectrogram(window_length=wl, time_step=ts, maximum_frequency=self.spec_freq_max.get())
 		self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
 		self.spectrogram += self.spectrogram.min()
 		self.spectrogram *= (60.0 / self.spectrogram.max())
@@ -1387,7 +1389,7 @@ class SpectrogramModule(object):
 		self.floor = self.axis_canvas.create_text(wwidth,self.canvas_height,anchor=SE,text='0')
 
 		self.spinwin = Frame(self.axis_frame)
-		self.axis_ceil = Spinbox(self.spinwin, textvariable=self.spec_freq_max, width=7)
+		self.axis_ceil = Spinbox(self.spinwin, textvariable=self.spec_freq_max, width=7, increment=100, from_=0, to_=self.app.Audio.sfile.frame_rate)
 		# self.axis_ceil = Spinbox(self.axis_frame, textvariable=self.spec_freq_max, width=7)
 		self.axis_canvas.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor=NE)
 		self.axis_ceil.grid(sticky=NE)
