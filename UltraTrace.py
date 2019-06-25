@@ -77,6 +77,9 @@ try:
 		import xrp  # pip3 install xparser
 		from ttkthemes import ThemedTk
 		from pathlib import Path
+	else:
+		print('Loading platform-specific enhancements for ' + _PLATFORM)
+		from ttkthemes import ThemedTk
 except (ImportError):
 	warnings.warn('Can\'t load platform-specific enhancements')
 	_PLATFORM = 'generic'
