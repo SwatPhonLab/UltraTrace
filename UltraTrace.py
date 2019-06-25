@@ -1338,7 +1338,11 @@ class SpectrogramModule(object):
 		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
 		self.spectrogram = None
 		self.spec_freq_max = DoubleVar()
+		self.wl = DoubleVar()
+		self.dyn_range = DoubleVar()
 		self.spec_freq_max.set(5000.0)
+		self.wl.set(0.0025)
+		self.dyn_range.set(70.0)
 		# self.freq_max_box = Entry(self.axis_frame, width=5, textvariable=str(self.spec_freq_max))
 		# self.freq_min_label = Canvas(self.axis_frame, width=50, height=self.canvas_height, background='gray')
 
@@ -1346,7 +1350,7 @@ class SpectrogramModule(object):
 		sound = parselmouth.Sound(self.app.Audio.current)
 
 		ts_fac = decimal.Decimal(10000.0)
-		wl = decimal.Decimal(0.0025)
+		wl = decimal.Decimal(self.wl.get())
 		start_time = self.app.TextGrid.start
 		end_time = self.app.TextGrid.end
 		duration = end_time - start_time
@@ -1389,10 +1393,15 @@ class SpectrogramModule(object):
 		self.floor = self.axis_canvas.create_text(wwidth,self.canvas_height,anchor=SE,text='0')
 
 		self.spinwin = Frame(self.axis_frame)
-		self.axis_ceil = Spinbox(self.spinwin, textvariable=self.spec_freq_max, width=7, increment=100, from_=0, to_=self.app.Audio.sfile.frame_rate)
-		# self.axis_ceil = Spinbox(self.axis_frame, textvariable=self.spec_freq_max, width=7)
+		axis_ceil_box = Spinbox(self.spinwin, textvariable=self.spec_freq_max, width=7, increment=100, from_=0, to_=self.app.Audio.sfile.frame_rate)
+		wl_box = Spinbox(self.spinwin, textvariable=self.wl, width=7, increment=0.0005, from_=0, to_=1)
+		dyn_range_box = Spinbox(self.spinwin, textvariable=self.dyn_range, width=7, increment=10, from_=0, to_=100)
 		self.axis_canvas.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor=NE)
-		self.axis_ceil.grid(sticky=NE)
+
+		#grid spinboxes on subframe
+		axis_ceil_box.grid(row=0, sticky=NE)
+		wl_box.grid(row=1, sticky=NE)
+		dyn_range_box.grid(row=2, sticky=NE)
 
 
 		self.grid()
@@ -1427,9 +1436,7 @@ class SpectrogramModule(object):
 		'''
 		self.canvas.grid(row=0, column=0, sticky=W)
 		self.spinwin.grid(row=0,column=0,sticky=NE)
-		# self.axis_ceil.grid(row=0,column=0,sticky=NE)
 		self.axis_canvas.grid(row=0,column=0,sticky=SE)
-		# self.axis_canvas.grid(row=1,column=0,sticky=SE)
 
 	def update(self):
 		'''
