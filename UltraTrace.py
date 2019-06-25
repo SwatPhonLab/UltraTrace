@@ -1343,34 +1343,45 @@ class SpectrogramModule(object):
 		self.spec_freq_max = DoubleVar()
 		self.wl = DoubleVar()
 		self.dyn_range = DoubleVar()
+		self.doDefaults()
+
+	def doDefaults(self):
 		self.spec_freq_max.set(5000.0)
 		self.wl.set(0.005)
 		self.dyn_range.set(7)
-		# self.freq_max_box = Entry(self.axis_frame, width=5, textvariable=str(self.spec_freq_max))
-		# self.freq_min_label = Canvas(self.axis_frame, width=50, height=self.canvas_height, background='gray')
+
+	def restoreDefaults(self):
+		self.doDefaults()
+		self.drawSpectrogram()
 
 	def reset(self):
 		self.drawSpectrogram()
 
-		wwidth=100
-		self.axis_canvas = Canvas(self.axis_frame, width=wwidth, height=self.canvas_height,background='gray', highlightthickness=0)
-		# self.floor = self.axis_canvas.create_text(self.canvas_width,self.canvas_height/2,anchor=SE,text='0')
-		self.floor = self.axis_canvas.create_text(wwidth,self.canvas_height,anchor=SE,text='0')
+		# wwidth=100
+		# self.axis_canvas = Canvas(self.axis_frame, width=wwidth, height=self.canvas_height,background='gray', highlightthickness=0)
+		# # self.floor = self.axis_canvas.create_text(self.canvas_width,self.canvas_height/2,anchor=SE,text='0')
+		# self.floor = self.axis_canvas.create_text(wwidth,self.canvas_height,anchor=SE,text='0')
 
-		#make spinboxes for spectrogram specs
+		#make spinboxes & buttons for spectrogram specs
 		self.spinwin = Frame(self.axis_frame)
+		#spinboxes
 		axis_ceil_box = Spinbox(self.spinwin, textvariable=self.spec_freq_max, command=self.drawSpectrogram, width=7, increment=100, from_=0, to_=self.app.Audio.sfile.frame_rate)
 		axis_ceil_box.bind('<Return>',self.drawSpectrogram)
 		wl_box = Spinbox(self.spinwin, textvariable=self.wl, command=self.drawSpectrogram, width=7, increment=0.0005, from_=0, to_=1)
 		wl_box.bind('<Return>',self.drawSpectrogram)
 		dyn_range_box = Spinbox(self.spinwin, textvariable=self.dyn_range, command=self.drawSpectrogram, width=7, increment=0.5, from_=0, to_=10)
 		dyn_range_box.bind('<Return>',self.drawSpectrogram)
-		self.axis_canvas.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor=NE)
+		#buttons
+		default_btn = Button(self.spinwin, text='Standards', command=self.restoreDefaults)
+		apply_btn = Button(self.spinwin, text='Apply', command=self.drawSpectrogram)
 
-		#grid spinboxes on subframe
-		axis_ceil_box.grid(row=0, sticky=NE)
-		wl_box.grid(row=1, sticky=NE)
-		dyn_range_box.grid(row=2, sticky=NE)
+		# self.axis_frame.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor=NE)
+		#grid spinboxes & buttons on subframe
+		axis_ceil_box.grid(row=0, columnspan=2, sticky=NE)
+		wl_box.grid(row=1, columnspan=2, sticky=NE)
+		dyn_range_box.grid(row=2, columnspan=2, sticky=NE)
+		default_btn.grid(row=3)
+		apply_btn.grid(row=3, column=1)
 
 		self.grid()
 		self.drawInterval()
@@ -1448,7 +1459,7 @@ class SpectrogramModule(object):
 		'''
 		self.canvas.grid(row=0, column=0, sticky=W)
 		self.spinwin.grid(row=0,column=0,sticky=NE)
-		self.axis_canvas.grid(row=0,column=0,sticky=SE)
+		# self.axis_canvas.grid(row=0,column=0,sticky=SE)
 
 	def update(self):
 		'''
