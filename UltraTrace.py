@@ -143,45 +143,21 @@ class ZoomFrame(Frame):
 	def setImage(self, image): # expect an Image() instance
 		self.image = image
 		self.width, self.height = self.image.size
-		self.container = self.canvas.create_rectangle(0,0,self.width,self.height,width=0)
-		self.canvas.scale('all', 0, 0, self.imgscale, self.imgscale)
-		self.canvas.move('all', self.panX, self.panY)
 		self.showImage()
-		self.app.Trace.update()
 
 	def showImage(self, event=None):
 		if self.image != None:
-			bbox1 = self.canvas.bbox( self.container )
-			bbox1 = ( bbox1[0]+1, bbox1[1]+1, bbox1[2]-1, bbox1[3]-1 )
-			bbox2 = ( self.canvas.canvasx(0), self.canvas.canvasy(0),
-					  self.canvas.canvasx(self.canvas.winfo_width()),
-					  self.canvas.canvasy(self.canvas.winfo_height()) )
-			bbox = ( min(bbox1[0],bbox2[0]), min(bbox1[1],bbox2[1]), min(bbox1[2],bbox2[2]), min(bbox1[3],bbox2[3]) )
-			if bbox[0] == bbox1[0] and bbox[2] == bbox1[2]:
-				bbox = ( bbox1[0], bbox[1], bbox1[2], bbox[3] )
-			if bbox[1] == bbox1[1] and bbox[3] == bbox1[3]:
-				bbox = ( bbox[0], bbox1[1], bbox[2], bbox1[3] )
-			if bbox[0] == 0 and bbox[1] == 0:
-				bbox = ( 1, 1, bbox[2], bbox[3] )
-				#canvas.configure( (0,0,x,y) ) seems to result in a canvas with bounding box (-1,-1,x,y)
-			self.canvas.configure(scrollregion=bbox)
-			x1 = max(bbox2[0] - bbox1[0], 0)
-			y1 = max(bbox2[1] - bbox1[1], 0)
-			x2 = min(bbox2[2], bbox1[2]) - bbox1[0]
-			y2 = min(bbox2[3], bbox1[3]) - bbox1[1]
-
-			if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # show image if it is in the visible area
-				x = min(int(x2 / self.imgscale), self.width)   # sometimes it is larger on 1 pixel...
-				y = min(int(y2 / self.imgscale), self.height)  # ...and sometimes not
-				image = self.image.crop((int(x1 / self.imgscale), int(y1 / self.imgscale), x, y))
-				imagetk = ImageTk.PhotoImage( image.resize((int(x2 - x1), int(y2 - y1))) )
-				imageid = self.canvas.create_image(max(bbox2[0], bbox1[0]), max(bbox2[1], bbox1[1]), anchor='nw', image=imagetk)
-				self.canvas.lower(imageid)  # set image into background
-				if len(self.canvas.find_all()) > 2:
-					for itm in self.canvas.find_all()[1:-1]: #leaves most recent items (uppermost and lowermost items)
-						self.canvas.delete(itm) #deletes old items
-				self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
-			# print([self.canvas.type(i) for i in self.canvas.find_all()])
+			self.canvas.delete(ALL)
+			self.container = self.canvas.create_rectangle(0,0,self.width,self.height,width=0)
+			self.canvas.scale('all', 0, 0, self.imgscale, self.imgscale)
+			self.canvas.move('all', self.panX, self.panY)
+			bbox = self.canvas.bbox(self.container)
+			image = self.image.resize((bbox[2] - bbox[0], bbox[3] - bbox[1]))
+			imagetk = ImageTk.PhotoImage(image)
+			image = self.canvas.create_image(bbox[0], bbox[1], anchor='nw', image=imagetk)
+			self.canvas.lower(image)
+			self.canvas.imagetk = imagetk
+			self.app.Trace.update()
 
 	def wheel(self, event):
 		print(event)
@@ -193,28 +169,22 @@ class ZoomFrame(Frame):
 			else:
 				x = self.canvas.canvasx(event.x)
 				y = self.canvas.canvasy(event.y)
-			scale = 1.0
 
 			# Respond to Linux (event.num) or Windows (event.delta) wheel event
 			if event.num == 5 or event.delta < 0 or event.keysym == 'minus':  # zoom out
 				if self.zoom < self.maxZoom:
 					self.zoom += 1
 					self.imgscale /= self.delta
-					scale         /= self.delta
-					self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
 
 			elif event.num == 4 or event.delta > 0 or event.keysym == 'equal':  # zoom in
 				if self.zoom > self.maxZoom * -1:
 					self.zoom -= 1
 					self.imgscale *= self.delta
-					scale         *= self.delta
-					self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
 
 			bbox = self.canvas.coords(self.container)
 			self.panX = bbox[0]
 			self.panY = bbox[1]
 			self.showImage()
-			self.app.Trace.update()
 
 	def scrollY(self, *args, **kwargs):
 		self.canvas.yview(*args, **kwargs)
@@ -223,20 +193,15 @@ class ZoomFrame(Frame):
 	def moveFrom(self, event):
 		self.panStartX = event.x
 		self.panStartY = event.y
-		#self.canvas.scan_mark( event.x, event.y )
 
 	def moveTo(self, event):
-		#self.canvas.scan_dragto( event.x, event.y, gain=1 )
-		#self.movement.append(['pan_end', event.x, event.y])
 		dx = event.x - self.panStartX
 		dy = event.y - self.panStartY
-		self.canvas.move('all', dx, dy)
 		self.panStartX = event.x
 		self.panStartY = event.y
 		self.panX += dx
 		self.panY += dy
 		self.showImage()
-		self.app.Trace.update()
 
 class Header(Label):
 	def __init__(self, master, text):
@@ -275,11 +240,8 @@ class Crosshairs(object):
 		self.trueX, self.trueY = x, y
 		if transform:
 			self.trueX, self.trueY = self.transformCoordsToTrue(x, y)
-			self.trueX = (self.trueX - self.zframe.panX) / self.zframe.imgscale
-			self.trueY = (self.trueY - self.zframe.panY) / self.zframe.imgscale
 		else:
-			self.x = (self.x * self.zframe.imgscale) + self.zframe.panX
-			self.y = (self.y * self.zframe.imgscale) + self.zframe.panY
+			self.x, self.y = self.transformTrueToCoords(x, y)
 			
 		self.len = self.transformLength( self.defaultLength )
 		self.resetTrueCoords()
@@ -296,7 +258,8 @@ class Crosshairs(object):
 		The values are calculated relative to the top left corner of the canvas at 1x zoom.  We need to
 		make sure to call this every time we change the position of a Crosshairs.
 		'''
-		self.trueX, self.trueY = self.transformCoordsToTrue(self.x,self.y)
+		#self.trueX, self.trueY = self.transformCoordsToTrue(self.x,self.y)
+		pass
 
 	def getTrueCoords(self):
 		''' called when we're saving to file '''
