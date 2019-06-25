@@ -103,7 +103,9 @@ class ZoomFrame(Frame):
 
 		self.delta = delta
 		self.maxZoom = 5
-		self.movement = []
+		self.panX = 0
+		self.panY = 0
+		self.imgscale = 1.0
 
 		self.app = app
 		self.app.bind('<Command-equal>', self.wheel )
@@ -133,21 +135,17 @@ class ZoomFrame(Frame):
 		self.zoom = 0
 		self.imgscale = 1.0
 		self.image = None
-		self.movement = []
 		self.panStartX = 0
 		self.panStartY = 0
+		self.panX = 0
+		self.panY = 0
 
 	def setImage(self, image): # expect an Image() instance
-		self.zoom = 0
-		self.imgscale = 1.0
 		self.image = image
 		self.width, self.height = self.image.size
 		self.container = self.canvas.create_rectangle(0,0,self.width,self.height,width=0)
-		for ev in self.movement:
-			if ev[0] == 'zoom':
-				self.wheel(ev[1], isFake=True)
-			elif ev[0] == 'pan':
-				self.canvas.move('all', ev[1], ev[2])
+		self.canvas.scale('all', 0, 0, self.imgscale, self.imgscale)
+		self.canvas.move('all', self.panX, self.panY)
 		self.showImage()
 
 	def showImage(self, event=None):
@@ -184,7 +182,7 @@ class ZoomFrame(Frame):
 				self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
 			# print([self.canvas.type(i) for i in self.canvas.find_all()])
 
-	def wheel(self, event, isFake=False):
+	def wheel(self, event):
 		print(event)
 		print("HARGLE BARGLE")
 		if self.image != None:
@@ -211,7 +209,9 @@ class ZoomFrame(Frame):
 					scale         *= self.delta
 					self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
 
-			if not isFake: self.movement.append(['zoom', event])
+			bbox = self.canvas.coords(self.container)
+			self.panX = bbox[0]
+			self.panY = bbox[1]
 			self.showImage()
 
 	def scrollY(self, *args, **kwargs):
@@ -229,13 +229,10 @@ class ZoomFrame(Frame):
 		dx = event.x - self.panStartX
 		dy = event.y - self.panStartY
 		self.canvas.move('all', dx, dy)
-		if self.movement and self.movement[-1][0] == 'pan':
-			self.movement[-1][1] += dx
-			self.movement[-1][2] += dy
-		else:
-			self.movement.append(['pan', dx, dy])
 		self.panStartX = event.x
 		self.panStartY = event.y
+		self.panX += dx
+		self.panY += dy
 		self.showImage()
 
 class Header(Label):
