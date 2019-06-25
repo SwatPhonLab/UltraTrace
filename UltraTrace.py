@@ -147,6 +147,7 @@ class ZoomFrame(Frame):
 		self.canvas.scale('all', 0, 0, self.imgscale, self.imgscale)
 		self.canvas.move('all', self.panX, self.panY)
 		self.showImage()
+		self.app.Trace.update()
 
 	def showImage(self, event=None):
 		if self.image != None:
@@ -213,6 +214,7 @@ class ZoomFrame(Frame):
 			self.panX = bbox[0]
 			self.panY = bbox[1]
 			self.showImage()
+			self.app.Trace.update()
 
 	def scrollY(self, *args, **kwargs):
 		self.canvas.yview(*args, **kwargs)
@@ -234,6 +236,7 @@ class ZoomFrame(Frame):
 		self.panX += dx
 		self.panY += dy
 		self.showImage()
+		self.app.Trace.update()
 
 class Header(Label):
 	def __init__(self, master, text):
@@ -269,8 +272,15 @@ class Crosshairs(object):
 
 		# store position data
 		self.x, self.y = x, y
+		self.trueX, self.trueY = x, y
 		if transform:
-			self.x, self.y = self.transformCoords(x,y)
+			self.trueX, self.trueY = self.transformCoordsToTrue(x, y)
+			self.trueX = (self.trueX - self.zframe.panX) / self.zframe.imgscale
+			self.trueY = (self.trueY - self.zframe.panY) / self.zframe.imgscale
+		else:
+			self.x = (self.x * self.zframe.imgscale) + self.zframe.panX
+			self.y = (self.y * self.zframe.imgscale) + self.zframe.panY
+			
 		self.len = self.transformLength( self.defaultLength )
 		self.resetTrueCoords()
 		self.isSelected = False
@@ -292,18 +302,16 @@ class Crosshairs(object):
 		''' called when we're saving to file '''
 		return self.trueX, self.trueY
 
-	def transformCoordsToTrue(self, x, y):
+	def transformCoordsToTrue(self, _x, _y):
 		''' canvas coords -> absolute coords '''
-		containerX, containerY = self.zframe.canvas.coords( self.zframe.container )[:2]
-		x = (x-containerX) / self.zframe.imgscale
-		y = (y-containerY) / self.zframe.imgscale
+		x = (self.trueX - self.zframe.panX) / self.zframe.imgscale
+		y = (self.trueY - self.zframe.panY) / self.zframe.imgscale
 		return x, y
 
-	def transformTrueToCoords(self, x, y):
+	def transformTrueToCoords(self, _x, _y):
 		''' absolute coords -> canvas coords '''
-		containerX, containerY = self.zframe.canvas.coords( self.zframe.container )[:2]
-		x = x*self.zframe.imgscale + containerX
-		y = y*self.zframe.imgscale + containerY
+		x = (_x * self.zframe.imgscale) + self.zframe.panX
+		y = (_y * self.zframe.imgscale) + self.zframe.panY
 		return x, y
 
 	def transformCoords(self, x, y):
@@ -319,9 +327,8 @@ class Crosshairs(object):
 	def getDistance(self, click):
 		''' calculates the distance from centerpoint to a click event '''
 		click = self.transformCoords(*click)
-		click = self.transformCoordsToTrue(*click)
-		dx = abs( self.trueX - click[0] )
-		dy = abs( self.trueY - click[1] )
+		dx = abs( self.x - click[0] )
+		dy = abs( self.y - click[1] )
 		return math.sqrt( dx**2 + dy**2 ) if self.isVisible else float('inf') # invisible points infinitely far away
 
 	def select(self):
