@@ -3,7 +3,6 @@
 # core libs
 from tkinter import *
 from tkinter.ttk import *
-from ttkthemes import ThemedTk
 from tkinter import filedialog
 # import soundfile as sf
 # import numpy as np
@@ -76,10 +75,12 @@ try:
 	print('Loading platform-specific enhancements for ' + _PLATFORM)
 	if _PLATFORM == 'Linux':
 		import xrp  # pip3 install xparser
+		from ttkthemes import ThemedTk
 		from pathlib import Path
 except (ImportError):
 	warnings.warn('Can\'t load platform-specific enhancements')
 	_PLATFORM = 'generic'
+	ThemedTk = Tk
 
 
 # some globals
@@ -2453,7 +2454,16 @@ class App(ThemedTk):
 		# do the normal Tk init stuff
 		if _PLATFORM=='Linux':
 			try:
-				ttktheme = xrp.parse_file(os.path.join(str(Path.home()), '.Xresources')).resources['*TtkTheme']
+				Xresources = xrp.parse_file(os.path.join(str(Path.home()), '.Xresources'))
+				if '*TtkTheme' in Xresources.resources:
+					ttktheme = Xresources.resources['*TtkTheme']
+					print("Setting Linux Ttk theme to {}".format(ttktheme))
+				elif '*TkTheme' in Xresources.resources:
+					ttktheme = Xresources.resources['*TkTheme']
+					print("Setting Linux Tk theme to {}".format(ttktheme))
+				else:
+					ttktheme = "clam"  # alt, clam, classic, default
+					print("Falling back to default Linux Tk theme: {}".format(ttktheme))
 				super().__init__(theme=ttktheme)
 			except Exception as e:
 				print("exception: ", e)

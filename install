@@ -9,7 +9,7 @@ sudo -H pip3 install -U python-magic soundfile scipy praat-parselmouth
 # non-critical
 ## Debian:
 ## sudo apt-get install python3-pyaudio python3-dicom python3-cairosvg python3-pydub python3-pil.imagetk
-## sudo pip3 install textgrid wav2vec
+## sudo pip3 install textgrid wav2vec ttkthemes xparser
 sudo -H pip3 install -U cairosvg wav2vec pygame numpy pillow pydicom textgrid
 
 python3 ./setup.py build_ext --inplace
