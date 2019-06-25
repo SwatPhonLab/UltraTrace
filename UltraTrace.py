@@ -1337,7 +1337,7 @@ class SpectrogramModule(object):
 		self.axis_frame = Frame(self.app.BOTTOM)
 		self.axis_frame.grid( row=0, column=0, sticky=E, pady=(self.app.pady*2,self.app.pady/2) )
 		self.canvas_width = self.app.TextGrid.canvas_width
-		self.canvas_height = 1
+		self.canvas_height = 106
 		self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
 		self.spectrogram = None
 		self.spec_freq_max = DoubleVar()
@@ -1345,7 +1345,7 @@ class SpectrogramModule(object):
 		self.dyn_range = DoubleVar()
 		self.spec_freq_max.set(5000.0)
 		self.wl.set(0.0025)
-		self.dyn_range.set(70.0)
+		self.dyn_range.set(5)
 		# self.freq_max_box = Entry(self.axis_frame, width=5, textvariable=str(self.spec_freq_max))
 		# self.freq_min_label = Canvas(self.axis_frame, width=50, height=self.canvas_height, background='gray')
 
@@ -1377,8 +1377,8 @@ class SpectrogramModule(object):
 		if img.mode != 'RGB':
 			img = img.convert('RGB')
 		contrast = ImageEnhance.Contrast(img)
-		img = contrast.enhance(5)
-		self.canvas_height = img.height
+		img = contrast.enhance(self.dyn_range.get())
+		# self.canvas_height = img.height
 		img = img.resize((self.canvas_width, self.canvas_height))
 
 		photo_img = ImageTk.PhotoImage(img)
@@ -1396,9 +1396,9 @@ class SpectrogramModule(object):
 		self.floor = self.axis_canvas.create_text(wwidth,self.canvas_height,anchor=SE,text='0')
 
 		self.spinwin = Frame(self.axis_frame)
-		axis_ceil_box = Spinbox(self.spinwin, textvariable=self.spec_freq_max, width=7, increment=100, from_=0, to_=self.app.Audio.sfile.frame_rate)
-		wl_box = Spinbox(self.spinwin, textvariable=self.wl, width=7, increment=0.0005, from_=0, to_=1)
-		dyn_range_box = Spinbox(self.spinwin, textvariable=self.dyn_range, width=7, increment=10, from_=0, to_=100)
+		axis_ceil_box = Spinbox(self.spinwin, textvariable=self.spec_freq_max, command=self.reset, width=7, increment=100, from_=0, to_=self.app.Audio.sfile.frame_rate)
+		wl_box = Spinbox(self.spinwin, textvariable=self.wl, command=self.reset, width=7, increment=0.0005, from_=0, to_=1)
+		dyn_range_box = Spinbox(self.spinwin, textvariable=self.dyn_range, command=self.reset, width=7, increment=0.5, from_=0, to_=10)
 		self.axis_canvas.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor=NE)
 
 		#grid spinboxes on subframe
