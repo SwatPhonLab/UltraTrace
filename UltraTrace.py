@@ -3,7 +3,6 @@
 # core libs
 from tkinter import *
 from tkinter.ttk import *
-from ttkthemes import ThemedTk
 from tkinter import filedialog
 # import soundfile as sf
 # import numpy as np
@@ -76,10 +75,12 @@ try:
 	print('Loading platform-specific enhancements for ' + _PLATFORM)
 	if _PLATFORM == 'Linux':
 		import xrp  # pip3 install xparser
+		from ttkthemes import ThemedTk
 		from pathlib import Path
 except (ImportError):
 	warnings.warn('Can\'t load platform-specific enhancements')
 	_PLATFORM = 'generic'
+	ThemedTk = Tk
 
 
 # some globals
