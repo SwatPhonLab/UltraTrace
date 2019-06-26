@@ -242,7 +242,7 @@ class Crosshairs(object):
 			self.trueX, self.trueY = self.transformCoordsToTrue(x, y)
 		else:
 			self.x, self.y = self.transformTrueToCoords(x, y)
-			
+
 		self.len = self.transformLength( self.defaultLength )
 		self.resetTrueCoords()
 		self.isSelected = False
@@ -1315,7 +1315,7 @@ class SpectrogramModule(object):
 	def doDefaults(self):
 		self.spec_freq_max.set(5000.0)
 		self.wl.set(0.005)
-		self.dyn_range.set(7)
+		self.dyn_range.set(90)
 
 	def restoreDefaults(self):
 		self.doDefaults()
@@ -1336,7 +1336,7 @@ class SpectrogramModule(object):
 		axis_ceil_box.bind('<Return>',self.drawSpectrogram)
 		wl_box = Spinbox(self.spinwin, textvariable=self.wl, command=self.drawSpectrogram, width=7, increment=0.0005, from_=0, to_=1)
 		wl_box.bind('<Return>',self.drawSpectrogram)
-		dyn_range_box = Spinbox(self.spinwin, textvariable=self.dyn_range, command=self.drawSpectrogram, width=7, increment=0.5, from_=0, to_=10)
+		dyn_range_box = Spinbox(self.spinwin, textvariable=self.dyn_range, command=self.drawSpectrogram, width=7, increment=10, from_=0, to_=10000)
 		dyn_range_box.bind('<Return>',self.drawSpectrogram)
 		#buttons
 		default_btn = Button(self.spinwin, text='Standards', command=self.restoreDefaults)
@@ -1377,14 +1377,24 @@ class SpectrogramModule(object):
 
 		spec = sound_clip.to_spectrogram(window_length=wl, time_step=ts, maximum_frequency=self.spec_freq_max.get())
 		self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
-		self.spectrogram += self.spectrogram.min()
-		self.spectrogram *= (60.0 / self.spectrogram.max())
+
+		# self.spectrogram += self.spectrogram.min()
+		# self.spectrogram *= (60.0 / self.spectrogram.max())
+
+		mx = self.spectrogram.max()
+		dyn = self.dyn_range.get()
+		# print(self.spectrogram.min(), self.spectrogram.max())
+		self.spectrogram = self.spectrogram.clip(mx-dyn, mx) - mx
+		# print(self.spectrogram.min(), self.spectrogram.max())
+		self.spectrogram *= (-255.0 / dyn)
+		# self.spectrogram += 60
+		# print(self.spectrogram.min(), self.spectrogram.max())
 
 		img = Image.fromarray(self.spectrogram)
 		if img.mode != 'RGB':
 			img = img.convert('RGB')
-		contrast = ImageEnhance.Contrast(img)
-		img = contrast.enhance(self.dyn_range.get())
+		# contrast = ImageEnhance.Contrast(img)
+		# img = contrast.enhance(5)
 		# self.canvas_height = img.height
 		img = img.resize((self.canvas_width, self.canvas_height))
 
