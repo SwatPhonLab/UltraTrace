@@ -99,19 +99,11 @@ class ZoomFrame(Frame):
 	'''
 	def __init__(self, master, delta, app):
 		Frame.__init__(self, master)
-		self.resetCanvas(master)
-
+		self.app = app
 		self.delta = delta
 		self.maxZoom = 5
-		self.panX = 0
-		self.panY = 0
-		self.imgscale = 1.0
+		#self.resetCanvas(master)
 
-		self.app = app
-		self.app.bind('<Command-equal>', self.wheel )
-		self.app.bind('<Command-minus>', self.wheel )
-
-	def resetCanvas(self, master):
 		self.canvas_width = 800
 		self.canvas_height = 600
 
@@ -128,6 +120,33 @@ class ZoomFrame(Frame):
 		self.canvas.bind('<MouseWheel>', self.wheel ) # Windows & Linux FIXME
 		self.canvas.bind('<Button-4>', self.wheel )   # Linux scroll up
 		self.canvas.bind('<Button-5>', self.wheel )   # Linux scroll down
+
+		self.resetCanvas()
+
+		self.canvas.bind('<Button-1>', self.app.onClick )
+		self.canvas.bind('<ButtonRelease-1>', self.app.onRelease )
+		self.canvas.bind('<Motion>', self.app.onMotion )
+
+		self.app.bind('<Command-equal>', self.wheel )
+		self.app.bind('<Command-minus>', self.wheel )
+
+	def resetCanvas(self):
+		self.canvas_width = 800
+		self.canvas_height = 600
+
+		# self.canvas = Canvas( master,  bg='grey', width=self.canvas_width, height=self.canvas_height, highlightthickness=0 )
+		# self.canvas.grid(row=0, column=0, sticky='news')
+		# self.canvas.update() # do i need
+
+		# self.master.rowconfigure(0, weight=1) # do i need
+		# self.master.columnconfigure(0, weight=1) # do i need
+		#
+		# self.canvas.bind('<Configure>', self.showImage ) # on canvas resize events
+		# self.canvas.bind('<Control-Button-1>', self.moveFrom )
+		# self.canvas.bind('<Control-B1-Motion>', self.moveTo )
+		# self.canvas.bind('<MouseWheel>', self.wheel ) # Windows & Linux FIXME
+		# self.canvas.bind('<Button-4>', self.wheel )   # Linux scroll up
+		# self.canvas.bind('<Button-5>', self.wheel )   # Linux scroll down
 
 		self.origX = self.canvas.xview()[0] - 1
 		self.origY = self.canvas.yview()[0] - 150
@@ -2124,10 +2143,10 @@ class DicomModule(object):
 		'''
 		if self.isLoaded:
 			# creates a new canvas object and we redraw everything to it
-			self.zframe.resetCanvas( self.app.RIGHT )
-			self.zframe.canvas.bind('<Button-1>', self.app.onClick )
-			self.zframe.canvas.bind('<ButtonRelease-1>', self.app.onRelease )
-			self.zframe.canvas.bind('<Motion>', self.app.onMotion )
+			self.zframe.resetCanvas()
+			# self.zframe.canvas.bind('<Button-1>', self.app.onClick )
+			# self.zframe.canvas.bind('<ButtonRelease-1>', self.app.onRelease )
+			# self.zframe.canvas.bind('<Motion>', self.app.onMotion )
 
 	 		# we want to go here only after a button press
 			if fromButton: self.app.framesUpdate()
@@ -2256,7 +2275,7 @@ class DicomModule(object):
 		new files should default to not showing dicom unless it has already been processed
 		'''
 		# hide frame navigation widgets
-		self.grid_remove()
+		# self.grid_remove()
 
 		self.isLoaded = False
 		self.dicom = None
@@ -2284,17 +2303,17 @@ class DicomModule(object):
 		self.zoomResetBtn.grid( row=7 )
 		self.app.Control.grid()
 
-	def grid_remove(self):
-		'''
-		Remove widgets from grid
-		'''
-		self.app.framesHeader.grid_remove()
-		self.app.framesPrevBtn.grid_remove()
-		self.app.framesEntryText.grid_remove()
-		self.app.framesEntryBtn.grid_remove()
-		self.app.framesNextBtn.grid_remove()
-		self.zoomResetBtn.grid_remove()
-		self.app.Control.grid_remove()
+	# def grid_remove(self):
+	# 	'''
+	# 	Remove widgets from grid
+	# 	'''
+	# 	self.app.framesHeader.grid_remove()
+	# 	self.app.framesPrevBtn.grid_remove()
+	# 	self.app.framesEntryText.grid_remove()
+	# 	self.app.framesEntryBtn.grid_remove()
+	# 	self.app.framesNextBtn.grid_remove()
+	# 	self.zoomResetBtn.grid_remove()
+	# 	self.app.Control.grid_remove()
 
 class ControlModule(object):
 	'''
