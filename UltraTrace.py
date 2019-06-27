@@ -755,7 +755,7 @@ class TextGridModule(object):
 					self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark)
 				except:
 					pass
-			self.grid()
+			# self.grid()
 
 		# self.app.constructed = True
 
@@ -2697,7 +2697,7 @@ class App(ThemedTk):
 		'''
 		if self.constructed == True:
 			self.count += 1
-			print(self.count, ' times accessed onWindowResize')
+			print(self.count, ' times accessed onWindowResize', event.widget, event.width, event.height)
 			# print(self.filesFrame.winfo_width())
 			# print(sys._getframe().f_back.f_code.co_name)
 			# print(self.winfo_width())
