@@ -370,7 +370,6 @@ class MetadataModule(object):
 			for example, it will try to locate files that have the same base filename and
 			each of a set of required extensions
 		'''
-
 		print( ' - initializing module: Data')
 		if path == None:
 			app.update()
@@ -516,7 +515,7 @@ class MetadataModule(object):
 		frame = self.app.frame if _frame==None else _frame
 		processed = self.getFileLevel( 'processed' )
 		try:
-			return processed[str(frame)]
+			return processed[str(frame-1)]
 		except: # catches missing frames and missing preprocessed data
 			return None
 
@@ -652,10 +651,13 @@ class TextGridModule(object):
 		self.tg_zoom_factor = 1.5
 		self.canvas_width=800
 		self.canvas_height=60
+		self.selectedTierFrames = []
 		self.selectedItem = None
-
 		self.start = 0
 		self.end = 0
+		self.frame_shift = DoubleVar()
+
+		self.startup()
 
 		#bindings
 		self.app.bind("<Command-n>", self.getBounds)
@@ -669,19 +671,11 @@ class TextGridModule(object):
 		self.app.bind("<Command-Left>", self.changeIntervals)
 		self.app.bind("<Command-Right>", self.changeIntervals)
 
-	def reset(self, event=None):
+	def startup(self):
 		'''
-		Try to load a TextGrid file based on information stored in the metadata
+
 		'''
 		self.app.constructed = False
-
-		# print(self.pp)
-		self.selectedTierFrames = []
-		self.selectedItem = None
-		#destroy
-		for wframe in [self.frame, self.canvas_frame]:
-			for child in wframe.winfo_children():
-				child.destroy()
 		if _TEXTGRID_LIBS_INSTALLED:
 			# default Label in case there are errors below
 			self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
@@ -690,6 +684,7 @@ class TextGridModule(object):
 			# print(filename)
 			if filename:
 				try:
+					print('line 687', filename)
 					# try to load up our TextGrid using the textgrid lib
 					self.TextGrid = TextGrid.fromFile( filename )
 					# reset default Label to actually be useful
@@ -713,8 +708,56 @@ class TextGridModule(object):
 				except:
 					pass
 			self.grid()
+		# self.app.constructed = True
 
-		self.app.constructed = True
+	def reset(self, event=None):
+		'''
+		Try to load a TextGrid file based on information stored in the metadata
+		'''
+		self.app.constructed = False
+
+		# print(self.pp)
+		self.selectedTierFrames = []
+		self.selectedItem = None
+		#destroy
+		# for wframe in [self.frame, self.canvas_frame]:
+		# 	for child in wframe.winfo_children():
+		# 		child.destroy()
+		if _TEXTGRID_LIBS_INSTALLED:
+			# default Label in case there are errors below
+			# self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
+			# the Data module will pass this filename=None if it can't find an appropriate .TextGrid file
+			filename = self.app.Data.getFileLevel( '.TextGrid' )
+			# print(filename)
+			if filename:
+				try:
+					# try to load up our TextGrid using the textgrid lib
+					self.TextGrid = TextGrid.fromFile( filename )
+					# reset default Label to actually be useful
+					# self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
+					# self.TkWidgets = []
+					# iterate the tiers
+					self.frameTierName = self.getFrameTierName()
+					# for tier in self.TextGrid.getNames():
+					# 	if tier != self.frameTierName and tier != self.frameTierName + '.original':
+					# 		# make some widgets for each tier
+					# 		tierWidgets = self.makeTierWidgets( tier )
+					# 		self.TkWidgets.append( tierWidgets )
+					self.start = self.TextGrid.minTime
+					self.end = self.TextGrid.maxTime
+					#make other widgets
+					# self.makeFrameWidget()
+					# self.makeTimeWidget()
+					#put items on canvases
+					self.fillCanvases()
+					#calculate first and last frames
+					self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark)
+					self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark)
+				except:
+					pass
+			self.grid()
+
+		# self.app.constructed = True
 
 	def shiftFrames(self):
 		'''
@@ -780,13 +823,12 @@ class TextGridModule(object):
 		# make subframe to go on top of label canvas
 		sbframe = Frame(frames_label)
 		#put new widgets onto subframe
-		self.frame_shift = DoubleVar()
 		offset = self.app.Data.getFileLevel( 'offset' )
 		if offset != None:
 			self.frame_shift.set(offset)
 		go_btn = Button(sbframe, text='Offset', command=self.shiftFrames)
-		minmax = len(self.app.Audio.sfile)*1000
-		txtbox = Spinbox(sbframe, textvariable=self.frame_shift, width=7, from_=-minmax, to=minmax)
+		# minmax = len(self.app.Audio.sfile)*1000
+		txtbox = Spinbox(sbframe, textvariable=self.frame_shift, width=7, from_=-10000000, to=10000000)
 		go_btn.grid(row=0, column=0, sticky=E)
 		txtbox.grid(row=0, column=1, sticky=E)
 		# put subframe on canvas
@@ -825,8 +867,8 @@ class TextGridModule(object):
 		'''
 		self.tier_pairs = {} #ends up being format {label: canvas}
 
-		self.app.Trace.frame.update()
-		self.label_width=self.app.Trace.frame.winfo_width()+self.label_padx
+		# self.app.Trace.frame.update()
+		self.label_width=350#self.app.Trace.frame.winfo_width()+self.label_padx
 		# print(self.label_width, 739)
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
 		# self.first_frame = 1
@@ -842,7 +884,6 @@ class TextGridModule(object):
 
 		canvas = self.widgets['canvas']
 		label = self.widgets['canvas-label']
-		tg_length=self.TextGrid.maxTime
 
 		#builds tier label functionality
 		label_text = label.create_text(self.label_width, self.canvas_height/2, anchor=E, justify=CENTER,
@@ -1263,6 +1304,7 @@ class TextGridModule(object):
 		'''
 
 		'''
+		self.app.constructed = False
 		try:
 			bloop = self.frames_canvas
 		except AttributeError:
@@ -1294,6 +1336,7 @@ class TextGridModule(object):
 
 		# repaint all frames
 		self.paintCanvases()
+		# self.app.constructed = True
 
 	def grid(self, event=None):
 		'''
@@ -1334,27 +1377,10 @@ class SpectrogramModule(object):
 		self.dyn_range = DoubleVar()
 		self.doDefaults()
 
-	def doDefaults(self):
-		self.spec_freq_max.set(5000.0)
-		self.wl.set(0.005)
-		self.dyn_range.set(90)
-
-	def restoreDefaults(self):
-		self.doDefaults()
-		self.drawSpectrogram()
-
-	def reset(self):
-		self.drawSpectrogram()
-
-		# wwidth=100
-		# self.axis_canvas = Canvas(self.axis_frame, width=wwidth, height=self.canvas_height,background='gray', highlightthickness=0)
-		# # self.floor = self.axis_canvas.create_text(self.canvas_width,self.canvas_height/2,anchor=SE,text='0')
-		# self.floor = self.axis_canvas.create_text(wwidth,self.canvas_height,anchor=SE,text='0')
-
 		#make spinboxes & buttons for spectrogram specs
 		self.spinwin = Frame(self.axis_frame)
 		#spinboxes
-		axis_ceil_box = Spinbox(self.spinwin, textvariable=self.spec_freq_max, command=self.drawSpectrogram, width=7, increment=100, from_=0, to_=self.app.Audio.sfile.frame_rate)
+		axis_ceil_box = Spinbox(self.spinwin, textvariable=self.spec_freq_max, command=self.drawSpectrogram, width=7, increment=100, from_=0, to_=100000)
 		axis_ceil_box.bind('<Return>',self.drawSpectrogram)
 		wl_box = Spinbox(self.spinwin, textvariable=self.wl, command=self.drawSpectrogram, width=7, increment=0.0005, from_=0, to_=1)
 		wl_box.bind('<Return>',self.drawSpectrogram)
@@ -1373,6 +1399,46 @@ class SpectrogramModule(object):
 		apply_btn.grid(row=3, column=1)
 
 		self.grid()
+
+	def doDefaults(self):
+		self.spec_freq_max.set(5000.0)
+		self.wl.set(0.005)
+		self.dyn_range.set(90)
+
+	def restoreDefaults(self):
+		self.doDefaults()
+		self.drawSpectrogram()
+
+	def reset(self):
+		self.drawSpectrogram()
+
+		# wwidth=100
+		# self.axis_canvas = Canvas(self.axis_frame, width=wwidth, height=self.canvas_height,background='gray', highlightthickness=0)
+		# # self.floor = self.axis_canvas.create_text(self.canvas_width,self.canvas_height/2,anchor=SE,text='0')
+		# self.floor = self.axis_canvas.create_text(wwidth,self.canvas_height,anchor=SE,text='0')
+
+		# #make spinboxes & buttons for spectrogram specs
+		# self.spinwin = Frame(self.axis_frame)
+		# #spinboxes
+		# axis_ceil_box = Spinbox(self.spinwin, textvariable=self.spec_freq_max, command=self.drawSpectrogram, width=7, increment=100, from_=0, to_=self.app.Audio.sfile.frame_rate)
+		# axis_ceil_box.bind('<Return>',self.drawSpectrogram)
+		# wl_box = Spinbox(self.spinwin, textvariable=self.wl, command=self.drawSpectrogram, width=7, increment=0.0005, from_=0, to_=1)
+		# wl_box.bind('<Return>',self.drawSpectrogram)
+		# dyn_range_box = Spinbox(self.spinwin, textvariable=self.dyn_range, command=self.drawSpectrogram, width=7, increment=10, from_=0, to_=10000)
+		# dyn_range_box.bind('<Return>',self.drawSpectrogram)
+		# #buttons
+		# default_btn = Button(self.spinwin, text='Standards', command=self.restoreDefaults)
+		# apply_btn = Button(self.spinwin, text='Apply', command=self.drawSpectrogram)
+		#
+		# # self.axis_frame.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor=NE)
+		# #grid spinboxes & buttons on subframe
+		# axis_ceil_box.grid(row=0, columnspan=2, sticky=NE)
+		# wl_box.grid(row=1, columnspan=2, sticky=NE)
+		# dyn_range_box.grid(row=2, columnspan=2, sticky=NE)
+		# default_btn.grid(row=3)
+		# apply_btn.grid(row=3, column=1)
+		#
+		# self.grid()
 		self.drawInterval()
 
 	def drawSpectrogram(self, event=None):
@@ -1543,9 +1609,11 @@ class TraceModule(object):
 
 	def update(self):
 		''' on change frames '''
+		self.app.constructed = False
 		self.grid()
 		self.reset() # clear our crosshairs
 		self.read()  # read from file
+		# self.app.constructed = True
 		#self.frame.update()
 		#print("TraceModule", self.frame.winfo_width())
 	def reset(self):
@@ -2155,10 +2223,12 @@ class DicomModule(object):
 		'''
 		change the image on the zoom frame
 		'''
+		self.app.constructed = False
 		if self.isLoaded:
 			image = self.app.Data.getPreprocessedDicom() if _frame==None else self.app.Data.getPreprocessedDicom(_frame=_frame)
 			image = Image.open( image )
 			self.zframe.setImage( image )
+		# self.app.constructed = True
 
 	def load(self, event=None):
 		'''
@@ -2512,16 +2582,16 @@ class App(ThemedTk):
 		self.Audio = PlaybackModule(self)
 		self.TextGrid = TextGridModule(self)
 		self.Spectrogram = SpectrogramModule(self)
-		self.constructed = True
+
 		print( ' - loading widgets' )
 
 		self.filesUpdate()
 		self.framesUpdate()
-		self.TextGrid.reset() #NOTE why does TextGridModule have to reset a second time? Is there a more economical way to do this?
+		# self.TextGrid.startup() #NOTE why does TextGridModule have to reset a second time? Is there a more economical way to do this?
 
 		print()
 
-
+		self.constructed = True
 
 	def setWidgetDefaults(self):
 		'''
@@ -2574,7 +2644,7 @@ class App(ThemedTk):
 		self.TOP.grid(    row=0, column=0, sticky=NW)
 		self.LEFT.grid(   row=0, sticky=N )
 		self.RIGHT.grid(  row=0, column=1)
-		self.BOTTOM.grid( row=1, column=0, sticky=NE)
+		self.BOTTOM.grid( row=1, column=0, sticky=E)
 		# self.BOTTOM.grid( row=1, column=0, columnspan=2 )
 		self.pady=3
 		# self.grid_columnconfigure(0,weight=1)
@@ -2759,7 +2829,7 @@ class App(ThemedTk):
 		# reset modules
 		self.Control.reset()
 		self.Trace.reset()
-		self.Dicom.reset() # need this after Trace.reset()
+		self.Dicom.reset() # need this after Trace.reset() #NOTE is this still true?
 		self.Audio.reset()
 		self.TextGrid.reset()
 		self.Spectrogram.reset()
@@ -2768,7 +2838,7 @@ class App(ThemedTk):
 		self.filesPrevBtn['state'] = DISABLED if self.Data.getFileLevel('_prev')==None else NORMAL
 		self.filesNextBtn['state'] = DISABLED if self.Data.getFileLevel('_next')==None else NORMAL
 
-		self.constructed = True
+		# self.constructed = True
 	def filesPrev(self, event=None):
 		'''
 		controls self.filesPrevBtn for panning between available files
@@ -2817,7 +2887,7 @@ class App(ThemedTk):
 		self.framesPrevBtn['state'] = DISABLED if self.frame==self.TextGrid.firstFrame else NORMAL
 		self.framesNextBtn['state'] = DISABLED if self.frame==self.TextGrid.lastFrame else NORMAL
 
-		self.constructed = True
+		# self.constructed = True
 	def framesPrev(self, event=None):
 		'''
 		controls self.framesPrevBtn for panning between frames
