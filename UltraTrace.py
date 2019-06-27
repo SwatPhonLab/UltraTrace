@@ -9,7 +9,7 @@ from tkinter import filedialog
 # import scipy.fftpack as fftpack
 # import urllib.request as request
 import argparse, datetime, json, \
-	math, os, sys, random, shutil, warnings, decimal, \
+	math, os, sys, random, shutil, warnings, decimal,\
 	soundfile as sf, scipy.fftpack as fftpack, urllib.request as request #FIXME should I put these with non-critical dependencies?
 
 import parselmouth
@@ -627,8 +627,7 @@ class TextGridModule(object):
 		self.label_padx = 0#17
 		self.canvas_frame = Frame(self.app.BOTTOM)#, padx=self.label_padx)
 		self.frame.grid( row=1, column=0 , sticky=N)
-		self.canvas_frame.grid(row=1, column=1, sticky=W)
-		# self.canvas_frame.grid(row=1, column=1, sticky=E)
+		self.canvas_frame.grid(row=1, column=1 )
 		self.TextGrid = None
 		self.selectedTier = StringVar()
 		self.tg_zoom_factor = 1.5
@@ -655,6 +654,8 @@ class TextGridModule(object):
 		'''
 		Try to load a TextGrid file based on information stored in the metadata
 		'''
+		self.app.constructed = False
+
 		# print(self.pp)
 		self.selectedTierFrames = []
 		self.selectedItem = None
@@ -693,6 +694,8 @@ class TextGridModule(object):
 				except:
 					pass
 			self.grid()
+
+		self.app.constructed = True
 
 	def shiftFrames(self):
 		'''
@@ -2449,6 +2452,7 @@ class App(ThemedTk):
 
 		print()
 		print( 'initializing UltraTrace' )
+		self.constructed = False
 
 		# do the normal Tk init stuff
 		if _PLATFORM=='Linux':
@@ -2489,7 +2493,7 @@ class App(ThemedTk):
 		self.Audio = PlaybackModule(self)
 		self.TextGrid = TextGridModule(self)
 		self.Spectrogram = SpectrogramModule(self)
-
+		self.constructed = True
 		print( ' - loading widgets' )
 
 		self.filesUpdate()
@@ -2497,6 +2501,8 @@ class App(ThemedTk):
 		self.TextGrid.reset() #NOTE why does TextGridModule have to reset a second time? Is there a more economical way to do this?
 
 		print()
+
+
 
 	def setWidgetDefaults(self):
 		'''
@@ -2546,12 +2552,14 @@ class App(ThemedTk):
 		self.LEFT = Frame(self.TOP)
 		self.RIGHT = Frame(self.TOP)
 		self.BOTTOM = Frame(self)
-		self.TOP.grid(    row=0, column=0)
+		self.TOP.grid(    row=0, column=0, sticky=NW)
 		self.LEFT.grid(   row=0, sticky=N )
-		self.RIGHT.grid(  row=0, column=1 )
-		self.BOTTOM.grid( row=1, column=0 )
+		self.RIGHT.grid(  row=0, column=1)
+		self.BOTTOM.grid( row=1, column=0, sticky=NE)
 		# self.BOTTOM.grid( row=1, column=0, columnspan=2 )
 		self.pady=3
+		# self.grid_columnconfigure(0,weight=1)
+		# self.TOP.grid_columnconfigure(0,weight=1)
 
 		# navigate between all available filenames in this directory
 		self.filesFrame = Frame(self.LEFT)#, pady=7)
@@ -2583,6 +2591,7 @@ class App(ThemedTk):
 		self.bind('<BackSpace>', self.onBackspace )
 		self.bind('<Configure>', self.onWindowResize )
 		self.bind('<Escape>', self.onEscape )
+		self.count = 0
 
 		# force window to front
 		self.lift()
@@ -2597,8 +2606,23 @@ class App(ThemedTk):
 		'''
 		Handle moving or resizing the app window
 		'''
-		geometry = self.geometry()
-		self.Data.setTopLevel( 'geometry', geometry )
+		if self.constructed == True:
+			self.count += 1
+			print(self.count, ' times accessed onWindowResize')
+			# print(self.filesFrame.winfo_width())
+			# print(sys._getframe().f_back.f_code.co_name)
+			# print(self.winfo_width())
+			geometry = self.geometry()
+			self.Data.setTopLevel( 'geometry', geometry )
+
+			#change widget sizes
+			self.fitToWindow()
+	def fitToWindow(self):
+		'''
+
+		'''
+		pass
+
 	def onClick(self, event):
 		'''
 		Handle clicking within the zoomframe canvas
@@ -2707,6 +2731,7 @@ class App(ThemedTk):
 		'''
 		Changes to be executed every time we change files
 		'''
+		self.constructed = False
 		# update variables
 		self.currentFileSV.set( self.Data.files[ self.currentFID ] )
 		self.frame = 1
@@ -2723,6 +2748,8 @@ class App(ThemedTk):
 		# check if we can pan left/right
 		self.filesPrevBtn['state'] = DISABLED if self.Data.getFileLevel('_prev')==None else NORMAL
 		self.filesNextBtn['state'] = DISABLED if self.Data.getFileLevel('_next')==None else NORMAL
+
+		self.constructed = True
 	def filesPrev(self, event=None):
 		'''
 		controls self.filesPrevBtn for panning between available files
@@ -2752,6 +2779,7 @@ class App(ThemedTk):
 		'''
 		Changes to be executed every time we change frames
 		'''
+		self.constructed = False
 		# frameTier = self.TextGrid.TextGrid.getFirst(self.TextGrid.frameTierName)
 		# if
 
@@ -2769,6 +2797,8 @@ class App(ThemedTk):
 		# check if we can pan left/right
 		self.framesPrevBtn['state'] = DISABLED if self.frame==self.TextGrid.firstFrame else NORMAL
 		self.framesNextBtn['state'] = DISABLED if self.frame==self.TextGrid.lastFrame else NORMAL
+
+		self.constructed = True
 	def framesPrev(self, event=None):
 		'''
 		controls self.framesPrevBtn for panning between frames
