@@ -675,7 +675,6 @@ class TextGridModule(object):
 		'''
 
 		'''
-		self.app.constructed = False
 		if _TEXTGRID_LIBS_INSTALLED:
 			# default Label in case there are errors below
 			self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
@@ -684,7 +683,6 @@ class TextGridModule(object):
 			# print(filename)
 			if filename:
 				try:
-					print('line 687', filename)
 					# try to load up our TextGrid using the textgrid lib
 					self.TextGrid = TextGrid.fromFile( filename )
 					# reset default Label to actually be useful
@@ -708,13 +706,11 @@ class TextGridModule(object):
 				except:
 					pass
 			self.grid()
-		# self.app.constructed = True
 
 	def reset(self, event=None):
 		'''
 		Try to load a TextGrid file based on information stored in the metadata
 		'''
-		self.app.constructed = False
 
 		# print(self.pp)
 		self.selectedTierFrames = []
@@ -757,7 +753,6 @@ class TextGridModule(object):
 					pass
 			# self.grid()
 
-		# self.app.constructed = True
 
 	def shiftFrames(self):
 		'''
@@ -1304,7 +1299,6 @@ class TextGridModule(object):
 		'''
 
 		'''
-		self.app.constructed = False
 		try:
 			bloop = self.frames_canvas
 		except AttributeError:
@@ -1336,7 +1330,6 @@ class TextGridModule(object):
 
 		# repaint all frames
 		self.paintCanvases()
-		# self.app.constructed = True
 
 	def grid(self, event=None):
 		'''
@@ -1609,11 +1602,9 @@ class TraceModule(object):
 
 	def update(self):
 		''' on change frames '''
-		self.app.constructed = False
 		self.grid()
 		self.reset() # clear our crosshairs
 		self.read()  # read from file
-		# self.app.constructed = True
 		#self.frame.update()
 		#print("TraceModule", self.frame.winfo_width())
 	def reset(self):
@@ -2223,12 +2214,10 @@ class DicomModule(object):
 		'''
 		change the image on the zoom frame
 		'''
-		self.app.constructed = False
 		if self.isLoaded:
 			image = self.app.Data.getPreprocessedDicom() if _frame==None else self.app.Data.getPreprocessedDicom(_frame=_frame)
 			image = Image.open( image )
 			self.zframe.setImage( image )
-		# self.app.constructed = True
 
 	def load(self, event=None):
 		'''
@@ -2541,7 +2530,6 @@ class App(ThemedTk):
 
 		print()
 		print( 'initializing UltraTrace' )
-		self.constructed = False
 
 		# do the normal Tk init stuff
 		if _PLATFORM=='Linux':
@@ -2591,7 +2579,7 @@ class App(ThemedTk):
 
 		print()
 
-		self.constructed = True
+		self.after(1000,self.afterstartup)
 
 	def setWidgetDefaults(self):
 		'''
@@ -2678,9 +2666,9 @@ class App(ThemedTk):
 		self.bind('<Left>', self.framesPrev )
 		self.bind('<Right>', self.framesNext )
 		self.bind('<BackSpace>', self.onBackspace )
-		self.bind('<Configure>', self.onWindowResize )
+		# self.bind('<Configure>', self.onWindowResize )
 		self.bind('<Escape>', self.onEscape )
-		self.count = 0
+		# self.count = 0
 
 		# force window to front
 		self.lift()
@@ -2691,21 +2679,27 @@ class App(ThemedTk):
 		'''
 		self.attributes('-topmost', 1)
 		self.attributes('-topmost', 0)
+	def afterstartup(self):
+		'''
+
+		'''
+		print('got here')
+		self.bind('<Configure>', self.onWindowResize )
+
 	def onWindowResize(self, event):
 		'''
 		Handle moving or resizing the app window
 		'''
-		if self.constructed == True:
-			self.count += 1
-			print(self.count, ' times accessed onWindowResize', event.widget, event.width, event.height)
-			# print(self.filesFrame.winfo_width())
-			# print(sys._getframe().f_back.f_code.co_name)
-			# print(self.winfo_width())
-			geometry = self.geometry()
-			self.Data.setTopLevel( 'geometry', geometry )
+		# self.count += 1
+		# print(self.count, ' times accessed onWindowResize', event.widget, event.width, event.height)
+		# print(self.filesFrame.winfo_width())
+		# print(sys._getframe().f_back.f_code.co_name)
+		# print(self.winfo_width())
+		geometry = self.geometry()
+		self.Data.setTopLevel( 'geometry', geometry )
 
-			#change widget sizes
-			self.fitToWindow()
+		#change widget sizes
+		self.fitToWindow()
 	def fitToWindow(self):
 		'''
 
@@ -2820,7 +2814,6 @@ class App(ThemedTk):
 		'''
 		Changes to be executed every time we change files
 		'''
-		self.constructed = False
 		# update variables
 		self.currentFileSV.set( self.Data.files[ self.currentFID ] )
 		self.frame = 1
@@ -2838,7 +2831,6 @@ class App(ThemedTk):
 		self.filesPrevBtn['state'] = DISABLED if self.Data.getFileLevel('_prev')==None else NORMAL
 		self.filesNextBtn['state'] = DISABLED if self.Data.getFileLevel('_next')==None else NORMAL
 
-		# self.constructed = True
 	def filesPrev(self, event=None):
 		'''
 		controls self.filesPrevBtn for panning between available files
@@ -2868,7 +2860,6 @@ class App(ThemedTk):
 		'''
 		Changes to be executed every time we change frames
 		'''
-		self.constructed = False
 		# frameTier = self.TextGrid.TextGrid.getFirst(self.TextGrid.frameTierName)
 		# if
 
@@ -2887,7 +2878,6 @@ class App(ThemedTk):
 		self.framesPrevBtn['state'] = DISABLED if self.frame==self.TextGrid.firstFrame else NORMAL
 		self.framesNextBtn['state'] = DISABLED if self.frame==self.TextGrid.lastFrame else NORMAL
 
-		# self.constructed = True
 	def framesPrev(self, event=None):
 		'''
 		controls self.framesPrevBtn for panning between frames
