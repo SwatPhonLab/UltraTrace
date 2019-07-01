@@ -512,10 +512,10 @@ class MetadataModule(object):
 		'''
 		Gets preprocessed (.dicom->.png) picture data for a given frame
 		'''
-		frame = self.app.frame if _frame==None else _frame
+		frame = self.app.frame if _frame==None else int(_frame)-1
 		processed = self.getFileLevel( 'processed' )
 		try:
-			return processed[str(frame-1)]
+			return processed[str(frame)]
 		except: # catches missing frames and missing preprocessed data
 			return None
 
@@ -711,7 +711,14 @@ class TextGridModule(object):
 		'''
 		Try to load a TextGrid file based on information stored in the metadata
 		'''
-
+		# print(self.app.LEFT.winfo_width(), 'line 714')
+		# for t in range(len(self.TkWidgets)):
+		# 	tierWidgets = self.TkWidgets[t]
+		# 	if 'canvas' in tierWidgets:
+		# 		tierWidgets['canvas-label'].config(width=self.app.LEFT.winfo_width())
+		# 		tierWidgets['canvas-label'].update()
+		# 	if 'frames' in tierWidgets:
+		# 		tierWidgets['frames-label'].config(width=self.app.LEFT.winfo_width())
 		# print(self.pp)
 		self.selectedTierFrames = []
 		self.selectedItem = None
@@ -863,7 +870,7 @@ class TextGridModule(object):
 		self.tier_pairs = {} #ends up being format {label: canvas}
 
 		# self.app.Trace.frame.update()
-		self.label_width=350#self.app.Trace.frame.winfo_width()+self.label_padx
+		self.label_width=316#self.app.Trace.frame.winfo_width()+self.label_padx
 		# print(self.label_width, 739)
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
 		# self.first_frame = 1
@@ -871,14 +878,14 @@ class TextGridModule(object):
 		# self.last_frame = self.TextGrid.getFirst(self.frameTierName)[-1].mark
 		# print('line 807')
 		tier_obj = self.TextGrid.getFirst(tier)
-		self.widgets = { 'name':tier,
+		widgets = { 'name':tier,
 						 #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
 						 'canvas-label':Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0),
 						 # 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
 						 'canvas':Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)}
 
-		canvas = self.widgets['canvas']
-		label = self.widgets['canvas-label']
+		canvas = widgets['canvas']
+		label = widgets['canvas-label']
 
 		#builds tier label functionality
 		label_text = label.create_text(self.label_width, self.canvas_height/2, anchor=E, justify=CENTER,
@@ -887,7 +894,7 @@ class TextGridModule(object):
 		canvas.bind("<Button-1>", self.genFrameList)
 		label.bind("<Button-1>", self.genFrameList)
 
-		return self.widgets
+		return widgets
 
 	def changeIntervals(self,event):
 		'''
@@ -2635,8 +2642,8 @@ class App(ThemedTk):
 		self.BOTTOM.grid( row=1, column=0, sticky=E)
 		# self.BOTTOM.grid( row=1, column=0, columnspan=2 )
 		self.pady=3
-		# self.grid_columnconfigure(0,weight=1)
-		# self.TOP.grid_columnconfigure(0,weight=1)
+		# self.columnconfigure(0,weight=1)
+		# self.TOP.columnconfigure(0,weight=1)
 
 		# navigate between all available filenames in this directory
 		self.filesFrame = Frame(self.LEFT)#, pady=7)
@@ -2683,7 +2690,6 @@ class App(ThemedTk):
 		'''
 
 		'''
-		print('got here')
 		self.bind('<Configure>', self.onWindowResize )
 
 	def onWindowResize(self, event):
