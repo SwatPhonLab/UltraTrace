@@ -870,7 +870,7 @@ class TextGridModule(object):
 		self.tier_pairs = {} #ends up being format {label: canvas}
 
 		# self.app.Trace.frame.update()
-		self.label_width=316#self.app.Trace.frame.winfo_width()+self.label_padx
+		self.label_width=300#self.app.Trace.frame.winfo_width()+self.label_padx
 		# print(self.label_width, 739)
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
 		# self.first_frame = 1
@@ -2633,7 +2633,7 @@ class App(ThemedTk):
 		'''
 		# main Frame skeleton
 		self.TOP = Frame(self)
-		self.TOP.columnconfigure(0,weight=1)
+		self.TOP.columnconfigure(1,weight=1)
 		# self.TOP.rowconfigure(0,weight=1)
 		self.LEFT = Frame(self.TOP)
 		# self.LEFT.rowconfigure(0,weight=1)
@@ -2642,7 +2642,8 @@ class App(ThemedTk):
 		self.RIGHT.rowconfigure(0,weight=1)
 		self.RIGHT.columnconfigure(0,weight=1)
 		self.BOTTOM = Frame(self)
-		self.BOTTOM.columnconfigure(0,weight=1)
+		# self.BOTTOM.columnconfigure(0,weight=1)
+		self.BOTTOM.columnconfigure(1,weight=1)
 		self.BOTTOM.rowconfigure(0,weight=1)
 		# self.TOP.grid(    row=0, column=0, sticky=NW)
 		# self.LEFT.grid(   row=0, sticky=N )
@@ -2702,24 +2703,27 @@ class App(ThemedTk):
 
 		'''
 		self.bind('<Configure>', self.onWindowResize )
+		self.alignBottomTop()
+
+	def alignBottomTop(self):
+		'''
+		Makes the length of the canvases on the lower left the same length as the pane of controls in self.LEFT
+		'''
+		self.leftwidth = self.LEFT.winfo_width()
+		for t in range(len(self.TextGrid.TkWidgets)):
+			tierWidgets = self.TextGrid.TkWidgets[t]
+			if 'frames' in tierWidgets:
+				tierWidgets['frames-label'].config(width=self.leftwidth)
+				tierWidgets['frames-label'].coords(ALL,(self.leftwidth,tierWidgets['frames-label'].coords(1)[1]))
+			if 'canvas' in tierWidgets:
+				tierWidgets['canvas-label'].config(width=self.leftwidth)
+				tierWidgets['canvas-label'].coords(ALL,(self.leftwidth,tierWidgets['canvas-label'].coords(1)[1]))
 
 	def onWindowResize(self, event):
 		'''
 		Handle moving or resizing the app window
 		'''
-		leftwidth = self.winfo_width()-800
-
-		for t in range(len(self.TextGrid.TkWidgets)):
-			tierWidgets = self.TextGrid.TkWidgets[t]
-			if 'frames' in tierWidgets:
-				tierWidgets['frames-label'].config(width=leftwidth)
-				tierWidgets['frames-label'].coords(ALL,(leftwidth,tierWidgets['frames-label'].coords(1)[1]))
-			if 'canvas' in tierWidgets:
-				# oldx = tierWidgets['canvas-label'].itemcget(,'x')
-				# print(oldx, type(oldx))
-				# print(tierWidgets['canvas-label'].itemcget(1,'position'))
-				tierWidgets['canvas-label'].config(width=leftwidth)
-				tierWidgets['canvas-label'].coords(ALL,(leftwidth,tierWidgets['canvas-label'].coords(1)[1]))
+		self.alignBottomTop()
 
 		# self.Dicom.zframe.canvas.itemconfig( canvas.find_all()[0], image=pic )
 
