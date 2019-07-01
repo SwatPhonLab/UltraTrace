@@ -124,7 +124,7 @@ class ZoomFrame(Frame):
 		self.resetCanvas()
 
 		self.canvas.bind('<Button-1>', self.app.onClick )
-		self.canvas.bind('<ButtonRelease-1>', self.app.onRelease )
+		self.canvas.bind('<ButtonRelease-1>', self.app.onReleaseZoom )
 		self.canvas.bind('<Motion>', self.app.onMotion )
 
 		self.app.bind('<Command-equal>', self.wheel )
@@ -949,12 +949,6 @@ class TextGridModule(object):
 				else:
 					self.start = newCenter - duration/2
 					self.end = newCenter + duration/2
-				# self.start = newCenter - duration/2
-				# self.end = newCenter + duration/2
-				# if self.start < 0:
-				# 	self.start = 0
-				# if self.end > self.TextGrid.maxTime:
-				# 	self.end = self.TextGrid.maxTime
 				relDuration = self.end - self.start
 
 				# select new item
@@ -2597,6 +2591,7 @@ class App(ThemedTk):
 		self.frame = 0			# current frame of dicom file
 		self.isClicked = False	# used in handling of canvas click events
 		self.isDragging = False # used in handling of canvas click events
+		self.resized = False 	#for changing widgets after window resize
 
 		# declare string variables
 		self.currentFileSV = StringVar(self)
@@ -2633,8 +2628,8 @@ class App(ThemedTk):
 		'''
 		# main Frame skeleton
 		self.TOP = Frame(self)
-		self.TOP.columnconfigure(1,weight=1)
-		# self.TOP.rowconfigure(0,weight=1)
+		self.TOP.columnconfigure(1,weight=1, minsize=320)
+		self.TOP.rowconfigure(0,weight=1, minsize=240)
 		self.LEFT = Frame(self.TOP)
 		# self.LEFT.rowconfigure(0,weight=1)
 		# self.LEFT.columnconfigure(0,weight=1)
@@ -2644,7 +2639,7 @@ class App(ThemedTk):
 		self.BOTTOM = Frame(self)
 		# self.BOTTOM.columnconfigure(0,weight=1)
 		self.BOTTOM.columnconfigure(1,weight=1)
-		self.BOTTOM.rowconfigure(0,weight=1)
+		# self.BOTTOM.rowconfigure(0,weight=1)
 		# self.TOP.grid(    row=0, column=0, sticky=NW)
 		# self.LEFT.grid(   row=0, sticky=N )
 		# self.RIGHT.grid(  row=0, column=1)
@@ -2685,7 +2680,7 @@ class App(ThemedTk):
 		self.bind('<Left>', self.framesPrev )
 		self.bind('<Right>', self.framesNext )
 		self.bind('<BackSpace>', self.onBackspace )
-		# self.bind('<Configure>', self.onWindowResize )
+		self.bind('<ButtonRelease-1>', self.onRelease)
 		self.bind('<Escape>', self.onEscape )
 		# self.count = 0
 
@@ -2724,19 +2719,7 @@ class App(ThemedTk):
 		Handle moving or resizing the app window
 		'''
 		self.alignBottomTop()
-
-		# self.Dicom.zframe.canvas.itemconfig( canvas.find_all()[0], image=pic )
-
-		# geometry = self.geometry()
-		# self.Data.setTopLevel( 'geometry', geometry )
-
-		#change widget sizes
-		self.fitToWindow()
-	def fitToWindow(self):
-		'''
-
-		'''
-		pass
+		self.resized=True
 
 	def onClick(self, event):
 		'''
@@ -2783,7 +2766,7 @@ class App(ThemedTk):
 				# set dragging variables
 				self.isDragging = True
 				self.dragClick = self.click
-	def onRelease(self, event):
+	def onReleaseZoom(self, event):
 		'''
 		Handle releasing a click within the zoomframe canvas
 		'''
@@ -2794,6 +2777,19 @@ class App(ThemedTk):
 			self.isDragging = False
 			self.isClicked = False
 			self.Trace.write()
+	def onRelease(self,event):
+		'''
+
+		'''
+		if self.resized == True:
+			self.resized = False
+			# png_loc = self.Data.getPreprocessedDicom(self.frame)
+			# image = Image.open( png_loc )
+			x = self.RIGHT.winfo_width()
+			y = self.RIGHT.winfo_height()
+			print(x,y)
+			# image = image.resize()
+
 	def onMotion(self, event):
 		'''
 		Handle mouse movement within the zoomframe canvas
