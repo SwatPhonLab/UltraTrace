@@ -111,8 +111,8 @@ class ZoomFrame(Frame):
 		self.canvas.grid(row=0, column=0, sticky='news')
 		self.canvas.update() # do i need
 
-		self.master.rowconfigure(0, weight=1) # do i need
-		self.master.columnconfigure(0, weight=1) # do i need
+		# self.master.rowconfigure(0, weight=1) # do i need
+		# self.master.columnconfigure(0, weight=1) # do i need
 
 		self.canvas.bind('<Configure>', self.showImage ) # on canvas resize events
 		self.canvas.bind('<Control-Button-1>', self.moveFrom )
@@ -644,7 +644,7 @@ class TextGridModule(object):
 		self.frame = Frame(self.app.BOTTOM)
 		self.label_padx = 0#17
 		self.canvas_frame = Frame(self.app.BOTTOM)#, padx=self.label_padx)
-		self.frame.grid( row=1, column=0 , sticky=N)
+		self.frame.grid( row=1, column=0, sticky=NE)
 		self.canvas_frame.grid(row=1, column=1 )
 		self.TextGrid = None
 		self.selectedTier = StringVar()
@@ -1522,7 +1522,7 @@ class SpectrogramModule(object):
 		'''
 		Put tkinter items on app
 		'''
-		self.canvas.grid(row=0, column=0, sticky=W)
+		self.canvas.grid(row=0, column=0, sticky=N+S+E+W)
 		self.spinwin.grid(row=0,column=0,sticky=NE)
 		# self.axis_canvas.grid(row=0,column=0,sticky=SE)
 
@@ -2633,17 +2633,28 @@ class App(ThemedTk):
 		'''
 		# main Frame skeleton
 		self.TOP = Frame(self)
+		self.TOP.columnconfigure(0,weight=1)
+		# self.TOP.rowconfigure(0,weight=1)
 		self.LEFT = Frame(self.TOP)
+		# self.LEFT.rowconfigure(0,weight=1)
+		# self.LEFT.columnconfigure(0,weight=1)
 		self.RIGHT = Frame(self.TOP)
+		self.RIGHT.rowconfigure(0,weight=1)
+		self.RIGHT.columnconfigure(0,weight=1)
 		self.BOTTOM = Frame(self)
-		self.TOP.grid(    row=0, column=0, sticky=NW)
-		self.LEFT.grid(   row=0, sticky=N )
-		self.RIGHT.grid(  row=0, column=1)
-		self.BOTTOM.grid( row=1, column=0, sticky=E)
-		# self.BOTTOM.grid( row=1, column=0, columnspan=2 )
+		self.BOTTOM.columnconfigure(0,weight=1)
+		self.BOTTOM.rowconfigure(0,weight=1)
+		# self.TOP.grid(    row=0, column=0, sticky=NW)
+		# self.LEFT.grid(   row=0, sticky=N )
+		# self.RIGHT.grid(  row=0, column=1)
+		# self.BOTTOM.grid( row=1, column=0, sticky=E)
+		self.TOP.grid(    row=0, column=0, sticky=N+E+S+W)
+		self.LEFT.grid(   row=0, sticky=N+E+S+W )
+		self.RIGHT.grid(  row=0, column=1, sticky=N+E+S+W)
+		self.BOTTOM.grid( row=1, column=0, sticky=N+E+S+W)
 		self.pady=3
-		# self.columnconfigure(0,weight=1)
-		# self.TOP.columnconfigure(0,weight=1)
+		self.columnconfigure(0,weight=1)
+		self.rowconfigure(0,weight=1)
 
 		# navigate between all available filenames in this directory
 		self.filesFrame = Frame(self.LEFT)#, pady=7)
@@ -2696,13 +2707,24 @@ class App(ThemedTk):
 		'''
 		Handle moving or resizing the app window
 		'''
-		# self.count += 1
-		# print(self.count, ' times accessed onWindowResize', event.widget, event.width, event.height)
-		# print(self.filesFrame.winfo_width())
-		# print(sys._getframe().f_back.f_code.co_name)
-		# print(self.winfo_width())
-		geometry = self.geometry()
-		self.Data.setTopLevel( 'geometry', geometry )
+		leftwidth = self.winfo_width()-800
+
+		for t in range(len(self.TextGrid.TkWidgets)):
+			tierWidgets = self.TextGrid.TkWidgets[t]
+			if 'frames' in tierWidgets:
+				tierWidgets['frames-label'].config(width=leftwidth)
+				tierWidgets['frames-label'].coords(ALL,(leftwidth,tierWidgets['frames-label'].coords(1)[1]))
+			if 'canvas' in tierWidgets:
+				# oldx = tierWidgets['canvas-label'].itemcget(,'x')
+				# print(oldx, type(oldx))
+				# print(tierWidgets['canvas-label'].itemcget(1,'position'))
+				tierWidgets['canvas-label'].config(width=leftwidth)
+				tierWidgets['canvas-label'].coords(ALL,(leftwidth,tierWidgets['canvas-label'].coords(1)[1]))
+
+		# self.Dicom.zframe.canvas.itemconfig( canvas.find_all()[0], image=pic )
+
+		# geometry = self.geometry()
+		# self.Data.setTopLevel( 'geometry', geometry )
 
 		#change widget sizes
 		self.fitToWindow()
@@ -3059,7 +3081,7 @@ class CanvasTooltip:
         self.tw.wm_overrideredirect(True)
 
         win = Frame(self.tw,
-                       background=bg,
+                       # background=bg,
                        borderwidth=0)
         label = Label(win,
                           text=self.text,
