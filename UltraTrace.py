@@ -2790,7 +2790,7 @@ class App(ThemedTk):
 			image = Image.open( png_loc )
 			x = self.RIGHT.winfo_width()
 			y = self.RIGHT.winfo_height()
-			print(x,y)
+			# print(x,y)
 			if x > y*(4/3):
 				x = round(y*(4/3))
 			else:
@@ -2808,14 +2808,18 @@ class App(ThemedTk):
 				tierWidgets = self.TextGrid.TkWidgets[t]
 				canvas = None
 				if 'frames' in tierWidgets:
-					canvas = tierWidgets['frames']
+					tierWidgets['frames'].config(width=x)
 				elif 'canvas' in tierWidgets:
-					canvas = tierWidgets['canvas']
+					tierWidgets['canvas'].config(width=x)
 				if 'times' in tierWidgets:
-					canvas = tierWidgets['times']
-				if canvas != None:
-					canvas.config(width=x)
+					tierWidgets['times'].config(width=x)
+					tierWidgets['times'].coords(2,(x,tierWidgets['times'].coords(2)[1])) #move end time
+
 			self.TextGrid.fillCanvases() #calls Spectrogram.reset
+
+		#save layout ot geometry manager
+		geometry = self.geometry()
+		self.Data.setTopLevel( 'geometry', geometry )
 
 
 	def onMotion(self, event):
