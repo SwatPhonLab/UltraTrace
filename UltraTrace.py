@@ -1485,6 +1485,7 @@ class SpectrogramModule(object):
 
 		# self.canvas.create_image(0,0, anchor=NW, image=photo_img)
 		# self.canvas.create_image(self.canvas_width/2,self.canvas_height/2, image=photo_img)
+		self.canvas.delete(ALL)
 		self.canvas.create_image(self.canvas_width, self.canvas_height, anchor=SE, image=photo_img)
 		self.img = photo_img
 
@@ -2781,8 +2782,9 @@ class App(ThemedTk):
 		'''
 
 		'''
-		if self.resized == True: #shouldn't trigger when frame not displayed
+		if self.resized == True and self.Dicom.isLoaded: #shouldn't trigger when frame not displayed
 			self.resized = False
+
 			#resize dicom image
 			png_loc = self.Data.getPreprocessedDicom(self.frame)
 			image = Image.open( png_loc )
@@ -2794,9 +2796,16 @@ class App(ThemedTk):
 			else:
 				image = image.resize((x,round(x*(3/4))))
 			imagetk = ImageTk.PhotoImage(image)
-			canvas = self.Dicom.zframe.canvas
-			canvas.itemconfig( canvas.find_all()[0], image=imagetk )
-			canvas.imagetk = imagetk
+			self.Dicom.zframe.canvas.itemconfig( self.Dicom.zframe.canvas.find_all()[0], image=imagetk )
+			self.Dicom.zframe.canvas.imagetk = imagetk
+
+			#resize spectrogram
+			self.Spectrogram.canvas_width = x
+			self.Spectrogram.canvas.config(width=x)
+			self.Spectrogram.drawSpectrogram()
+
+			#resize TextGrid tiers
+
 
 	def onMotion(self, event):
 		'''
