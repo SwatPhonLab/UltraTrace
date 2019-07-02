@@ -2792,19 +2792,30 @@ class App(ThemedTk):
 			y = self.RIGHT.winfo_height()
 			print(x,y)
 			if x > y*(4/3):
-				image = image.resize((round(y*(4/3)),y))
+				x = round(y*(4/3))
 			else:
-				image = image.resize((x,round(x*(3/4))))
+				y = round(x*(3/4))
+			image = image.resize((x,y))
 			imagetk = ImageTk.PhotoImage(image)
 			self.Dicom.zframe.canvas.itemconfig( self.Dicom.zframe.canvas.find_all()[0], image=imagetk )
 			self.Dicom.zframe.canvas.imagetk = imagetk
 
-			#resize spectrogram
+			#resize TextGrid tiers and spectrogram
 			self.Spectrogram.canvas_width = x
 			self.Spectrogram.canvas.config(width=x)
-			self.Spectrogram.drawSpectrogram()
-
-			#resize TextGrid tiers
+			self.TextGrid.canvas_width = x
+			for t in range(len(self.TextGrid.TkWidgets)):
+				tierWidgets = self.TextGrid.TkWidgets[t]
+				canvas = None
+				if 'frames' in tierWidgets:
+					canvas = tierWidgets['frames']
+				elif 'canvas' in tierWidgets:
+					canvas = tierWidgets['canvas']
+				if 'times' in tierWidgets:
+					canvas = tierWidgets['times']
+				if canvas != None:
+					canvas.config(width=x)
+			self.TextGrid.fillCanvases() #calls Spectrogram.reset
 
 
 	def onMotion(self, event):
