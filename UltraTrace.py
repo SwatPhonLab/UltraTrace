@@ -702,7 +702,9 @@ class TextGridModule(object):
 					self.fillCanvases()
 					#calculate first and last frames
 					self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark)
+					self.startFrame = self.firstFrame
 					self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark)
+					self.endFrame = self.lastFrame
 				except:
 					pass
 			self.grid()
@@ -755,7 +757,9 @@ class TextGridModule(object):
 					self.fillCanvases()
 					#calculate first and last frames
 					self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark)
+					self.startFrame = self.firstFrame
 					self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark)
+					self.endFrame = self.lastFrame
 				except:
 					pass
 			# self.grid()
@@ -1303,6 +1307,7 @@ class TextGridModule(object):
 		try:
 			bloop = self.frames_canvas
 		except AttributeError:
+			print("you've been blooped")
 			self.reset()
 
 		# print(self.frames_canvas)
@@ -2935,14 +2940,14 @@ class App(ThemedTk):
 		self.Spectrogram.update()
 
 		# check if we can pan left/right
-		self.framesPrevBtn['state'] = DISABLED if self.frame==self.TextGrid.firstFrame else NORMAL
-		self.framesNextBtn['state'] = DISABLED if self.frame==self.TextGrid.lastFrame else NORMAL
+		self.framesPrevBtn['state'] = DISABLED if self.frame==self.TextGrid.startFrame else NORMAL
+		self.framesNextBtn['state'] = DISABLED if self.frame==self.TextGrid.endFrame else NORMAL
 
 	def framesPrev(self, event=None):
 		'''
 		controls self.framesPrevBtn for panning between frames
 		'''
-		if self.Dicom.isLoaded and self.frame > self.TextGrid.firstFrame:
+		if self.Dicom.isLoaded and self.frame > self.TextGrid.startFrame:
 			self.frame -= 1
 			# if len(self.TextGrid.selectedTierFrames) != 0:
 			# 	while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame > self.TextGrid.last_frame:
@@ -2955,7 +2960,7 @@ class App(ThemedTk):
 		'''
 		controls self.framesNextBtn for panning between frames
 		'''
-		if self.Dicom.isLoaded and self.frame < self.TextGrid.lastFrame:
+		if self.Dicom.isLoaded and self.frame < self.TextGrid.endFrame:
 			self.frame += 1
 			# if len(self.TextGrid.selectedTierFrames) != 0:
 			# 	while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame < self.TextGrid.first_frame:
