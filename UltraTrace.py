@@ -106,6 +106,8 @@ class ZoomFrame(Frame):
 
 		self.canvas_width = 800
 		self.canvas_height = 600
+		self.shown = False
+		self.aspect_ratio = 4.0/3.0
 
 		self.canvas = Canvas( master,  bg='grey', width=self.canvas_width, height=self.canvas_height, highlightthickness=0 )
 		self.canvas.grid(row=0, column=0, sticky='news')
@@ -162,6 +164,7 @@ class ZoomFrame(Frame):
 	def setImage(self, image): # expect an Image() instance
 		self.image = image
 		self.width, self.height = self.image.size
+		self.aspect_ratio = self.width/self.height
 		self.showImage()
 
 	def showImage(self, event=None):
@@ -176,6 +179,7 @@ class ZoomFrame(Frame):
 			image = self.canvas.create_image(bbox[0], bbox[1], anchor='nw', image=imagetk)
 			self.canvas.lower(image)
 			self.canvas.imagetk = imagetk
+			self.shown = True
 			self.app.Trace.update()
 
 	def wheel(self, event):
@@ -2345,6 +2349,7 @@ class DicomModule(object):
 
 		self.isLoaded = False
 		self.dicom = None
+		self.zframe.shown = False
 
 		# update buttons
 		#print(self.app.Data.data['files'])
@@ -2787,7 +2792,7 @@ class App(ThemedTk):
 		'''
 
 		'''
-		if self.resized == True and self.Dicom.isLoaded: #shouldn't trigger when frame not displayed
+		if self.resized == True and self.Dicom.zframe.shown == True: #shouldn't trigger when frame not displayed
 			self.resized = False
 
 			#resize dicom image
@@ -2797,9 +2802,9 @@ class App(ThemedTk):
 			y = self.RIGHT.winfo_height()
 			# print(x,y)
 			if x > y*(4/3):
-				x = round(y*(4/3))
+				x = round(y*self.Dicom.zframe.aspect_ratio)
 			else:
-				y = round(x*(3/4))
+				y = round(x*(1/self.Dicom.zframe.aspect_ratio))
 			image = image.resize((x,y))
 			imagetk = ImageTk.PhotoImage(image)
 			self.Dicom.zframe.canvas.itemconfig( self.Dicom.zframe.canvas.find_all()[0], image=imagetk )
