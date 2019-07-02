@@ -2781,14 +2781,22 @@ class App(ThemedTk):
 		'''
 
 		'''
-		if self.resized == True:
+		if self.resized == True: #shouldn't trigger when frame not displayed
 			self.resized = False
-			# png_loc = self.Data.getPreprocessedDicom(self.frame)
-			# image = Image.open( png_loc )
+			#resize dicom image
+			png_loc = self.Data.getPreprocessedDicom(self.frame)
+			image = Image.open( png_loc )
 			x = self.RIGHT.winfo_width()
 			y = self.RIGHT.winfo_height()
 			print(x,y)
-			# image = image.resize()
+			if x > y*(4/3):
+				image = image.resize((round(y*(4/3)),y))
+			else:
+				image = image.resize((x,round(x*(3/4))))
+			imagetk = ImageTk.PhotoImage(image)
+			canvas = self.Dicom.zframe.canvas
+			canvas.itemconfig( canvas.find_all()[0], image=imagetk )
+			canvas.imagetk = imagetk
 
 	def onMotion(self, event):
 		'''
