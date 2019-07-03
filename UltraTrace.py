@@ -197,10 +197,10 @@ class ZoomFrame(Frame):
 		print(event)
 		print("HARGLE BARGLE")
 		if self.image != None:
-			if event.keysym == 'equal' or event.keysym == 'minus':
+			if event.keysym == 'equal' or event.keysym == 'minus': #what is this for?
 				x = self.canvas_width/2
 				y = self.canvas_height/2
-			else:
+			else:													#do these vars get used?
 				x = self.canvas.canvasx(event.x)
 				y = self.canvas.canvasy(event.y)
 
@@ -1621,10 +1621,11 @@ class TraceModule(object):
 			self.getWidget( Button(self.frame, text='Rename', command=self.renameTrace), row=100, column=3 ) ]
 
 		self.app.bind('<Control-r>', self.recolor )
+		self.grid()
 
 	def update(self):
 		''' on change frames '''
-		self.grid()
+		# self.grid()
 		self.reset() # clear our crosshairs
 		self.read()  # read from file
 		#self.frame.update()
@@ -2826,7 +2827,6 @@ class App(ThemedTk):
 				if 'times' in tierWidgets:
 					tierWidgets['times'].config(width=x)
 					tierWidgets['times'].coords(2,(x,tierWidgets['times'].coords(2)[1])) #move end time
-
 			self.TextGrid.fillCanvases() #calls Spectrogram.reset
 
 		#save layout ot geometry manager
