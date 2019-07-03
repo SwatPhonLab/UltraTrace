@@ -105,7 +105,9 @@ class ZoomFrame(Frame):
 		#self.resetCanvas(master)
 
 		self.canvas_width = 800
+		self.width = 0
 		self.canvas_height = 600
+		self.height = 0
 		self.shown = False
 		self.aspect_ratio = 4.0/3.0
 
@@ -163,8 +165,17 @@ class ZoomFrame(Frame):
 
 	def setImage(self, image): # expect an Image() instance
 		self.image = image
-		self.width, self.height = self.image.size
-		self.aspect_ratio = self.width/self.height
+		if self.width == 0:
+			self.width, self.height = self.image.size
+			self.aspect_ratio = self.width/self.height
+		else:
+			self.width = self.app.RIGHT.winfo_width()
+			self.height = self.app.RIGHT.winfo_height()
+			# print(x,y)
+			if self.width > self.height*self.aspect_ratio:
+				self.width = round(self.height*self.aspect_ratio)
+			else:
+				self.height = round(self.width*(1/self.aspect_ratio))
 		self.showImage()
 
 	def showImage(self, event=None):
@@ -2798,18 +2809,9 @@ class App(ThemedTk):
 			#resize dicom image
 			png_loc = self.Data.getPreprocessedDicom(self.frame)
 			image = Image.open( png_loc )
-			x = self.RIGHT.winfo_width()
-			y = self.RIGHT.winfo_height()
-			# print(x,y)
-			if x > y*(4/3):
-				x = round(y*self.Dicom.zframe.aspect_ratio)
-			else:
-				y = round(x*(1/self.Dicom.zframe.aspect_ratio))
-			image = image.resize((x,y))
-			imagetk = ImageTk.PhotoImage(image)
-			self.Dicom.zframe.canvas.itemconfig( self.Dicom.zframe.canvas.find_all()[0], image=imagetk )
-			self.Dicom.zframe.canvas.imagetk = imagetk
-
+			self.Dicom.zframe.setImage(image)
+			x = self.Dicom.zframe.width
+			y = self.Dicom.zframe.height
 			#resize TextGrid tiers and spectrogram
 			self.Spectrogram.canvas_width = x
 			self.Spectrogram.canvas.config(width=x)
