@@ -118,7 +118,7 @@ class ZoomFrame(Frame):
 		# self.master.rowconfigure(0, weight=1) # do i need
 		# self.master.columnconfigure(0, weight=1) # do i need
 
-		self.canvas.bind('<Configure>', self.showImage ) # on canvas resize events
+		# self.canvas.bind('<Configure>', self.showImage ) # on canvas resize events
 		self.canvas.bind('<Control-Button-1>', self.moveFrom )
 		self.canvas.bind('<Control-B1-Motion>', self.moveTo )
 		self.canvas.bind('<MouseWheel>', self.wheel ) # Windows & Linux FIXME
@@ -218,6 +218,7 @@ class ZoomFrame(Frame):
 			bbox = self.canvas.coords(self.container)
 			self.panX = bbox[0]
 			self.panY = bbox[1]
+			print(bbox, 'line 221')
 			self.showImage()
 
 	def scrollY(self, *args, **kwargs):
@@ -272,6 +273,7 @@ class Crosshairs(object):
 		# store position data
 		self.x, self.y = x, y
 		self.trueX, self.trueY = x, y
+		self.trueX, self.trueY = self.transformCoordsToTrue(x, y)
 		if transform:
 			self.trueX, self.trueY = self.transformCoordsToTrue(x, y)
 		else:
@@ -299,16 +301,24 @@ class Crosshairs(object):
 		''' called when we're saving to file '''
 		return self.trueX, self.trueY
 
-	def transformCoordsToTrue(self, _x, _y):
-		''' canvas coords -> absolute coords '''
-		x = (self.trueX - self.zframe.panX) / self.zframe.imgscale
-		y = (self.trueY - self.zframe.panY) / self.zframe.imgscale
-		return x, y
+	def transformCoordsToTrue(self, x, y):
 
-	def transformTrueToCoords(self, _x, _y):
+		# x = (self.trueX - self.zframe.panX) / self.zframe.imgscale
+		# y = (self.trueY - self.zframe.panY) / self.zframe.imgscale
+		# return x,y
+		truex = (x-self.zframe.panX)/(self.zframe.width*self.zframe.imgscale)
+		truey = (y-self.zframe.panY)/(self.zframe.height*self.zframe.imgscale)
+		# truex = (x-self.zframe.panX)/self.zframe.imgscale
+		# truey = (y-self.zframe.panY)/self.zframe.imgscale
+		# print(truex, truey)
+		return truex, truey
+
+	def transformTrueToCoords(self, truex, truey):
 		''' absolute coords -> canvas coords '''
-		x = (_x * self.zframe.imgscale) + self.zframe.panX
-		y = (_y * self.zframe.imgscale) + self.zframe.panY
+		# x = (_x * self.zframe.imgscale) + self.zframe.panX
+		# y = (_y * self.zframe.imgscale) + self.zframe.panY
+		x = truex * self.zframe.width * self.zframe.imgscale + self.zframe.panX
+		y = truey * self.zframe.height * self.zframe.imgscale + self.zframe.panY
 		return x, y
 
 	def transformCoords(self, x, y):
@@ -359,10 +369,10 @@ class Crosshairs(object):
 		''' move the centerpoint to a given point (calculated in main class) '''
 		if self.isVisible:
 
-			self.trueX += (click[0] - self.x) / self.zframe.imgscale
-			self.trueY += (click[1] - self.y) / self.zframe.imgscale
-			self.x, self.y = self.transformTrueToCoords(self.trueX, self.trueY)
-
+			self.x += (click[0] - self.x)
+			self.y += (click[1] - self.y)
+			# self.x, self.y = self.transformTrueToCoords(self.trueX, self.trueY)
+			print(self.x, self.y, 'line 375')
 			self.len = self.transformLength( self.defaultLength )
 			self.zframe.canvas.coords( self.hline, self.x-self.len, self.y, self.x+self.len, self.y )
 			self.zframe.canvas.coords( self.vline, self.x, self.y-self.len, self.x, self.y+self.len )
@@ -2828,6 +2838,8 @@ class App(ThemedTk):
 					tierWidgets['times'].config(width=x)
 					tierWidgets['times'].coords(2,(x,tierWidgets['times'].coords(2)[1])) #move end time
 			self.TextGrid.fillCanvases() #calls Spectrogram.reset
+			#move Traces
+			self.Trace.update()
 
 		#save layout ot geometry manager
 		geometry = self.geometry()
