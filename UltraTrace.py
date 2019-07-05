@@ -273,7 +273,6 @@ class Crosshairs(object):
 		# store position data
 		self.x, self.y = x, y
 		self.trueX, self.trueY = x, y
-		self.trueX, self.trueY = self.transformCoordsToTrue(x, y)
 		if transform:
 			self.trueX, self.trueY = self.transformCoordsToTrue(x, y)
 		else:
