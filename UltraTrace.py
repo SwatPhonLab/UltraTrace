@@ -371,6 +371,7 @@ class Crosshairs(object):
 			self.x += (click[0] - self.x)
 			self.y += (click[1] - self.y)
 			# self.x, self.y = self.transformTrueToCoords(self.trueX, self.trueY)
+			self.trueX, self.trueY = self.transformCoordsToTrue(self.x, self.y)
 			print(self.x, self.y, 'line 375')
 			self.len = self.transformLength( self.defaultLength )
 			self.zframe.canvas.coords( self.hline, self.x-self.len, self.y, self.x+self.len, self.y )
