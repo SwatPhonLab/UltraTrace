@@ -456,6 +456,9 @@ class MetadataModule(object):
 					# allow us to follow symlinks
 					real_filepath = os.path.realpath(filepath)
 
+					#make file path relative to metadata file
+					filepath = os.path.relpath(filepath,start=self.path)
+
 					MIME = getMIMEType(real_filepath)
 					if MIME in MIMEs:
 						# add `good` files
@@ -569,8 +572,14 @@ class MetadataModule(object):
 
 		if key == 'all':
 			return mddict.keys()
-		elif key in mddict:
-			return mddict[ key ]
+		elif key in mddict and mddict[ key ] != None:
+			# print(mddict[key], 'line 576')
+			if type(mddict[key]) is dict:
+				for el in mddict[key].keys():
+					mddict[key][el] = os.path.join(self.path, mddict[key][el])
+			else:
+				mddict[key] = os.path.join(self.path, mddict[key])
+			return mddict[key]
 		else:
 			return None
 
@@ -2309,7 +2318,7 @@ class DicomModule(object):
 
 		# write to a special directory
 		outputpath = os.path.join(
-			self.app.Data.getTopLevel('path'),
+			# self.app.Data.getTopLevel('path'),
 			self.app.Data.getFileLevel('name')+'_dicom_to_png' )
 		if os.path.exists( outputpath ) == False:
 			os.mkdir( outputpath )
