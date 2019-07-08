@@ -131,6 +131,9 @@ class ZoomFrame(Frame):
 		self.canvas.bind('<ButtonRelease-1>', self.app.onReleaseZoom )
 		self.canvas.bind('<Motion>', self.app.onMotion )
 
+		self.canvas.bind('<Shift-Button-1>', self.app.Trace.selectMultiple)
+		self.canvas.bind('<Shift-ButtonRelease-1>', self.app.Trace.selectMultipleRelease)
+
 		self.app.bind('<Command-equal>', self.wheel )
 		self.app.bind('<Command-minus>', self.wheel )
 
@@ -573,7 +576,6 @@ class MetadataModule(object):
 		if key == 'all':
 			return mddict.keys()
 		elif key in mddict and mddict[ key ] != None:
-			# print(mddict[key], 'line 576')
 			if type(mddict[key]) is dict:
 				for el in mddict[key].keys():
 					mddict[key][el] = os.path.join(self.path, mddict[key][el])
@@ -1746,6 +1748,47 @@ class TraceModule(object):
 		if self.getCurrentTraceName() in self.crosshairs:
 			for ch in self.crosshairs[self.getCurrentTraceName()]:
 				self.select(ch)
+	def selectMultiple(self,event):
+		'''click on a place, and select all crosshairs in a rectangle from click to release'''
+		# get nearby crosshairs from this trace
+		self.nearby = self.getNearClickAllTraces((event.x, event.y))
+
+		#if not clicking on a ch
+		if self.nearby == None:
+			self.unselectAll()
+
+			canvas = self.app.Dicom.zframe.canvas
+			self.selectBoxX = canvas.canvasx(event.x)
+			self.selectBoxY = canvas.canvasy(event.y)
+		else:
+			self.select(self.nearby)
+
+	def selectMultipleRelease(self,event):
+		''' '''
+		#if not clicking on a ch
+		if self.nearby == None:
+			canvas = self.app.Dicom.zframe.canvas
+			x1=self.selectBoxX
+			x2=canvas.canvasx(event.x)
+			y1=self.selectBoxY
+			y2=canvas.canvasy(event.y)
+			# stuff = canvas.find_enclosed(x1,y1,x2,y2)
+			# print(stuff)
+			# print(x1,x2,y1,y2)
+			trace = self.getCurrentTraceName()
+			coords = []
+			x1True = None
+
+			if trace in self.crosshairs:
+				for ch in self.crosshairs[ trace ]:
+					if x1True == None:
+						x1True, y1True = ch.transformCoordsToTrue(x1,y1)
+						x2True, y2True = ch.transformCoordsToTrue(x2,y2)
+					if ch.isVisible:
+						x,y = ch.getTrueCoords()
+						if min(x1True,x2True) < x < max(x1True,x2True) and min(y1True,y2True) < y < max(y1True,y2True):
+							self.select(ch)
+
 	def unselect(self, ch):
 		''' unselect a crosshairs '''
 		ch.unselect()
@@ -1813,12 +1856,13 @@ class TraceModule(object):
 
 		return None
 
-	def copy(self):
+	def copy(self, event):
 		''' TODO '''
-		pass
+		print('copy')
+		print(self.crosshairs)
 	def paste(self):
 		''' TODO '''
-		pass
+		print('paste')
 	def recolor(self, event=None, trace=None, color=None):
 		''' change the color of a particular trace '''
 
@@ -2608,8 +2652,8 @@ class App(ThemedTk):
 
 		# initialize other modules
 		self.Control = ControlModule(self)
-		self.Dicom = DicomModule(self)
 		self.Trace = TraceModule(self)
+		self.Dicom = DicomModule(self)
 		self.Audio = PlaybackModule(self)
 		self.TextGrid = TextGridModule(self)
 		self.Spectrogram = SpectrogramModule(self)
@@ -2796,10 +2840,7 @@ class App(ThemedTk):
 			# otherwise, add it to our selection
 			else:
 
-				# check if we're holding shift key
-				if event.state != 1 and nearby.isSelected == False:
-					# if not, clear current selection
-					self.Trace.unselectAll()
+				self.Trace.unselectAll()
 
 				# add this guy to our current selection
 				nearby.select()
