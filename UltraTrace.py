@@ -131,8 +131,10 @@ class ZoomFrame(Frame):
 		self.canvas.bind('<ButtonRelease-1>', self.app.onReleaseZoom )
 		self.canvas.bind('<Motion>', self.app.onMotion )
 
-		self.canvas.bind('<Shift-Button-1>', self.app.Trace.selectMultiple)
-		self.canvas.bind('<Shift-ButtonRelease-1>', self.app.Trace.selectMultipleRelease)
+		# self.canvas.bind('<Shift-Button-1>', self.app.Trace.selectMultiple)
+		# self.canvas.bind('<Shift-ButtonRelease-1>', self.app.Trace.selectMultipleRelease)
+		self.canvas.bind('Shift',self.app.Trace.shiftPress)
+		self.canvas.bind('KeyRelease-Shift',self.app.Trace.shiftRelease)
 
 		self.app.bind('<Command-equal>', self.wheel )
 		self.app.bind('<Command-minus>', self.wheel )
@@ -1747,6 +1749,15 @@ class TraceModule(object):
 		if self.getCurrentTraceName() in self.crosshairs:
 			for ch in self.crosshairs[self.getCurrentTraceName()]:
 				self.select(ch)
+
+	def shiftPress(self,event):
+		''' '''
+		print('pressed')
+	def shiftRelease(self,event):
+		''' '''
+		print('unpressed')
+
+
 	def selectMultiple(self,event):
 		'''click on a place, and select all crosshairs in a rectangle from click to release'''
 		# get nearby crosshairs from this trace
