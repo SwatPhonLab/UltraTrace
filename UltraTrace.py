@@ -221,7 +221,7 @@ class ZoomFrame(Frame):
 			bbox = self.canvas.coords(self.container)
 			self.panX = bbox[0]
 			self.panY = bbox[1]
-			print(bbox, 'line 221')
+			# print(bbox, 'line 221')
 			self.showImage()
 
 	def scrollY(self, *args, **kwargs):
@@ -375,7 +375,6 @@ class Crosshairs(object):
 			self.y += (click[1] - self.y)
 			# self.x, self.y = self.transformTrueToCoords(self.trueX, self.trueY)
 			self.trueX, self.trueY = self.transformCoordsToTrue(self.x, self.y)
-			print(self.x, self.y, 'line 375')
 			self.len = self.transformLength( self.defaultLength )
 			self.zframe.canvas.coords( self.hline, self.x-self.len, self.y, self.x+self.len, self.y )
 			self.zframe.canvas.coords( self.vline, self.x, self.y-self.len, self.x, self.y+self.len )
@@ -1762,7 +1761,6 @@ class TraceModule(object):
 			self.selectBoxY = canvas.canvasy(event.y)
 		else:
 			self.select(self.nearby)
-
 	def selectMultipleRelease(self,event):
 		''' '''
 		#if not clicking on a ch
@@ -1856,13 +1854,20 @@ class TraceModule(object):
 
 		return None
 
-	def copy(self, event):
+	def copy(self, event=None):
 		''' TODO '''
-		print('copy')
-		print(self.crosshairs)
+		# print('copy')
+		self.copied = []
+		if len(self.selected) > 0:
+			for ch in self.selected:
+				self.copied.append(ch.getTrueCoords())
 	def paste(self):
 		''' TODO '''
-		print('paste')
+		newCrosshairs = []
+		for xy in self.copied:
+			ch = self.add(xy[0],xy[1], transform=False)
+		self.write()
+
 	def recolor(self, event=None, trace=None, color=None):
 		''' change the color of a particular trace '''
 
