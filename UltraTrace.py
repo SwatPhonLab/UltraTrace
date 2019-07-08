@@ -697,16 +697,41 @@ class TextGridModule(object):
 		self.startup()
 
 		#bindings
-		self.app.bind("<Command-n>", self.getBounds)
-		self.app.bind("<Command-a>", self.getBounds)
-		self.app.bind("<Command-i>", self.getBounds)
-		self.app.bind("<Command-o>", self.getBounds)
+		if _PLATFORM == 'Linux':
+			self.app.bind("<Control-n>", self.getBounds)
+			self.app.bind("<Control-a>", self.getBounds)
+			self.app.bind("<Control-i>", self.getBounds)
+			self.app.bind("<Control-o>", self.getBounds)
+			# Command is Alt in Linux, apparently
+			self.app.bind("<Command-Up>", self.changeTiers)
+			self.app.bind("<Command-Down>", self.changeTiers)
+			self.app.bind("<Command-Left>", self.changeIntervals)
+			self.app.bind("<Command-Right>", self.changeIntervals)
+		elif _PLATFORM == 'Darwin':
+			self.app.bind("<Command-n>", self.getBounds)
+			self.app.bind("<Command-a>", self.getBounds)
+			self.app.bind("<Command-i>", self.getBounds)
+			self.app.bind("<Command-o>", self.getBounds)
+			self.app.bind("<Option-Up>", self.changeTiers)
+			self.app.bind("<Option-Down>", self.changeTiers)
+			self.app.bind("<Option-Left>", self.changeIntervals)
+			self.app.bind("<Option-Right>", self.changeIntervals)
+		#defaults (Command/Alt everything)
+		else:
+			self.app.bind("<Command-n>", self.getBounds)
+			self.app.bind("<Command-a>", self.getBounds)
+			self.app.bind("<Command-i>", self.getBounds)
+			self.app.bind("<Command-o>", self.getBounds)
+			self.app.bind("<Command-Up>", self.changeTiers)
+			self.app.bind("<Command-Down>", self.changeTiers)
+			self.app.bind("<Command-Left>", self.changeIntervals)
+			self.app.bind("<Command-Right>", self.changeIntervals)
+
+		# these aren't Praat-like
 		self.app.bind("<Shift-Left>", self.getBounds)
 		self.app.bind("<Shift-Right>", self.getBounds)
-		self.app.bind("<Command-Up>", self.changeTiers)
-		self.app.bind("<Command-Down>", self.changeTiers)
-		self.app.bind("<Command-Left>", self.changeIntervals)
-		self.app.bind("<Command-Right>", self.changeIntervals)
+
+
 
 	def startup(self):
 		'''
