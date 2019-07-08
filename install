@@ -4,13 +4,16 @@
 ## Debian:
 ## sudo apt-get install python3-soundfile python3-scipy
 ## sudo pip3 install praat-parselmouth python-magic
-sudo -H pip3 install -U python-magic soundfile scipy praat-parselmouth
+
+# old:
+##sudo -H pip3 install -U python-magic soundfile scipy praat-parselmouth
 
 # non-critical
 ## Debian:
-## sudo apt-get install python3-pyaudio python3-dicom python3-cairosvg python3-pydub python3-pil.imagetk
+## sudo apt-get install python3-pyaudio python3-dicom python3-cairosvg python3-pydub python3-pil.imagetk ffmpeg
 ## sudo pip3 install textgrid wav2vec ttkthemes xparser
-sudo -H pip3 install -U cairosvg wav2vec pygame numpy pillow pydicom textgrid
+# old:
+##sudo -H pip3 install -U cairosvg wav2vec pygame numpy pillow pydicom textgrid
 
 python3 ./setup.py build_ext --inplace
 
