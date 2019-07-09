@@ -1623,6 +1623,9 @@ class TraceModule(object):
 		# set of currently selected crosshairs
 		self.selected = set()
 
+		# set of copied crosshairs
+		self.copied = []
+
 		# declare & init trace string variable
 		self.traceSV = StringVar()
 		self.traceSV.set( '' )
@@ -1885,10 +1888,10 @@ class TraceModule(object):
 				self.copied.append(ch.getTrueCoords())
 	def paste(self):
 		''' TODO '''
-		newCrosshairs = []
-		for xy in self.copied:
-			ch = self.add(xy[0],xy[1], transform=False)
-		self.write()
+		if len(self.copied) > 0:
+			for xy in self.copied:
+				ch = self.add(xy[0],xy[1], transform=False)
+			self.write()
 
 	def recolor(self, event=None, trace=None, color=None):
 		''' change the color of a particular trace '''
