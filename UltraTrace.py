@@ -2892,10 +2892,9 @@ class App(ThemedTk):
 		Handle releasing a click within the zoomframe canvas
 		'''
 		if self.Dicom.isLoaded:
-			if self.isDragging:
-				dx = (event.x - self.click[0])
-				dy = (event.y - self.click[1])
-
+			# if self.isDragging:
+			# 	dx = (event.x - self.click[0])
+			# 	dy = (event.y - self.click[1])
 			if event.state == 257 and self.selectBoxX!=False:
 				self.selectBoxX = False
 				self.selectBoxY = False
@@ -2927,6 +2926,7 @@ class App(ThemedTk):
 		'''
 
 		'''
+		self.onReleaseZoom(event)
 		if self.resized == True and self.Dicom.zframe.shown == True: #shouldn't trigger when frame not displayed
 			self.resized = False
 
@@ -2957,8 +2957,6 @@ class App(ThemedTk):
 			#save layout ot geometry manager
 			geometry = self.geometry()
 			self.Data.setTopLevel( 'geometry', geometry )
-		else:
-			self.onReleaseZoom(event)
 
 	def onMotion(self, event):
 		'''
