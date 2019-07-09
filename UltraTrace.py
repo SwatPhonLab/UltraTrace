@@ -128,13 +128,7 @@ class ZoomFrame(Frame):
 		self.resetCanvas()
 
 		self.canvas.bind('<Button-1>', self.app.onClick )
-		self.canvas.bind('<ButtonRelease-1>', self.app.onReleaseZoom )
 		self.canvas.bind('<Motion>', self.app.onMotion )
-
-		# self.canvas.bind('<Shift-Button-1>', self.app.Trace.selectMultiple)
-		# self.canvas.bind('<Shift-ButtonRelease-1>', self.app.Trace.selectMultipleRelease)
-		self.canvas.bind('Shift',self.app.Trace.shiftPress)
-		self.canvas.bind('KeyRelease-Shift',self.app.Trace.shiftRelease)
 
 		self.app.bind('<Command-equal>', self.wheel )
 		self.app.bind('<Command-minus>', self.wheel )
@@ -1775,14 +1769,6 @@ class TraceModule(object):
 			for ch in self.crosshairs[self.getCurrentTraceName()]:
 				self.select(ch)
 
-	def shiftPress(self,event):
-		''' '''
-		print('pressed')
-	def shiftRelease(self,event):
-		''' '''
-		print('unpressed')
-
-
 	def selectMultiple(self,event):
 		'''click on a place, and select all crosshairs in a rectangle from click to release'''
 		# get nearby crosshairs from this trace
@@ -2719,6 +2705,8 @@ class App(ThemedTk):
 		self.isClicked = False	# used in handling of canvas click events
 		self.isDragging = False # used in handling of canvas click events
 		self.resized = False 	#for changing widgets after window resize
+		self.selectBoxX = False
+		self.selectBoxY = False
 
 		# declare string variables
 		self.currentFileSV = StringVar(self)
@@ -2861,13 +2849,16 @@ class App(ThemedTk):
 
 			# if we didn't click near anything ...
 			if nearby == None:
-
-				# unselect crosshairs
-				self.isClicked = True
 				self.Trace.unselectAll()
-				ch = self.Trace.add( *self.click )
+				if event.state != 1:
+					# unselect crosshairs
+					self.isClicked = True
+					ch = self.Trace.add( *self.click )
 
-				self.Control.push({ 'type':'add', 'chs':[ch] })
+					self.Control.push({ 'type':'add', 'chs':[ch] })
+				else:
+					self.selectBoxX = self.Dicom.zframe.canvas.canvasx(event.x)
+					self.selectBoxY = self.Dicom.zframe.canvas.canvasy(event.y)
 				return
 
 			# NOTE: only get here if we clicked near something
@@ -2880,11 +2871,10 @@ class App(ThemedTk):
 
 			# otherwise, add it to our selection
 			else:
-
-				self.Trace.unselectAll()
+				if event.state != 1: #and nearby.isSelected == False:
+					self.Trace.unselectAll()
 
 				# add this guy to our current selection
-				nearby.select()
 				self.Trace.select( nearby )
 
 				# set dragging variables
@@ -2898,9 +2888,34 @@ class App(ThemedTk):
 			if self.isDragging:
 				dx = (event.x - self.click[0])
 				dy = (event.y - self.click[1])
+
+			if event.state == 257 and self.selectBoxX!=False:
+				self.selectBoxX = False
+				self.selectBoxY = False
+
+				canvas = self.Dicom.zframe.canvas
+				x1=self.selectBoxX
+				x2=canvas.canvasx(event.x)
+				y1=self.selectBoxY
+				y2=canvas.canvasy(event.y)
+				trace = self.Trace.getCurrentTraceName()
+				coords = []
+				x1True = None
+
+				if trace in self.Trace.crosshairs:
+					for ch in self.Trace.crosshairs[ trace ]:
+						if x1True == None:
+							x1True, y1True = ch.transformCoordsToTrue(x1,y1)
+							x2True, y2True = ch.transformCoordsToTrue(x2,y2)
+						if ch.isVisible:
+							x,y = ch.getTrueCoords()
+							if min(x1True,x2True) < x < max(x1True,x2True) and min(y1True,y2True) < y < max(y1True,y2True):
+								self.Trace.select(ch)
+
 			self.isDragging = False
 			self.isClicked = False
 			self.Trace.write()
+
 	def onRelease(self,event):
 		'''
 
@@ -2932,10 +2947,11 @@ class App(ThemedTk):
 			#move Traces
 			self.Trace.update()
 
-		#save layout ot geometry manager
-		geometry = self.geometry()
-		self.Data.setTopLevel( 'geometry', geometry )
-
+			#save layout ot geometry manager
+			geometry = self.geometry()
+			self.Data.setTopLevel( 'geometry', geometry )
+		else:
+			self.onReleaseZoom(event)
 
 	def onMotion(self, event):
 		'''
