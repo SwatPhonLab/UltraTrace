@@ -1349,12 +1349,12 @@ class TextGridModule(object):
 			for frame in frames:
 				if frame[:5] == 'frame':
 					frame_obj = self.frames_canvas.find_withtag(frame)
-					self.frames_canvas.itemconfig(frame_obj, fill='red')
+					self.frames_canvas.itemconfig(frame_obj, fill='blue')
 
-		#current frame highlighted in blue
+		#current frame highlighted in red
 		if self.app.frame:
-			highlighted_frame = self.frames_canvas.find_withtag('frame'+str(self.app.frame))
-			self.frames_canvas.itemconfig(highlighted_frame, fill='blue')
+			self.highlighted_frame = self.frames_canvas.find_withtag('frame'+str(self.app.frame))
+			self.frames_canvas.itemconfig(self.highlighted_frame, fill='red')
 
 	def update(self):
 		'''
@@ -1573,6 +1573,10 @@ class SpectrogramModule(object):
 				if itm+1 in widg.find_all():
 					r_loc = widg.coords(itm+1)[0]
 					self.canvas.create_line(r_loc, 0, r_loc, self.canvas_height, tags='line', fill='blue')
+
+			#draw selected frame
+			xcoord = self.app.TextGrid.frames_canvas.coords(self.app.TextGrid.highlighted_frame)[0]
+			self.canvas.create_line(xcoord,0,xcoord,self.canvas_height, tags='line', fill='red')
 
 	def grid(self):
 		'''
