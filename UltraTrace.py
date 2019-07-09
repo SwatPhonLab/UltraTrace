@@ -1251,7 +1251,7 @@ class TextGridModule(object):
 				dist = abs(obj_x-x_loc)
 				maybe_item = el
 
-		if widg in self.tier_pairs.keys(): #if on tier-label canvas
+		if widg in self.tier_pairs.keys(): #on tier-label canvas
 			#fill selected tier frames
 			self.selectedTierFrames = []
 			for x in widg.gettags(maybe_item):
@@ -1259,7 +1259,7 @@ class TextGridModule(object):
 					self.selectedTierFrames.append(x[5:])
 			item = maybe_item
 
-		else: #on canvas with intervals/frames
+		elif widg in self.tier_pairs.values(): #on canvas with intervals/frames
 			if isinstance(maybe_item, int):
 				# #if item found is a boundary
 				# if len(widg.gettags(maybe_item)) == 0 or widg.gettags(maybe_item) == ('current',):
@@ -1276,6 +1276,8 @@ class TextGridModule(object):
 				for x in widg.gettags(item):
 					if x[:5] == 'frame':
 						self.selectedTierFrames.append(x[5:])
+		else:
+			item = maybe_item
 
 		return item
 
@@ -1430,6 +1432,7 @@ class SpectrogramModule(object):
 		self.spec_freq_max = DoubleVar()
 		self.wl = DoubleVar()
 		self.dyn_range = DoubleVar()
+		self.clicktime = -1
 		self.doDefaults()
 
 		#make spinboxes & buttons for spectrogram specs
@@ -1455,6 +1458,8 @@ class SpectrogramModule(object):
 
 		self.grid()
 
+		self.canvas.bind('<Button-1>', self.jumpToFrame)
+
 	def doDefaults(self):
 		self.spec_freq_max.set(5000.0)
 		self.wl.set(0.005)
@@ -1466,39 +1471,11 @@ class SpectrogramModule(object):
 
 	def reset(self):
 		self.drawSpectrogram()
-
-		# wwidth=100
-		# self.axis_canvas = Canvas(self.axis_frame, width=wwidth, height=self.canvas_height,background='gray', highlightthickness=0)
-		# # self.floor = self.axis_canvas.create_text(self.canvas_width,self.canvas_height/2,anchor=SE,text='0')
-		# self.floor = self.axis_canvas.create_text(wwidth,self.canvas_height,anchor=SE,text='0')
-
-		# #make spinboxes & buttons for spectrogram specs
-		# self.spinwin = Frame(self.axis_frame)
-		# #spinboxes
-		# axis_ceil_box = Spinbox(self.spinwin, textvariable=self.spec_freq_max, command=self.drawSpectrogram, width=7, increment=100, from_=0, to_=self.app.Audio.sfile.frame_rate)
-		# axis_ceil_box.bind('<Return>',self.drawSpectrogram)
-		# wl_box = Spinbox(self.spinwin, textvariable=self.wl, command=self.drawSpectrogram, width=7, increment=0.0005, from_=0, to_=1)
-		# wl_box.bind('<Return>',self.drawSpectrogram)
-		# dyn_range_box = Spinbox(self.spinwin, textvariable=self.dyn_range, command=self.drawSpectrogram, width=7, increment=10, from_=0, to_=10000)
-		# dyn_range_box.bind('<Return>',self.drawSpectrogram)
-		# #buttons
-		# default_btn = Button(self.spinwin, text='Standards', command=self.restoreDefaults)
-		# apply_btn = Button(self.spinwin, text='Apply', command=self.drawSpectrogram)
-		#
-		# # self.axis_frame.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor=NE)
-		# #grid spinboxes & buttons on subframe
-		# axis_ceil_box.grid(row=0, columnspan=2, sticky=NE)
-		# wl_box.grid(row=1, columnspan=2, sticky=NE)
-		# dyn_range_box.grid(row=2, columnspan=2, sticky=NE)
-		# default_btn.grid(row=3)
-		# apply_btn.grid(row=3, column=1)
-		#
-		# self.grid()
 		self.drawInterval()
 
 	def drawSpectrogram(self, event=None):
 		'''
-
+		Extracts spectrogram data from sound, and draws it to canvas
 		'''
 		sound = parselmouth.Sound(self.app.Audio.current)
 
@@ -1577,6 +1554,23 @@ class SpectrogramModule(object):
 			#draw selected frame
 			xcoord = self.app.TextGrid.frames_canvas.coords(self.app.TextGrid.highlighted_frame)[0]
 			self.canvas.create_line(xcoord,0,xcoord,self.canvas_height, tags='line', fill='red')
+			#draw line where user last clicked on spectrogram
+			if self.clicktime != -1:
+				x = self.canvas_width*(self.clicktime - float(self.app.TextGrid.start))/float(self.app.TextGrid.end - self.app.TextGrid.start)
+				self.canvas.create_line(x,0,x,self.canvas_height, tags='line', fill='green')
+
+	def jumpToFrame(self, event):
+		'''  '''
+		#prevents wiping of canvases because of mouse click
+		self.app.resized = False
+		# draw line at click location
+		x = self.canvas.canvasx(event.x)
+		self.clicktime = x*float(self.app.TextGrid.end - self.app.TextGrid.start)/self.canvas_width + float(self.app.TextGrid.start)
+		#jump to new frame
+		frame = self.app.TextGrid.my_find_closest(self.app.TextGrid.frames_canvas, self.canvas.canvasx(event.x))
+		framenum = self.app.TextGrid.frames_canvas.gettags(frame)[0][5:]
+		self.app.frame=int(framenum)
+		self.app.framesUpdate()
 
 	def grid(self):
 		'''
