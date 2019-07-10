@@ -115,7 +115,7 @@ class ZoomFrame(Frame):
 		self.canvas.grid(row=0, column=0, sticky='news')
 		self.canvas.update() # do i need
 		rect = RectTracker(self.canvas)
-		rect.autodraw()
+		rect.autodraw(outline='blue')
 
 		# self.master.rowconfigure(0, weight=1) # do i need
 		# self.master.columnconfigure(0, weight=1) # do i need
@@ -496,15 +496,15 @@ class MetadataModule(object):
 					filepath = os.path.relpath(filepath,start=self.path)
 
 					MIME = getMIMEType(real_filepath)
-					if MIME in MIMEs:
+					if (MIME == 'text/plain' or MIME == 'application/json') and extension == '.measurement':
+						print('Found old measurement file {}'.format(filename))
+						self.importOldMeasurement(real_filepath, filename)
+					elif MIME in MIMEs:
 						# add `good` files
 						if extension in MIMEs[ MIME ]:
 							if filename not in files:
 								files[filename] = { key:None for key in fileKeys }
 							files[filename][extension] = filepath
-						elif MIME == 'text/plain' and extension == '.measurement':
-							print('Found old measurement file {}'.format(filename))
-							self.importOldMeasurement(filepath, filename)
 					elif MIME == 'image/png' and '_dicom_to_png' in path:
 						# check for preprocessed dicom files
 						name, frame = filename.split( '_frame_' )
