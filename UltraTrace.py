@@ -127,7 +127,7 @@ class ZoomFrame(Frame):
 
 		self.resetCanvas()
 
-		self.canvas.bind('<Button-1>', self.app.onClick )
+		self.canvas.bind('<Button-1>', self.app.onClickZoom )
 		self.canvas.bind('<Motion>', self.app.onMotion )
 
 		self.app.bind('<Command-equal>', self.wheel )
@@ -1433,6 +1433,7 @@ class SpectrogramModule(object):
 		self.wl = DoubleVar()
 		self.dyn_range = DoubleVar()
 		self.clicktime = -1
+		self.specClick = False
 		self.doDefaults()
 
 		#make spinboxes & buttons for spectrogram specs
@@ -1527,7 +1528,6 @@ class SpectrogramModule(object):
 		self.canvas.create_image(self.canvas_width, self.canvas_height, anchor=SE, image=photo_img)
 		self.img = photo_img
 
-
 	def drawInterval(self):
 		'''
 		Adapted with permission from
@@ -1552,10 +1552,11 @@ class SpectrogramModule(object):
 					self.canvas.create_line(r_loc, 0, r_loc, self.canvas_height, tags='line', fill='blue')
 
 			#draw selected frame
-			xcoord = self.app.TextGrid.frames_canvas.coords(self.app.TextGrid.highlighted_frame)[0]
-			self.canvas.create_line(xcoord,0,xcoord,self.canvas_height, tags='line', fill='red')
+			if self.app.TextGrid.firstFrame <= self.app.frame <= self.app.TextGrid.lastFrame :
+				xcoord = self.app.TextGrid.frames_canvas.coords(self.app.TextGrid.highlighted_frame)[0]
+				self.canvas.create_line(xcoord,0,xcoord,self.canvas_height, tags='line', fill='red')
 			#draw line where user last clicked on spectrogram
-			if self.clicktime != -1:
+			if self.clicktime != -1 and self.specClick == False:
 				x = self.canvas_width*(self.clicktime - float(self.app.TextGrid.start))/float(self.app.TextGrid.end - self.app.TextGrid.start)
 				self.canvas.create_line(x,0,x,self.canvas_height, tags='line', fill='green')
 
@@ -1565,12 +1566,18 @@ class SpectrogramModule(object):
 		self.app.resized = False
 		# draw line at click location
 		x = self.canvas.canvasx(event.x)
-		self.clicktime = x*float(self.app.TextGrid.end - self.app.TextGrid.start)/self.canvas_width + float(self.app.TextGrid.start)
+		self.clicktime = self.xToTime(x)
 		#jump to new frame
 		frame = self.app.TextGrid.my_find_closest(self.app.TextGrid.frames_canvas, self.canvas.canvasx(event.x))
 		framenum = self.app.TextGrid.frames_canvas.gettags(frame)[0][5:]
 		self.app.frame=int(framenum)
 		self.app.framesUpdate()
+		#for selecting & zooming interval (w/ shift)
+		self.specClick = True
+
+	def xToTime(self, x):
+		''' converts from a x coordinate (relative to the canvas) to the timestamp at that coordinate'''
+		return x*float(self.app.TextGrid.end - self.app.TextGrid.start)/self.canvas_width + float(self.app.TextGrid.start)
 
 	def grid(self):
 		'''
@@ -2317,7 +2324,7 @@ class DicomModule(object):
 		if self.isLoaded:
 			# creates a new canvas object and we redraw everything to it
 			self.zframe.resetCanvas()
-			# self.zframe.canvas.bind('<Button-1>', self.app.onClick )
+			# self.zframe.canvas.bind('<Button-1>', self.app.onClickZoom )
 			# self.zframe.canvas.bind('<ButtonRelease-1>', self.app.onRelease )
 			# self.zframe.canvas.bind('<Motion>', self.app.onMotion )
 
@@ -2837,7 +2844,7 @@ class App(ThemedTk):
 		self.alignBottomTop()
 		self.resized=True
 
-	def onClick(self, event):
+	def onClickZoom(self, event):
 		'''
 		Handle clicking within the zoomframe canvas
 		'''
@@ -2881,6 +2888,7 @@ class App(ThemedTk):
 				# set dragging variables
 				self.isDragging = True
 				self.dragClick = self.click
+
 	def onReleaseZoom(self, event):
 		'''
 		Handle releasing a click within the zoomframe canvas
@@ -2915,12 +2923,26 @@ class App(ThemedTk):
 			self.isDragging = False
 			self.isClicked = False
 			self.Trace.write()
+	def onReleaseSpec(self,event):
+		'''shift + release zooms textgrid & spectrogram to selected interval'''
+		if self.Spectrogram.specClick==True:
+			if event.state==257:
+				canvas = self.Spectrogram.canvas
+				x1 = self.Spectrogram.clicktime
+				x2 = self.Spectrogram.xToTime(canvas.canvasx(event.x))
+				self.TextGrid.start = decimal.Decimal(min(x1,x2))
+				self.TextGrid.end = decimal.Decimal(max(x1,x2))
+				self.TextGrid.fillCanvases()
+			self.Spectrogram.specClick = False
 
 	def onRelease(self,event):
 		'''
 
 		'''
+		#runs if click happened on specific canvases
 		self.onReleaseZoom(event)
+		self.onReleaseSpec(event)
+		#runs if window resized
 		if self.resized == True and self.Dicom.zframe.shown == True: #shouldn't trigger when frame not displayed
 			self.resized = False
 
