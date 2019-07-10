@@ -174,9 +174,9 @@ class ZoomFrame(Frame):
 			self.height = self.app.RIGHT.winfo_height()
 			# print(x,y)
 			if self.width > self.height*self.aspect_ratio:
-				self.width = round(self.height*self.aspect_ratio)
-			else:
 				self.height = round(self.width*(1/self.aspect_ratio))
+			else:
+				self.width = round(self.height*self.aspect_ratio)
 		self.showImage()
 
 	def showImage(self, event=None):
@@ -1815,46 +1815,6 @@ class TraceModule(object):
 			for ch in self.crosshairs[self.getCurrentTraceName()]:
 				self.select(ch)
 
-	def selectMultiple(self,event):
-		'''click on a place, and select all crosshairs in a rectangle from click to release'''
-		# get nearby crosshairs from this trace
-		self.nearby = self.getNearClickAllTraces((event.x, event.y))
-
-		#if not clicking on a ch
-		if self.nearby == None:
-			self.unselectAll()
-
-			canvas = self.app.Dicom.zframe.canvas
-			self.selectBoxX = canvas.canvasx(event.x)
-			self.selectBoxY = canvas.canvasy(event.y)
-		else:
-			self.select(self.nearby)
-	def selectMultipleRelease(self,event):
-		''' '''
-		#if not clicking on a ch
-		if self.nearby == None:
-			canvas = self.app.Dicom.zframe.canvas
-			x1=self.selectBoxX
-			x2=canvas.canvasx(event.x)
-			y1=self.selectBoxY
-			y2=canvas.canvasy(event.y)
-			# stuff = canvas.find_enclosed(x1,y1,x2,y2)
-			# print(stuff)
-			# print(x1,x2,y1,y2)
-			trace = self.getCurrentTraceName()
-			coords = []
-			x1True = None
-
-			if trace in self.crosshairs:
-				for ch in self.crosshairs[ trace ]:
-					if x1True == None:
-						x1True, y1True = ch.transformCoordsToTrue(x1,y1)
-						x2True, y2True = ch.transformCoordsToTrue(x2,y2)
-					if ch.isVisible:
-						x,y = ch.getTrueCoords()
-						if min(x1True,x2True) < x < max(x1True,x2True) and min(y1True,y2True) < y < max(y1True,y2True):
-							self.select(ch)
-
 	def unselect(self, ch):
 		''' unselect a crosshairs '''
 		ch.unselect()
@@ -2932,9 +2892,7 @@ class App(ThemedTk):
 		Handle releasing a click within the zoomframe canvas
 		'''
 		if self.Dicom.isLoaded:
-			# if self.isDragging:
-			# 	dx = (event.x - self.click[0])
-			# 	dy = (event.y - self.click[1])
+			# select multiple crosshairs
 			if event.state == 257 and self.selectBoxX!=False:
 				self.selectBoxX = False
 				self.selectBoxY = False
@@ -2988,8 +2946,9 @@ class App(ThemedTk):
 			png_loc = self.Data.getPreprocessedDicom(self.frame)
 			image = Image.open( png_loc )
 			self.Dicom.zframe.setImage(image)
-			x = self.Dicom.zframe.width
-			y = self.Dicom.zframe.height
+			# x = self.Dicom.zframe.width
+			x = self.winfo_width() - self.LEFT.winfo_width()
+			# y = self.Dicom.zframe.height
 			#resize TextGrid tiers and spectrogram
 			self.Spectrogram.canvas_width = x
 			self.Spectrogram.canvas.config(width=x)
