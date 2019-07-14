@@ -169,30 +169,31 @@ class ZoomFrame(Frame):
 		if self.width == 0:
 			self.width, self.height = self.image.size
 			self.aspect_ratio = self.width/self.height
+		# else:
+		self.width = self.app.RIGHT.winfo_width()
+		self.height = self.app.RIGHT.winfo_height()
+		# print(x,y)
+		if self.width > self.height*self.aspect_ratio:
+			self.height = round(self.width*(1/self.aspect_ratio))
 		else:
-			self.width = self.app.RIGHT.winfo_width()
-			self.height = self.app.RIGHT.winfo_height()
-			# print(x,y)
-			if self.width > self.height*self.aspect_ratio:
-				self.height = round(self.width*(1/self.aspect_ratio))
-			else:
-				self.width = round(self.height*self.aspect_ratio)
+			self.width = round(self.height*self.aspect_ratio)
 		self.showImage()
 
 	def showImage(self, event=None):
+		# print(self.width, self.height, 'line 183')
 		if self.image != None:
-			self.canvas.delete(ALL)
-			self.container = self.canvas.create_rectangle(0,0,self.width,self.height,width=0)
+			self.canvas.delete('delendum')
+			self.container = self.canvas.create_rectangle(0,0,self.width,self.height,width=0, tags='delendum')
 			self.canvas.scale('all', 0, 0, self.imgscale, self.imgscale)
 			self.canvas.move('all', self.panX, self.panY)
 			bbox = self.canvas.bbox(self.container)
 			image = self.image.resize((bbox[2] - bbox[0], bbox[3] - bbox[1]))
 			imagetk = ImageTk.PhotoImage(image)
-			image = self.canvas.create_image(bbox[0], bbox[1], anchor='nw', image=imagetk)
+			image = self.canvas.create_image(bbox[0], bbox[1], anchor='nw', image=imagetk, tags='delendum')
 			self.canvas.lower(image)
 			self.canvas.imagetk = imagetk
 			self.shown = True
-			self.app.Trace.update()
+			# self.app.Trace.update()
 
 	def wheel(self, event):
 		print(event)
@@ -260,8 +261,8 @@ class RectTracker:
 	def autodraw(self, **opts):
 		"""Setup automatic drawing; supports command option"""
 		self.start = None
-		self.canvas.bind("<Button-1>", self.__update, '+')
-		self.canvas.bind("<B1-Motion>", self.__update, '+')
+		# self.canvas.bind("<Shift-Button-1>", self.__update, '+')
+		self.canvas.bind("<Shift-B1-Motion>", self.__update, '+')
 		self.canvas.bind("<ButtonRelease-1>", self.__stop, '+')
 
 		self._command = opts.pop('command', lambda *args: None)
@@ -270,7 +271,7 @@ class RectTracker:
 	def __update(self, event):
 		if not self.start:
 			self.start = [event.x, event.y]
-			return
+			# return
 
 		if self.item is not None:
 			self.canvas.delete(self.item)
@@ -377,6 +378,7 @@ class Crosshairs(object):
 	def select(self):
 		''' select this Crosshairs '''
 		if self.isVisible:
+			print(self.hline, self.vline, 'line 380')
 			self.zframe.canvas.itemconfig( self.hline, fill=self.selectedColor, width=self.selectedWidth)
 			self.zframe.canvas.itemconfig( self.vline, fill=self.selectedColor, width=self.selectedWidth)
 			self.isSelected = True
@@ -1601,7 +1603,7 @@ class SpectrogramModule(object):
 	def jumpToFrame(self, event):
 		'''  '''
 		#prevents wiping of canvases because of mouse click
-		self.app.resized = False
+		# self.app.resized = False
 		# draw line at click location
 		x = self.canvas.canvasx(event.x)
 		self.clicktime = self.xToTime(x)
@@ -1714,6 +1716,7 @@ class TraceModule(object):
 		''' on change frames '''
 		# self.grid()
 		self.reset() # clear our crosshairs
+		print('line 1718 update')
 		self.read()  # read from file
 		#self.frame.update()
 		#print("TraceModule", self.frame.winfo_width())
@@ -1749,12 +1752,20 @@ class TraceModule(object):
 		if write:
 			self.write()
 		return ch
+	def move(self):
+		''' called when window resizes to move to correct relative locations'''
+		# trace = self.getCurrentTraceName()
+		if self.crosshairs:
+			for trace in self.crosshairs:
+				for ch in self.crosshairs[ trace ]:
+					truex,truey = ch.getTrueCoords()
+					ch.x,ch.y = ch.transformTrueToCoords(truex, truey)
+					ch.dragTo((ch.x,ch.y))
 
 	def read(self):
 		'''
 		read a list of crosshair coordinates from the metadata file
 		'''
-
 		frame = self.app.frame
 		for trace in self.available:
 			try:
@@ -2710,7 +2721,7 @@ class App(ThemedTk):
 		self.frame = 0			# current frame of dicom file
 		self.isClicked = False	# used in handling of canvas click events
 		self.isDragging = False # used in handling of canvas click events
-		self.resized = False 	#for changing widgets after window resize
+		# self.resized = False 	#for changing widgets after window resize
 		self.selectBoxX = False
 		self.selectBoxY = False
 
@@ -2801,6 +2812,7 @@ class App(ThemedTk):
 		self.bind('<Left>', self.framesPrev )
 		self.bind('<Right>', self.framesNext )
 		self.bind('<BackSpace>', self.onBackspace )
+		self.bind('<Button-1>', self.getWinSize)
 		self.bind('<ButtonRelease-1>', self.onRelease)
 		self.bind('<Escape>', self.onEscape )
 		# self.count = 0
@@ -2818,10 +2830,12 @@ class App(ThemedTk):
 		'''
 
 		'''
-		self.bind('<Configure>', self.onWindowResize )
-		self.alignBottomTop()
+		self.bind('<Configure>', self.alignBottomLeft )
+		self.alignBottomLeft()
+		self.getWinSize()
+		self.alignBottomRight(self.oldwidth-self.leftwidth)
 
-	def alignBottomTop(self):
+	def alignBottomLeft(self, event=None):
 		'''
 		Makes the length of the canvases on the lower left the same length as the pane of controls in self.LEFT
 		'''
@@ -2834,14 +2848,32 @@ class App(ThemedTk):
 			if 'canvas' in tierWidgets:
 				tierWidgets['canvas-label'].config(width=self.leftwidth)
 				tierWidgets['canvas-label'].coords(ALL,(self.leftwidth,tierWidgets['canvas-label'].coords(1)[1]))
+	def alignBottomRight(self,x):
+		''' '''
+		self.Spectrogram.canvas_width = x
+		self.Spectrogram.canvas.config(width=x)
+		self.TextGrid.canvas_width = x
+		for t in range(len(self.TextGrid.TkWidgets)):
+			tierWidgets = self.TextGrid.TkWidgets[t]
+			canvas = None
+			if 'frames' in tierWidgets:
+				tierWidgets['frames'].config(width=x)
+			elif 'canvas' in tierWidgets:
+				tierWidgets['canvas'].config(width=x)
+			if 'times' in tierWidgets:
+				tierWidgets['times'].config(width=x)
+				tierWidgets['times'].coords(2,(x,tierWidgets['times'].coords(2)[1])) #move end time
+		self.TextGrid.fillCanvases() #calls Spectrogram.reset
 
-	def onWindowResize(self, event):
-		'''
-		Handle moving or resizing the app window
-		'''
-		self.alignBottomTop()
-		self.resized=True
+	# def onWindowResize(self, event):
+	# 	'''
+	# 	Handle moving or resizing the app window
+	# 	'''
+	# 	self.alignBottomLeft()
+	# 	# self.resized=True
 
+	def getWinSize(self, event=None):
+		self.oldwidth = self.winfo_width()
 	def onClickZoom(self, event):
 		'''
 		Handle clicking within the zoomframe canvas
@@ -2893,15 +2925,15 @@ class App(ThemedTk):
 		'''
 		if self.Dicom.isLoaded:
 			# select multiple crosshairs
-			if event.state == 257 and self.selectBoxX!=False:
-				self.selectBoxX = False
-				self.selectBoxY = False
-
+			if self.selectBoxX!=False:
 				canvas = self.Dicom.zframe.canvas
 				x1=self.selectBoxX
 				x2=canvas.canvasx(event.x)
 				y1=self.selectBoxY
 				y2=canvas.canvasy(event.y)
+				self.selectBoxX = False
+				self.selectBoxY = False
+
 				trace = self.Trace.getCurrentTraceName()
 				coords = []
 				x1True = None
@@ -2939,9 +2971,10 @@ class App(ThemedTk):
 		self.onReleaseZoom(event)
 		self.onReleaseSpec(event)
 		#runs if window resized
-		if self.resized == True and self.Dicom.zframe.shown == True: #shouldn't trigger when frame not displayed
-			self.resized = False
-
+		# if self.resized == True and self.Dicom.zframe.shown == True: #shouldn't trigger when frame not displayed
+		if self.winfo_width() != self.oldwidth and self.Dicom.zframe.shown == True: #shouldn't trigger when frame not displayed
+			# self.resized = False
+			print('got heem')
 			#resize dicom image
 			png_loc = self.Data.getPreprocessedDicom(self.frame)
 			image = Image.open( png_loc )
@@ -2950,22 +2983,9 @@ class App(ThemedTk):
 			x = self.winfo_width() - self.LEFT.winfo_width()
 			# y = self.Dicom.zframe.height
 			#resize TextGrid tiers and spectrogram
-			self.Spectrogram.canvas_width = x
-			self.Spectrogram.canvas.config(width=x)
-			self.TextGrid.canvas_width = x
-			for t in range(len(self.TextGrid.TkWidgets)):
-				tierWidgets = self.TextGrid.TkWidgets[t]
-				canvas = None
-				if 'frames' in tierWidgets:
-					tierWidgets['frames'].config(width=x)
-				elif 'canvas' in tierWidgets:
-					tierWidgets['canvas'].config(width=x)
-				if 'times' in tierWidgets:
-					tierWidgets['times'].config(width=x)
-					tierWidgets['times'].coords(2,(x,tierWidgets['times'].coords(2)[1])) #move end time
-			self.TextGrid.fillCanvases() #calls Spectrogram.reset
+			self.alignBottomRight(x)
 			#move Traces
-			self.Trace.update()
+			self.Trace.move()
 
 			#save layout ot geometry manager
 			geometry = self.geometry()
