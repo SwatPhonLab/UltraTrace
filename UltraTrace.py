@@ -1415,7 +1415,7 @@ class TextGridModule(object):
 					if framenum in self.app.Data.getCurrentTraceTracedFrames():
 						fill = 'blue'
 					else:
-						fill = 'deep sky blue'
+						fill = 'dodger blue'
 					self.frames_canvas.itemconfig(frame_obj, fill=fill)
 
 		#current frame highlighted in red
@@ -2926,19 +2926,22 @@ class App(ThemedTk):
 			# NOTE: only get here if we clicked near something
 
 			# if holding option key, unselect the guy we clicked on
-			if event.state == 16:
+			# if event.state == 16:
+			# if holding shift key, and ch is selected, unselect it
+			if event.state == 1 and nearby in self.Trace.selected:
 				nearby.unselect()
 				if nearby in self.Trace.selected:
 					self.Trace.selected.remove( nearby )
 
-			# otherwise, add it to our selection
-			else:
+			# otherwise, if not selected, add it to our selection
+			elif nearby not in self.Trace.selected:
 				if event.state != 1: #and nearby.isSelected == False:
 					self.Trace.unselectAll()
 
 				# add this guy to our current selection
 				self.Trace.select( nearby )
-
+			#through all of these operations, if clicked ch is selected, is ready to be dragged
+			if nearby in self.Trace.selected:
 				# set dragging variables
 				self.isDragging = True
 				self.dragClick = self.click
@@ -2948,6 +2951,7 @@ class App(ThemedTk):
 		Handle releasing a click within the zoomframe canvas
 		'''
 		if self.Dicom.isLoaded:
+
 			# select multiple crosshairs
 			if self.selectBoxX!=False:
 				canvas = self.Dicom.zframe.canvas
