@@ -123,7 +123,7 @@ class ZoomFrame(Frame):
 		# self.canvas.bind('<Configure>', self.showImage ) # on canvas resize events
 		self.canvas.bind('<Control-Button-1>', self.moveFrom )
 		self.canvas.bind('<Control-B1-Motion>', self.moveTo )
-		self.canvas.bind('<MouseWheel>', self.wheel ) # Windows & Linux FIXME
+		self.canvas.bind('<MouseWheel>', self.wheel ) # Windows & Linux
 		self.canvas.bind('<Button-4>', self.wheel )   # Linux scroll up
 		self.canvas.bind('<Button-5>', self.wheel )   # Linux scroll down
 
@@ -1734,7 +1734,14 @@ class TraceModule(object):
 			self.getWidget( Button(self.frame, text='New', command=self.newTrace), row=100, column=2 ),
 			self.getWidget( Button(self.frame, text='Rename', command=self.renameTrace), row=100, column=3 ) ]
 
-		self.app.bind('<Control-r>', self.recolor )
+		if _PLATFORM == 'Linux':
+			self.app.bind('<Control-r>', self.recolor )
+			self.app.bind('<Control-c>', self.copy )
+			self.app.bind('<Control-v>', self.paste )
+		else:
+			self.app.bind('<Command-r>', self.recolor )
+			self.app.bind('<Command-c>', self.copy )
+			self.app.bind('<Command-v>', self.paste )
 		self.grid()
 
 	def update(self):
@@ -1918,18 +1925,21 @@ class TraceModule(object):
 		return None
 
 	def copy(self, event=None):
-		''' TODO '''
+		''' copies relative positions of selected crosshairs for pasting'''
 		# print('copy')
 		self.copied = []
 		if len(self.selected) > 0:
 			for ch in self.selected:
 				self.copied.append(ch.getTrueCoords())
-	def paste(self):
-		''' TODO '''
+	def paste(self, event=None):
+		''' pastes copied crosshairs and add them to undo/redo buffer '''
 		if len(self.copied) > 0:
+			newChs = []
 			for xy in self.copied:
 				ch = self.add(xy[0],xy[1], transform=False)
+				newChs.append(ch)
 			self.write()
+			self.app.Control.push({ 'type':'add', 'chs':newChs })
 
 	def recolor(self, event=None, trace=None, color=None):
 		''' change the color of a particular trace '''
@@ -2348,7 +2358,9 @@ class DicomModule(object):
 			self.zoomResetBtn = Button(self.app.LEFT, text='Reset image', command=self.zoomReset)#, pady=7 )
 
 			# reset zoom keyboard shortcut
-			self.app.bind('<Command-0>', self.zoomReset )
+			if _PLATFORM == 'Linux':
+				self.app.bind('<Control-0>', self.zoomReset )
+			else: self.app.bind('<Command-0>', self.zoomReset )
 
 	def zoomReset(self, fromButton=False):
 		'''
@@ -2549,8 +2561,12 @@ class ControlModule(object):
 		# initialize our stacks
 		self.reset()
 		# bind Ctrl+z to UNDO and Ctrl+Shift+Z to REDO
-		self.app.bind('<Control-z>', self.undo )
-		self.app.bind('<Control-Z>', self.redo )
+		if _PLATFORM == 'Linux':
+			self.app.bind('<Control-z>', self.undo )
+			self.app.bind('<Control-Z>', self.redo )
+		else:
+			self.app.bind('<Command-z>', self.undo )
+			self.app.bind('<Command-Z>', self.redo )
 		# also make some buttons and bind them
 		self.frame = Frame(self.app.LEFT)#, pady=7)
 		self.frame.grid( row=5 )
@@ -2838,6 +2854,7 @@ class App(ThemedTk):
 		self.bind('<BackSpace>', self.onBackspace )
 		self.bind('<Button-1>', self.getWinSize)
 		self.bind('<ButtonRelease-1>', self.onRelease)
+		self.bind('<Double-Button-1>', self.onDoubleClick)
 		self.bind('<Escape>', self.onEscape )
 		# self.count = 0
 
@@ -2898,6 +2915,12 @@ class App(ThemedTk):
 
 	def getWinSize(self, event=None):
 		self.oldwidth = self.winfo_width()
+	def onDoubleClick(self, event):
+		''' select only crosshairs that's doubel clicked'''
+		nearby = self.Trace.getNearClickAllTraces( (event.x, event.y) )
+		if nearby != None:
+			self.Trace.unselectAll()
+			self.Trace.select( nearby )
 	def onClickZoom(self, event):
 		'''
 		Handle clicking within the zoomframe canvas
@@ -2916,7 +2939,6 @@ class App(ThemedTk):
 					# unselect crosshairs
 					self.isClicked = True
 					ch = self.Trace.add( *self.click )
-
 					self.Control.push({ 'type':'add', 'chs':[ch] })
 				else:
 					self.selectBoxX = self.Dicom.zframe.canvas.canvasx(event.x)
