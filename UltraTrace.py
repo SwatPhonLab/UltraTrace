@@ -536,6 +536,7 @@ class MetadataModule(object):
 			# sort files, set the geometry, and write
 			self.data[ 'files' ] = [ files[key] for key in sorted(files.keys()) ]
 			self.data[ 'geometry' ] = '1150x800+1400+480'
+			print('line 539')
 			self.write()
 
 		self.app.geometry( self.getTopLevel('geometry') )
@@ -562,7 +563,9 @@ class MetadataModule(object):
 		'''
 		Write metadata out to file
 		'''
-		# print(self.data['offset'])
+		# print()
+		# print(self.data, 'write')
+		# print()
 		mdfile = self.mdfile if _mdfile==None else _mdfile
 		with open( mdfile, 'w' ) as f:
 			json.dump( self.data, f, indent=3 )
@@ -580,7 +583,7 @@ class MetadataModule(object):
 		frame = self.app.frame if _frame==None else _frame #int(_frame)-1
 		processed = self.getFileLevel( 'processed' )
 		try:
-			return processed[str(frame)]
+			return self.unrelativize(processed[str(frame)])
 		except: # catches missing frames and missing preprocessed data
 			return None
 
@@ -598,6 +601,7 @@ class MetadataModule(object):
 		Set directory-level metadata
 		'''
 		self.data[ key ] = value
+		print('line 602')
 		self.write()
 
 	def getFileLevel( self, key, _fileid=None ):
@@ -610,14 +614,20 @@ class MetadataModule(object):
 		if key == 'all':
 			return mddict.keys()
 		elif key in mddict and mddict[ key ] != None:
-			if type(mddict[key]) is dict:
-				for el in mddict[key].keys():
-					mddict[key][el] = os.path.join(self.path, mddict[key][el])
-			else:
-				mddict[key] = os.path.join(self.path, mddict[key])
+			# if type(mddict[key]) is dict:
+			# 	for el in mddict[key].keys():
+			# 		mddict[key][el] = os.path.join(self.path, mddict[key][el])
+			# else:
+			# 	mddict[key] = os.path.join(self.path, mddict[key])
+			# print(mddict[key])
+			# print()
 			return mddict[key]
 		else:
 			return None
+
+	def unrelativize(self, fil):
+		'''make from a relative path into non-relative path'''
+		return os.path.join(self.path, fil)
 
 	def setFileLevel( self, key, value, _fileid=None ):
 		'''
@@ -695,6 +705,7 @@ class MetadataModule(object):
 		if filename not in self.data[ 'traces' ][ trace ][ 'files' ]:
 			self.data[ 'traces' ][ trace ][ 'files' ][ filename ] = {}
 		self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ str(frame) ] = crosshairs
+		# print('line 701')
 		self.write()
 
 	def tracesExist( self, trace ):
@@ -788,7 +799,7 @@ class TextGridModule(object):
 			if filename:
 				try:
 					# try to load up our TextGrid using the textgrid lib
-					self.TextGrid = TextGrid.fromFile( filename )
+					self.TextGrid = TextGrid.fromFile( self.app.Data.unrelativize(filename) )
 					# reset default Label to actually be useful
 					# self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
 					self.TkWidgets = []
@@ -841,7 +852,7 @@ class TextGridModule(object):
 			if filename:
 				try:
 					# try to load up our TextGrid using the textgrid lib
-					self.TextGrid = TextGrid.fromFile( filename )
+					self.TextGrid = TextGrid.fromFile( self.app.Data.unrelativize(filename) )
 					# reset default Label to actually be useful
 					# self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
 					# self.TkWidgets = []
@@ -907,7 +918,7 @@ class TextGridModule(object):
 			self.app.Data.write()
 			# newTier.write(self.TextGrid.getFirst(self.frameTierName))
 			self.fillCanvases()
-			self.TextGrid.write(self.app.Data.getFileLevel( '.TextGrid' ))
+			self.TextGrid.write(self.app.Data.unrelativize(self.app.Data.getFileLevel( '.TextGrid' )))
 
 
 		#except ValueError:
@@ -1525,6 +1536,7 @@ class SpectrogramModule(object):
 		self.grid()
 
 		self.canvas.bind('<Button-1>', self.jumpToFrame)
+		# self.canvas.bind('<Shift-Button-1>', self.jumpToFrame)
 
 	def doDefaults(self):
 		self.spec_freq_max.set(5000.0)
@@ -1608,13 +1620,17 @@ class SpectrogramModule(object):
 				for i in itvl_canvas.find_withtag('line'):
 					loc = itvl_canvas.coords(i)[0]
 					self.canvas.create_line(loc, 0, loc, self.canvas_height, tags='line', fill='blue')
-			else:
+			elif widg in self.app.TextGrid.tier_pairs.values(): #if widg is textgrid canvas
 				if itm-1 in widg.find_all():
 					l_loc = widg.coords(itm-1)[0]
 					self.canvas.create_line(l_loc, 0, l_loc, self.canvas_height, tags='line', fill='blue')
 				if itm+1 in widg.find_all():
 					r_loc = widg.coords(itm+1)[0]
 					self.canvas.create_line(r_loc, 0, r_loc, self.canvas_height, tags='line', fill='blue')
+			# if l_loc:
+			# 	self.canvas.create_line(l_loc, 0, l_loc, self.canvas_height, tags='line', fill='blue')
+			# if r_loc:
+			# 	self.canvas.create_line(r_loc, 0, r_loc, self.canvas_height, tags='line', fill='blue')
 
 			#draw selected frame
 			if self.app.TextGrid.firstFrame <= self.app.frame <= self.app.TextGrid.lastFrame :
@@ -1622,7 +1638,7 @@ class SpectrogramModule(object):
 				self.canvas.create_line(xcoord,0,xcoord,self.canvas_height, tags='line', fill='red')
 			#draw line where user last clicked on spectrogram
 			if self.clicktime != -1 and self.specClick == False:
-				x = self.canvas_width*(self.clicktime - float(self.app.TextGrid.start))/float(self.app.TextGrid.end - self.app.TextGrid.start)
+				x = self.timeToX(self.clicktime)
 				self.canvas.create_line(x,0,x,self.canvas_height, tags='line', fill='green')
 
 	def jumpToFrame(self, event):
@@ -1642,7 +1658,10 @@ class SpectrogramModule(object):
 
 	def xToTime(self, x):
 		''' converts from a x coordinate (relative to the canvas) to the timestamp at that coordinate'''
-		return x*float(self.app.TextGrid.end - self.app.TextGrid.start)/self.canvas_width + float(self.app.TextGrid.start)
+		return (x*float(self.app.TextGrid.end - self.app.TextGrid.start)/self.canvas_width) + float(self.app.TextGrid.start)
+	def timeToX(self,time):
+		''' converts from a time to the x coordinate on a canvas representing that time'''
+		return self.canvas_width*(time - float(self.app.TextGrid.start))/float(self.app.TextGrid.end - self.app.TextGrid.start)
 
 	def grid(self):
 		'''
@@ -2107,6 +2126,7 @@ class PlaybackModule(object):
 		audiofile = self.app.Data.getFileLevel( codec )
 		if audiofile != None:
 			try:
+				audiofile = self.app.Data.unrelativize(audiofile)
 				self.sfile = AudioSegment.from_file( audiofile )
 				self.current = audiofile
 				return True
@@ -2443,10 +2463,13 @@ class DicomModule(object):
 		# write to a special directory
 		outputpath = os.path.join(
 			# self.app.Data.getTopLevel('path'),
-			self.app.Data.getFileLevel('name')+'_dicom_to_png' )
+			self.app.Data.getFileLevel('name')+'_dicom_to_png/' )
 		if os.path.exists( outputpath ) == False:
 			os.mkdir( outputpath )
-
+		rel_outputpath = os.path.relpath(outputpath,start=self.app.Data.path)
+		# print(outputpath, 'line 2457')
+		# print(self.app.Data.getFileLevel('name'))
+		# print()
 		# grab one frame at a time to write (and provide a progress indicator)
 		printProgressBar(0, frames, prefix = 'Processing:', suffix = 'complete')
 		for f in range( frames ):
@@ -2456,13 +2479,16 @@ class DicomModule(object):
 			arr = pixels[ f,:,:,: ] if RGB else pixels[ f,:,: ]
 			img = Image.fromarray( arr )
 
-			outputfilename = '%s_frame_%04d.png' % ( self.app.Data.getFileLevel('name'), f+1 )
-			outputfilepath = os.path.join( outputpath, outputfilename )
-			img.save( outputfilepath, format='PNG' )
+			outputfilename = '%s_frame_%04d.png' % ( os.path.basename(self.app.Data.getFileLevel('name')), f+1 )
+			outputfilepath = os.path.join( rel_outputpath, outputfilename )
+			# print(outputpath, outputfilename,'line 2457')
+			# print(outputfilepath)
+			# img.save( os.path.join(self.app.Data.path,outputfilepath), format='PNG' )
 
 			# keep track of all the processing we've finished
-			processedData[ str(f) ] = outputfilepath
-
+			# print(os.path.join(outputpath,outputfilename))
+			processedData[ str(f+1) ] = outputfilepath
+		# print(processedData)
 		self.app.Data.setFileLevel( 'processed', processedData )
 		self.app.lift()
 		self.load()
@@ -2916,7 +2942,7 @@ class App(ThemedTk):
 	def getWinSize(self, event=None):
 		self.oldwidth = self.winfo_width()
 	def onDoubleClick(self, event):
-		''' select only crosshairs that's doubel clicked'''
+		''' select only crosshairs that's double clicked'''
 		nearby = self.Trace.getNearClickAllTraces( (event.x, event.y) )
 		if nearby != None:
 			self.Trace.unselectAll()
@@ -3006,11 +3032,31 @@ class App(ThemedTk):
 		if self.Spectrogram.specClick==True:
 			if event.state==257:
 				canvas = self.Spectrogram.canvas
-				x1 = self.Spectrogram.clicktime
-				x2 = self.Spectrogram.xToTime(canvas.canvasx(event.x))
-				self.TextGrid.start = decimal.Decimal(min(x1,x2))
-				self.TextGrid.end = decimal.Decimal(max(x1,x2))
-				self.TextGrid.fillCanvases()
+				t1 = self.Spectrogram.clicktime
+				t2 = self.Spectrogram.xToTime(canvas.canvasx(event.x))
+				# self.TextGrid.start = decimal.Decimal(min(t1,t2))
+				# self.TextGrid.end = decimal.Decimal(max(t1,t2))
+				#find all frames within range
+				canvas.dtag(ALL) #gets rid of previous tags
+				a = self.Spectrogram.timeToX(self.Spectrogram.clicktime)
+				b = event.x
+				x1 = min(a,b)
+				x2 = max(a,b)
+				frame_i = self.TextGrid.frames_canvas.find_all()[0]
+				current_loc = self.TextGrid.frames_canvas.coords(frame_i)[0]
+				while current_loc < x2:
+					if current_loc > x1:
+						tag = self.TextGrid.frames_canvas.gettags(frame_i)[0]
+						canvas.addtag_all(tag)
+					frame_i += 1
+					current_loc = self.TextGrid.frames_canvas.coords(frame_i)[0]
+				self.TextGrid.selectedItem = (canvas, canvas.find_all()[0])
+				# self.TextGrid.paintCanvases()
+				# self.Spectrogram.drawInterval(l_loc=x1,r_loc=x2)
+				# print(canvas.gettags(ALL))
+				# specgram = self.Spectrogram.canvas.find_all()[0]
+				# self.TextGrid.fillCanvases()
+				self.TextGrid.genFrameList(widg=canvas,x_loc=x2)
 			self.Spectrogram.specClick = False
 
 	def onRelease(self,event):
