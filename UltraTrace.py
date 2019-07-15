@@ -378,7 +378,6 @@ class Crosshairs(object):
 	def select(self):
 		''' select this Crosshairs '''
 		if self.isVisible:
-			print(self.hline, self.vline, 'line 380')
 			self.zframe.canvas.itemconfig( self.hline, fill=self.selectedColor, width=self.selectedWidth)
 			self.zframe.canvas.itemconfig( self.vline, fill=self.selectedColor, width=self.selectedWidth)
 			self.isSelected = True
@@ -578,7 +577,7 @@ class MetadataModule(object):
 		'''
 		Gets preprocessed (.dicom->.png) picture data for a given frame
 		'''
-		frame = self.app.frame if _frame==None else int(_frame)-1
+		frame = self.app.frame if _frame==None else _frame #int(_frame)-1
 		processed = self.getFileLevel( 'processed' )
 		try:
 			return processed[str(frame)]
@@ -662,13 +661,13 @@ class MetadataModule(object):
 		except KeyError:
 			return {}
 
-	def getTraceCurrentFrame( self, trace ):
+	def getTraceCurrentFrame( self, trace, _frame=None ):
 		'''
 		Returns a list of the crosshairs for the given trace at the current file
 		and current frame
 		'''
 		filename = self.getCurrentFilename()
-		frame    = str(self.app.frame)
+		frame    = str(self.app.frame) #if _frame==None else int(_frame)-1
 		try:
 			return self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ frame ]
 		except KeyError:
@@ -1716,7 +1715,6 @@ class TraceModule(object):
 		''' on change frames '''
 		# self.grid()
 		self.reset() # clear our crosshairs
-		print('line 1718 update')
 		self.read()  # read from file
 		#self.frame.update()
 		#print("TraceModule", self.frame.winfo_width())
@@ -2705,12 +2703,12 @@ class App(ThemedTk):
 		print( ' - loading widgets' )
 
 		self.filesUpdate()
-		self.framesUpdate()
+		# self.framesUpdate()
 		# self.TextGrid.startup() #NOTE why does TextGridModule have to reset a second time? Is there a more economical way to do this?
 
 		print()
 
-		self.after(1000,self.afterstartup)
+		self.after(300,self.afterstartup)
 
 	def setWidgetDefaults(self):
 		'''
@@ -2974,7 +2972,6 @@ class App(ThemedTk):
 		# if self.resized == True and self.Dicom.zframe.shown == True: #shouldn't trigger when frame not displayed
 		if self.winfo_width() != self.oldwidth and self.Dicom.zframe.shown == True: #shouldn't trigger when frame not displayed
 			# self.resized = False
-			print('got heem')
 			#resize dicom image
 			png_loc = self.Data.getPreprocessedDicom(self.frame)
 			image = Image.open( png_loc )
@@ -3059,6 +3056,8 @@ class App(ThemedTk):
 		# check if we can pan left/right
 		self.filesPrevBtn['state'] = DISABLED if self.Data.getFileLevel('_prev')==None else NORMAL
 		self.filesNextBtn['state'] = DISABLED if self.Data.getFileLevel('_next')==None else NORMAL
+		#load first frame
+		self.framesUpdate()
 
 	def filesPrev(self, event=None):
 		'''
