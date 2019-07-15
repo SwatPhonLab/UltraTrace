@@ -661,13 +661,22 @@ class MetadataModule(object):
 		except KeyError:
 			return {}
 
-	def getTraceCurrentFrame( self, trace, _frame=None ):
+	def getCurrentTraceTracedFrames(self):
+		''' '''
+		frames = self.getCurrentTraceAllFrames()
+		tracedFrames = []
+		for frame,traces in frames.items():
+			if traces != []:
+				tracedFrames.append(frame)
+		return tracedFrames
+
+	def getTraceCurrentFrame( self, trace ):
 		'''
 		Returns a list of the crosshairs for the given trace at the current file
 		and current frame
 		'''
 		filename = self.getCurrentFilename()
-		frame    = str(self.app.frame) #if _frame==None else int(_frame)-1
+		frame    = str(self.app.frame)# if _frame==None else str(_frame)
 		try:
 			return self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ frame ]
 		except KeyError:
@@ -1245,7 +1254,12 @@ class TextGridModule(object):
 					if tier[i].time >= self.start:
 						# x_coord = (tier[i].time-self.start)/duration*self.canvas_width
 						x_coord = ((tier[i].time-self.start)*self.canvas_width)/duration
-						frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags="frame"+tier[i].mark)
+						#determine fill
+						if tier[i].mark in self.app.Data.getCurrentTraceTracedFrames():
+							fill = 'black'
+						else:
+							fill = 'gray50'
+						frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags="frame"+tier[i].mark, fill=fill)
 						if first_frame_found == False:
 							self.firstFrame = int(tier[i].mark)
 							first_frame_found = True
@@ -1324,7 +1338,12 @@ class TextGridModule(object):
 		'''
 		Turns selected frame and interval back to black
 		'''
-		self.frames_canvas.itemconfig(ALL, fill='black')
+		for frame in range(1,self.app.frames+1):
+			if str(frame) in self.app.Data.getCurrentTraceTracedFrames():
+				fill = 'black'
+			else:
+				fill = 'gray50'
+			self.frames_canvas.itemconfig('frame'+str(frame), fill=fill)
 		if self.selectedItem:
 			wdg = self.selectedItem[0]
 			itm = self.selectedItem[1]
@@ -1387,10 +1406,17 @@ class TextGridModule(object):
 
 			#paint frames
 			frames = wdg.gettags(itm)
+			traces = self.app.Data.getCurrentTraceAllFrames
 			for frame in frames:
 				if frame[:5] == 'frame':
 					frame_obj = self.frames_canvas.find_withtag(frame)
-					self.frames_canvas.itemconfig(frame_obj, fill='blue')
+					#detect whether frame contains any traces
+					framenum = frame[5:]
+					if framenum in self.app.Data.getCurrentTraceTracedFrames():
+						fill = 'blue'
+					else:
+						fill = 'deep sky blue'
+					self.frames_canvas.itemconfig(frame_obj, fill=fill)
 
 		#current frame highlighted in red
 		if self.app.frame:
