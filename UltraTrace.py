@@ -317,7 +317,7 @@ class Crosshairs(object):
 			self.x, self.y = self.transformTrueToCoords(x, y)
 
 		self.len = self.transformLength( self.defaultLength )
-		self.resetTrueCoords()
+		# self.resetTrueCoords()
 		self.isSelected = False
 		self.isVisible = True
 
@@ -325,21 +325,21 @@ class Crosshairs(object):
 		self.hline = self.zframe.canvas.create_line(self.x-self.len, self.y, self.x+self.len, self.y, fill=self.unselectedColor, width=self.unselectedWidth)
 		self.vline = self.zframe.canvas.create_line(self.x, self.y-self.len, self.x, self.y+self.len, fill=self.unselectedColor, width=self.unselectedWidth)
 
-	def resetTrueCoords(self):
-		'''
-		This function calculates the `true` coordinates for saving our crosshairs to the metadata file.
-		The values are calculated relative to the top left corner of the canvas at 1x zoom.  We need to
-		make sure to call this every time we change the position of a Crosshairs.
-		'''
-		#self.trueX, self.trueY = self.transformCoordsToTrue(self.x,self.y)
-		pass
+	# def resetTrueCoords(self):
+	# 	'''
+	# 	This function calculates the `true` coordinates for saving our crosshairs to the metadata file.
+	# 	The values are calculated relative to the top left corner of the canvas at 1x zoom.  We need to
+	# 	make sure to call this every time we change the position of a Crosshairs.
+	# 	'''
+	# 	#self.trueX, self.trueY = self.transformCoordsToTrue(self.x,self.y)
+	# 	pass
 
 	def getTrueCoords(self):
 		''' called when we're saving to file '''
 		return self.trueX, self.trueY
 
 	def transformCoordsToTrue(self, x, y):
-
+		''' canvas coords -> absolute coords '''
 		# x = (self.trueX - self.zframe.panX) / self.zframe.imgscale
 		# y = (self.trueY - self.zframe.panY) / self.zframe.imgscale
 		# return x,y
@@ -552,7 +552,11 @@ class MetadataModule(object):
 					array = value['points']
 
 		filenum, framenum = filename.split('_')
-		new_array = [{"x":point1,"y":point2} for point1, point2 in array]
+		# new_array = [{"x":point1/800,"y":point2/600} for point1, point2 in array]
+		new_array = []
+		for point1, point2 in array:
+			el = {"x":point1/800,"y":point2/600} #converts coords to "true" (i.e. % through each axis), assuming traces were made at 1x zoom and no pan
+			new_array.append(el)
 		list_of_files = self.data['traces']['tongue']['files']
 		if not filenum in list_of_files:
 			list_of_files[filenum]={}
@@ -600,7 +604,6 @@ class MetadataModule(object):
 		Set directory-level metadata
 		'''
 		self.data[ key ] = value
-		print('line 602')
 		self.write()
 
 	def getFileLevel( self, key, _fileid=None ):
