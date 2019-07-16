@@ -339,7 +339,10 @@ class Crosshairs(object):
 		return self.trueX, self.trueY
 
 	def transformCoordsToTrue(self, x, y):
-		''' canvas coords -> absolute coords '''
+		'''
+		canvas coords -> absolute coords
+		absolute coords are % along each axis (e.g. center of image = [.5,.5])
+		'''
 		# x = (self.trueX - self.zframe.panX) / self.zframe.imgscale
 		# y = (self.trueY - self.zframe.panY) / self.zframe.imgscale
 		# return x,y
@@ -351,7 +354,10 @@ class Crosshairs(object):
 		return truex, truey
 
 	def transformTrueToCoords(self, truex, truey):
-		''' absolute coords -> canvas coords '''
+		'''
+		absolute coords -> canvas coords
+		absolute coords are % along each axis (e.g. center of image = [.5,.5])
+		'''
 		# x = (_x * self.zframe.imgscale) + self.zframe.panX
 		# y = (_y * self.zframe.imgscale) + self.zframe.panY
 		x = truex * self.zframe.width * self.zframe.imgscale + self.zframe.panX
@@ -545,6 +551,10 @@ class MetadataModule(object):
 		'''
 		Writes information from .measurement file into metadata file
 		'''
+		#this is a hack -- should really go into Dicom (which is not yet loaded) and check
+		defaultx = 800
+		defaulty = 600
+
 		open_file = json.load(open(filepath, 'r'))
 		for key, value in open_file.items():
 			if isinstance(value, dict):
@@ -555,7 +565,8 @@ class MetadataModule(object):
 		# new_array = [{"x":point1/800,"y":point2/600} for point1, point2 in array]
 		new_array = []
 		for point1, point2 in array:
-			el = {"x":point1/800,"y":point2/600} #converts coords to "true" (i.e. % through each axis), assuming traces were made at 1x zoom and no pan
+			#assuming traces were made at 1x zoom and no pan
+			el = {"x":point1/defaultx,"y":point2/defaulty} #converts coords to "true" (i.e. % through each axis),
 			new_array.append(el)
 		list_of_files = self.data['traces']['tongue']['files']
 		if not filenum in list_of_files:
@@ -743,7 +754,7 @@ class TextGridModule(object):
 		self.tg_zoom_factor = 1.5
 		self.canvas_width=800
 		self.canvas_height=60
-		self.selectedTierFrames = []
+		self.selectedIntvlFrames = []
 		self.selectedItem = None
 		self.start = 0
 		self.end = 0
@@ -839,7 +850,7 @@ class TextGridModule(object):
 		# 	if 'frames' in tierWidgets:
 		# 		tierWidgets['frames-label'].config(width=self.app.LEFT.winfo_width())
 		# print(self.pp)
-		self.selectedTierFrames = []
+		self.selectedIntvlFrames = []
 		self.selectedItem = None
 		#destroy
 		# for wframe in [self.frame, self.canvas_frame]:
@@ -976,10 +987,11 @@ class TextGridModule(object):
 		Jumps to clicked frame
 		'''
 		item = self.my_find_closest(event.widget, event.x)
+		self.setSelectedIntvlFrames((event.widget, item))
 		frame = event.widget.gettags(item)[0][5:]
 		self.app.frame = int(frame)
-		if not frame in self.selectedTierFrames:
-			self.selectedTierFrames = []
+		if not frame in self.selectedIntvlFrames:
+			self.selectedIntvlFrames = []
 			self.wipeFill()
 		self.app.framesUpdate()
 
@@ -1077,6 +1089,7 @@ class TextGridModule(object):
 				x_loc = float(rel_time/relDuration*self.canvas_width)
 				item = self.my_find_closest(widg, x_loc)
 				self.selectedItem = (widg, item)
+				self.setSelectedIntvlFrames(self.selectedItem)
 
 				self.fillCanvases()
 				self.genFrameList(widg=widg, x_loc=x_loc)
@@ -1319,10 +1332,7 @@ class TextGridModule(object):
 
 		if widg in self.tier_pairs.keys(): #on tier-label canvas
 			#fill selected tier frames
-			self.selectedTierFrames = []
-			for x in widg.gettags(maybe_item):
-				if x[:5] == 'frame':
-					self.selectedTierFrames.append(x[5:])
+			# self.setSelectedIntvlFrames(widg,item)
 			item = maybe_item
 
 		elif widg in self.tier_pairs.values(): #on canvas with intervals/frames
@@ -1338,14 +1348,18 @@ class TextGridModule(object):
 				else:
 					item = maybe_item
 
-				self.selectedTierFrames = []
-				for x in widg.gettags(item):
-					if x[:5] == 'frame':
-						self.selectedTierFrames.append(x[5:])
+				# self.setSelectedIntvlFrames(widg,item)
 		else:
 			item = maybe_item
 
 		return item
+	def setSelectedIntvlFrames(self,tupl):
+		''' '''
+		widg,item=tupl
+		self.selectedIntvlFrames = []
+		for x in widg.gettags(item):
+			if x[:5] == 'frame':
+				self.selectedIntvlFrames.append(x[5:])
 
 	def wipeFill(self):
 		'''
@@ -1358,8 +1372,10 @@ class TextGridModule(object):
 				fill = 'gray50'
 			self.frames_canvas.itemconfig('frame'+str(frame), fill=fill)
 		if self.selectedItem:
-			wdg = self.selectedItem[0]
-			itm = self.selectedItem[1]
+			wdg,itm = self.selectedItem
+			if wdg.type(itm) != 'text':
+				# print(self.selectedItem,self.app.Spectrogram.oldSelected,'line 1374')
+				wdg,itm = self.app.Spectrogram.oldSelected
 			wdg.itemconfig(itm, fill='black')
 			if len(wdg.find_withtag(itm+1)) > 0:
 				wdg.itemconfig(itm+1, fill='black')
@@ -1371,7 +1387,7 @@ class TextGridModule(object):
 				self.tier_pairs[wdg].itemconfig(ALL, fill='black')
 				self.frames_canvas.itemconfig(ALL, fill='black')
 
-	def genFrameList(self, event=None, widg=None, x_loc=None):
+	def genFrameList(self, event=None, widg=None, x_loc=None, SI=False):
 		'''
 		Upon click, reads frames within interval from the tags to the text item of that interval,
 		and highlights text of clicked interval
@@ -1381,12 +1397,14 @@ class TextGridModule(object):
 			widg=event.widget
 			x_loc=event.x
 
-		item = self.my_find_closest(widg, x_loc)
-		self.selectedItem = (widg, item)
+		if SI==False:
+			item = self.my_find_closest(widg, x_loc)
+			self.selectedItem = (widg, item)
+			self.setSelectedIntvlFrames(self.selectedItem)
 
 		#automatically updates frame
-		if not str(self.app.frame) in self.selectedTierFrames:
-			new_frame = int(self.selectedTierFrames[0])
+		if not str(self.app.frame) in self.selectedIntvlFrames:
+			new_frame = int(self.selectedIntvlFrames[0])
 			if self.firstFrame > new_frame:
 				new_frame = self.firstFrame
 			elif new_frame > self.lastFrame:
@@ -1404,12 +1422,13 @@ class TextGridModule(object):
 		if self.selectedItem:
 			wdg,itm = self.selectedItem
 			#paint selected
-			wdg.itemconfig(itm, fill='blue')
-			#paint boundaries of selected
-			if itm+1 in wdg.find_all():
-				wdg.itemconfig(itm+1, fill='blue')
-			if itm-1 in wdg.find_all():
-				wdg.itemconfig(itm-1, fill='blue')
+			if wdg.type(itm) == 'text':
+				wdg.itemconfig(itm, fill='blue')
+				#paint boundaries of selected
+				if itm+1 in wdg.find_all():
+					wdg.itemconfig(itm+1, fill='blue')
+				if itm-1 in wdg.find_all():
+					wdg.itemconfig(itm-1, fill='blue')
 			if wdg in self.tier_pairs.keys(): #if on tier-label canvas
 				canvas = self.tier_pairs[wdg]
 				for el in canvas.find_all():
@@ -1419,6 +1438,7 @@ class TextGridModule(object):
 
 			#paint frames
 			frames = wdg.gettags(itm)
+			# print(frames, 'line 1438')
 			traces = self.app.Data.getCurrentTraceAllFrames
 			for frame in frames:
 				if frame[:5] == 'frame':
@@ -1440,11 +1460,11 @@ class TextGridModule(object):
 		'''
 
 		'''
-		try:
-			bloop = self.frames_canvas
-		except AttributeError:
-			print("you've been blooped")
-			self.reset()
+		# try:
+		# 	bloop = self.frames_canvas
+		# except AttributeError:
+		# 	print("you've been blooped")
+		# 	self.reset()
 
 		# print(self.frames_canvas)
 		#create list of displayed frames' tags
@@ -1463,12 +1483,13 @@ class TextGridModule(object):
 		self.wipeFill()
 		#if selected frame outside selected interval, select interval on same tier containing frame
 		if self.selectedItem:
-			if "frame"+str(self.app.frame) not in self.selectedItem[0].gettags(self.selectedItem[1]): #FIXME should also detect if on label canvas
-				widg = self.selectedItem[0]
-				if widg in self.tier_pairs:
-					widg = self.tier_pairs[widg]
-				new_interval = widg.find_withtag("frame"+str(self.app.frame))[0]
-				self.selectedItem = (self.selectedItem[0], new_interval)
+			if self.selectedItem[0] in self.tier_pairs.keys() or self.selectedItem[0] in self.tier_pairs.values():
+				if "frame"+str(self.app.frame) not in self.selectedItem[0].gettags(self.selectedItem[1]): #FIXME should also detect if on label canvas
+					widg = self.selectedItem[0]
+					if widg in self.tier_pairs:
+						widg = self.tier_pairs[widg]
+					new_interval = widg.find_withtag("frame"+str(self.app.frame))[0]
+					self.selectedItem = (self.selectedItem[0], new_interval)
 
 		# repaint all frames
 		self.paintCanvases()
@@ -1512,6 +1533,7 @@ class SpectrogramModule(object):
 		self.dyn_range = DoubleVar()
 		self.clicktime = -1
 		self.specClick = False
+		self.oldSelected = None
 		self.doDefaults()
 
 		#make spinboxes & buttons for spectrogram specs
@@ -1548,6 +1570,13 @@ class SpectrogramModule(object):
 	def restoreDefaults(self):
 		self.doDefaults()
 		self.drawSpectrogram()
+
+	def update(self):
+		'''
+		Removes and redraws lines on top of Spectrogram corresponding to selected interval(s)
+		'''
+		self.canvas.delete('line')
+		self.drawInterval()
 
 	def reset(self):
 		self.drawSpectrogram()
@@ -1645,6 +1674,10 @@ class SpectrogramModule(object):
 
 	def jumpToFrame(self, event):
 		'''  '''
+		#restore textgrid selected interval between clicks
+		if self.app.TextGrid.selectedItem[0] == self.canvas:
+			self.app.TextGrid.selectedItem = self.oldSelected
+			self.app.TextGrid.setSelectedIntvlFrames(self.app.TextGrid.selectedItem)
 		#prevents wiping of canvases because of mouse click
 		# self.app.resized = False
 		# draw line at click location
@@ -1655,6 +1688,9 @@ class SpectrogramModule(object):
 		framenum = self.app.TextGrid.frames_canvas.gettags(frame)[0][5:]
 		self.app.frame=int(framenum)
 		self.app.framesUpdate()
+		#remember which interval was selected before specgram click
+		if event.state==1:
+			self.oldSelected = self.app.TextGrid.selectedItem
 		#for selecting & zooming interval (w/ shift)
 		self.specClick = True
 
@@ -1672,13 +1708,6 @@ class SpectrogramModule(object):
 		self.canvas.grid(row=0, column=0, sticky=N+S+E+W)
 		self.spinwin.grid(row=0,column=0,sticky=NE)
 		# self.axis_canvas.grid(row=0,column=0,sticky=SE)
-
-	def update(self):
-		'''
-		Removes and redraws lines on top of Spectrogram corresponding to selected interval(s)
-		'''
-		self.canvas.delete('line')
-		self.drawInterval()
 
 
 class TraceModule(object):
@@ -3037,8 +3066,11 @@ class App(ThemedTk):
 				t2 = self.Spectrogram.xToTime(canvas.canvasx(event.x))
 				# self.TextGrid.start = decimal.Decimal(min(t1,t2))
 				# self.TextGrid.end = decimal.Decimal(max(t1,t2))
-				#find all frames within range
-				canvas.dtag(ALL) #gets rid of previous tags
+				#find all frames within range, and add them as tags
+				for itm in canvas.find_all(): #gets rid of previous tags
+					# for tag in canvas.gettags(itm): #canvas.dtag() does not seem to work with one argument
+					for tag in self.TextGrid.selectedIntvlFrames:
+						canvas.dtag(itm,'frame'+str(tag))
 				a = self.Spectrogram.timeToX(self.Spectrogram.clicktime)
 				b = event.x
 				x1 = min(a,b)
@@ -3052,12 +3084,13 @@ class App(ThemedTk):
 					frame_i += 1
 					current_loc = self.TextGrid.frames_canvas.coords(frame_i)[0]
 				self.TextGrid.selectedItem = (canvas, canvas.find_all()[0])
+				self.TextGrid.setSelectedIntvlFrames(self.TextGrid.selectedItem)
 				# self.TextGrid.paintCanvases()
 				# self.Spectrogram.drawInterval(l_loc=x1,r_loc=x2)
 				# print(canvas.gettags(ALL))
 				# specgram = self.Spectrogram.canvas.find_all()[0]
 				# self.TextGrid.fillCanvases()
-				self.TextGrid.genFrameList(widg=canvas,x_loc=x2)
+				self.TextGrid.genFrameList(widg=canvas,x_loc=x2, SI=True)
 			self.Spectrogram.specClick = False
 
 	def onRelease(self,event):
@@ -3211,10 +3244,10 @@ class App(ThemedTk):
 		'''
 		if self.Dicom.isLoaded and self.frame > self.TextGrid.startFrame:
 			self.frame -= 1
-			# if len(self.TextGrid.selectedTierFrames) != 0:
-			# 	while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame > self.TextGrid.last_frame:
-			# 		if self.frame <= int(self.TextGrid.selectedTierFrames[0]):
-			# 			self.frame = int(self.TextGrid.selectedTierFrames[0])
+			# if len(self.TextGrid.selectedIntvlFrames) != 0:
+			# 	while str(self.frame) not in self.TextGrid.selectedIntvlFrames or self.frame > self.TextGrid.last_frame:
+			# 		if self.frame <= int(self.TextGrid.selectedIntvlFrames[0]):
+			# 			self.frame = int(self.TextGrid.selectedIntvlFrames[0])
 			# 			break
 			# 		self.frame -= 1
 			self.framesUpdate()
@@ -3224,10 +3257,10 @@ class App(ThemedTk):
 		'''
 		if self.Dicom.isLoaded and self.frame < self.TextGrid.endFrame:
 			self.frame += 1
-			# if len(self.TextGrid.selectedTierFrames) != 0:
-			# 	while str(self.frame) not in self.TextGrid.selectedTierFrames or self.frame < self.TextGrid.first_frame:
-			# 		if self.frame >= int(self.TextGrid.selectedTierFrames[-1]):
-			# 			self.frame = int(self.TextGrid.selectedTierFrames[-1])
+			# if len(self.TextGrid.selectedIntvlFrames) != 0:
+			# 	while str(self.frame) not in self.TextGrid.selectedIntvlFrames or self.frame < self.TextGrid.first_frame:
+			# 		if self.frame >= int(self.TextGrid.selectedIntvlFrames[-1]):
+			# 			self.frame = int(self.TextGrid.selectedIntvlFrames[-1])
 			# 			break
 			# 		self.frame += 1
 			self.framesUpdate()
