@@ -1667,10 +1667,12 @@ class SpectrogramModule(object):
 				if itm+1 in widg.find_all():
 					r_loc = widg.coords(itm+1)[0]
 					self.canvas.create_line(r_loc, 0, r_loc, self.canvas_height, tags='line', fill='blue')
-			# if l_loc:
-			# 	self.canvas.create_line(l_loc, 0, l_loc, self.canvas_height, tags='line', fill='blue')
-			# if r_loc:
-			# 	self.canvas.create_line(r_loc, 0, r_loc, self.canvas_height, tags='line', fill='blue')
+			elif widg == self.canvas:
+				l_time, r_time = self.app.TextGrid.getMinMaxTime()
+				l_loc = self.timeToX(float(l_time))
+				r_loc = self.timeToX(float(r_time))
+				self.canvas.create_line(l_loc, 0, l_loc, self.canvas_height, tags='line', fill='blue')
+				self.canvas.create_line(r_loc, 0, r_loc, self.canvas_height, tags='line', fill='blue')
 
 			#draw selected frame
 			if self.app.TextGrid.firstFrame <= self.app.frame <= self.app.TextGrid.lastFrame :
@@ -2258,7 +2260,6 @@ class PlaybackModule(object):
 		'''
 
 		'''
-		print(self.app.TextGrid.selectedItem, 'line 2259')
 		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
 		self.framestart = int(framenums[0])
@@ -3094,7 +3095,8 @@ class App(ThemedTk):
 						canvas.addtag_all(tag)
 					frame_i += 1
 					current_loc = self.TextGrid.frames_canvas.coords(frame_i)[0]
-
+				canvas.addtag_all('minTime'+str(self.Spectrogram.xToTime(x1)))
+				canvas.addtag_all('maxTime'+str(self.Spectrogram.xToTime(x2)))
 				self.TextGrid.selectedItem = (canvas, canvas.find_all()[0])
 				self.TextGrid.setSelectedIntvlFrames(self.TextGrid.selectedItem)
 				# self.TextGrid.paintCanvases()
@@ -3104,6 +3106,7 @@ class App(ThemedTk):
 				# self.TextGrid.fillCanvases()
 				self.TextGrid.genFrameList(widg=canvas,x_loc=x2, SI=True)
 			self.Spectrogram.specClick = False
+			self.Spectrogram.clicktime = -1
 
 	def onRelease(self,event):
 		'''
