@@ -536,7 +536,6 @@ class MetadataModule(object):
 			# sort files, set the geometry, and write
 			self.data[ 'files' ] = [ files[key] for key in sorted(files.keys()) ]
 			self.data[ 'geometry' ] = '1150x800+1400+480'
-			print('line 539')
 			self.write()
 
 		self.app.geometry( self.getTopLevel('geometry') )
@@ -2438,7 +2437,7 @@ class DicomModule(object):
 		if self.isLoaded == False:
 			try:
 				dicomfile = self.app.Data.getFileLevel( '.dicom' )
-				self.dicom = dicom.read_file( dicomfile )
+				self.dicom = dicom.read_file( self.app.Data.unrelativize(dicomfile) )
 
 			except dicom.errors.InvalidDicomError:
 				print( 'Unable to read DICOM file: %s' % dicomfile )
@@ -2462,12 +2461,11 @@ class DicomModule(object):
 
 		# write to a special directory
 		outputpath = os.path.join(
-			# self.app.Data.getTopLevel('path'),
-			self.app.Data.getFileLevel('name')+'_dicom_to_png/' )
+			self.app.Data.getTopLevel('path'),
+			self.app.Data.getFileLevel('name')+'_dicom_to_png' )
 		if os.path.exists( outputpath ) == False:
 			os.mkdir( outputpath )
 		rel_outputpath = os.path.relpath(outputpath,start=self.app.Data.path)
-		# print(outputpath, 'line 2457')
 		# print(self.app.Data.getFileLevel('name'))
 		# print()
 		# grab one frame at a time to write (and provide a progress indicator)
@@ -2483,7 +2481,7 @@ class DicomModule(object):
 			outputfilepath = os.path.join( rel_outputpath, outputfilename )
 			# print(outputpath, outputfilename,'line 2457')
 			# print(outputfilepath)
-			# img.save( os.path.join(self.app.Data.path,outputfilepath), format='PNG' )
+			img.save( os.path.join(self.app.Data.path,outputfilepath), format='PNG' )
 
 			# keep track of all the processing we've finished
 			# print(os.path.join(outputpath,outputfilename))
