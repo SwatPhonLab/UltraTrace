@@ -1257,9 +1257,10 @@ class TextGridModule(object):
 						frame_i+=1
 					#pass on selected-ness
 					if self.selectedItem:
-						# old_selected_tags = self.selectedItem[0].gettags(self.selectedItem[1])
-						if minTimetag in old_selected_tags and maxTimetag in old_selected_tags:
-							self.selectedItem = (canvas, text)
+						if self.selectedItem[0] != self.app.Spectrogram.canvas:
+							# old_selected_tags = self.selectedItem[0].gettags(self.selectedItem[1])
+							if minTimetag in old_selected_tags and maxTimetag in old_selected_tags:
+								self.selectedItem = (canvas, text)
 					#create line
 					loc=rel_time/duration*self.canvas_width
 					i+=1
@@ -1438,8 +1439,7 @@ class TextGridModule(object):
 
 			#paint frames
 			frames = wdg.gettags(itm)
-			# print(frames, 'line 1438')
-			traces = self.app.Data.getCurrentTraceAllFrames
+			# print(frames, wdg, 'line1442')
 			for frame in frames:
 				if frame[:5] == 'frame':
 					frame_obj = self.frames_canvas.find_withtag(frame)
@@ -1632,9 +1632,16 @@ class SpectrogramModule(object):
 
 		# self.canvas.create_image(0,0, anchor=NW, image=photo_img)
 		# self.canvas.create_image(self.canvas_width/2,self.canvas_height/2, image=photo_img)
+		if self.app.TextGrid.selectedItem:
+			tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
 		self.canvas.delete(ALL)
-		self.canvas.create_image(self.canvas_width, self.canvas_height, anchor=SE, image=photo_img)
+		img = self.canvas.create_image(self.canvas_width, self.canvas_height, anchor=SE, image=photo_img)
 		self.img = photo_img
+		#pass on selected-ness
+		if self.app.TextGrid.selectedItem:
+			self.app.TextGrid.selectedItem = (self.canvas, img)
+			for tag in tags:
+				self.canvas.addtag_all(tag) #re-add tags from previous image
 
 	def drawInterval(self):
 		'''
