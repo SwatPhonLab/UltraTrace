@@ -1639,9 +1639,11 @@ class SpectrogramModule(object):
 		self.img = photo_img
 		#pass on selected-ness
 		if self.app.TextGrid.selectedItem:
-			self.app.TextGrid.selectedItem = (self.canvas, img)
-			for tag in tags:
-				self.canvas.addtag_all(tag) #re-add tags from previous image
+			if self.app.TextGrid.selectedItem[0] == self.canvas:
+				self.app.TextGrid.selectedItem = (self.canvas, img)
+				#pass on tags
+				for tag in tags:
+					self.canvas.addtag_all(tag)
 
 	def drawInterval(self):
 		'''
@@ -2256,6 +2258,7 @@ class PlaybackModule(object):
 		'''
 
 		'''
+		print(self.app.TextGrid.selectedItem, 'line 2259')
 		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
 		self.framestart = int(framenums[0])
@@ -3073,15 +3076,16 @@ class App(ThemedTk):
 				t2 = self.Spectrogram.xToTime(canvas.canvasx(event.x))
 				# self.TextGrid.start = decimal.Decimal(min(t1,t2))
 				# self.TextGrid.end = decimal.Decimal(max(t1,t2))
-				#find all frames within range, and add them as tags
-				for itm in canvas.find_all(): #gets rid of previous tags
+				#gets rid of previous tags
+				# for itm in canvas.find_all()[0]:
 					# for tag in canvas.gettags(itm): #canvas.dtag() does not seem to work with one argument
-					for tag in self.TextGrid.selectedIntvlFrames:
-						canvas.dtag(itm,'frame'+str(tag))
+				for tag in canvas.gettags(canvas.find_all()[0]):
+					canvas.dtag(canvas.find_all()[0],tag)
 				a = self.Spectrogram.timeToX(self.Spectrogram.clicktime)
 				b = event.x
 				x1 = min(a,b)
 				x2 = max(a,b)
+				#find all frames within range, and add them as tags
 				frame_i = self.TextGrid.frames_canvas.find_all()[0]
 				current_loc = self.TextGrid.frames_canvas.coords(frame_i)[0]
 				while current_loc < x2:
@@ -3090,6 +3094,7 @@ class App(ThemedTk):
 						canvas.addtag_all(tag)
 					frame_i += 1
 					current_loc = self.TextGrid.frames_canvas.coords(frame_i)[0]
+
 				self.TextGrid.selectedItem = (canvas, canvas.find_all()[0])
 				self.TextGrid.setSelectedIntvlFrames(self.TextGrid.selectedItem)
 				# self.TextGrid.paintCanvases()
