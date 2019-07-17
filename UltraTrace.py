@@ -1405,7 +1405,12 @@ class TextGridModule(object):
 
 		#automatically updates frame
 		if not str(self.app.frame) in self.selectedIntvlFrames:
-			new_frame = int(self.selectedIntvlFrames[0])
+			if self.selectedIntvlFrames:
+				new_frame = int(self.selectedIntvlFrames[0])
+			else:
+				frame = self.my_find_closest(self.frames_canvas,x_loc)
+				framenum = self.frames_canvas.gettags(frame)[0][5:]
+				new_frame = int(framenum)
 			if self.firstFrame > new_frame:
 				new_frame = self.firstFrame
 			elif new_frame > self.lastFrame:
@@ -1593,18 +1598,18 @@ class SpectrogramModule(object):
 		start_time = self.app.TextGrid.start
 		end_time = self.app.TextGrid.end
 		duration = end_time - start_time
-		ts = duration / ts_fac
+		self.ts = duration / ts_fac
 		# the amount taken off in spectrogram creation seems to be
 		# ( 2 * ts * floor( wl / ts ) ) + ( duration % ts )
 		# but we've defined ts as duration / 10000, so duration % ts = 0
 		# so the amount to increase the length by is ts * floor( wl / ts )
 		# at either end - D.S.
-		extra = ts * math.floor( wl / ts )
+		extra = self.ts * math.floor( wl / self.ts )
 		start_time = max(0, start_time - extra)
 		end_time = min(end_time + extra, sound.get_total_duration())
 		sound_clip = sound.extract_part(from_time=start_time, to_time=end_time)
 
-		spec = sound_clip.to_spectrogram(window_length=wl, time_step=ts, maximum_frequency=self.spec_freq_max.get())
+		spec = sound_clip.to_spectrogram(window_length=wl, time_step=self.ts, maximum_frequency=self.spec_freq_max.get())
 		self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
 
 		# self.spectrogram += self.spectrogram.min()
@@ -3082,34 +3087,35 @@ class App(ThemedTk):
 			t2 = self.Spectrogram.xToTime(canvas.canvasx(event.x))
 			# self.TextGrid.start = decimal.Decimal(min(t1,t2))
 			# self.TextGrid.end = decimal.Decimal(max(t1,t2))
-			#gets rid of previous tags
 			# for itm in canvas.find_all()[0]:
 				# for tag in canvas.gettags(itm): #canvas.dtag() does not seem to work with one argument
-			for tag in canvas.gettags(canvas.find_all()[0]):
-				canvas.dtag(canvas.find_all()[0],tag)
-			a = self.Spectrogram.timeToX(self.Spectrogram.clicktime)
-			b = event.x
-			x1 = min(a,b)
-			x2 = max(a,b)
-			#find all frames within range, and add them as tags
-			frame_i = self.TextGrid.frames_canvas.find_all()[0]
-			current_loc = self.TextGrid.frames_canvas.coords(frame_i)[0]
-			while current_loc < x2:
-				if current_loc > x1:
-					tag = self.TextGrid.frames_canvas.gettags(frame_i)[0]
-					canvas.addtag_all(tag)
-				frame_i += 1
+			if max(t1,t2) - min(t1,t2) > self.Spectrogram.ts: #if selected area is larger than one strip of Spectrogram
+				#gets rid of previous tags
+				for tag in canvas.gettags(canvas.find_all()[0]):
+					canvas.dtag(canvas.find_all()[0],tag)
+				a = self.Spectrogram.timeToX(self.Spectrogram.clicktime)
+				b = event.x
+				x1 = min(a,b)
+				x2 = max(a,b)
+				#find all frames within range, and add them as tags
+				frame_i = self.TextGrid.frames_canvas.find_all()[0]
 				current_loc = self.TextGrid.frames_canvas.coords(frame_i)[0]
-			canvas.addtag_all('minTime'+str(self.Spectrogram.xToTime(x1)))
-			canvas.addtag_all('maxTime'+str(self.Spectrogram.xToTime(x2)))
-			self.TextGrid.selectedItem = (canvas, canvas.find_all()[0])
-			self.TextGrid.setSelectedIntvlFrames(self.TextGrid.selectedItem)
-			# self.TextGrid.paintCanvases()
-			# self.Spectrogram.drawInterval(l_loc=x1,r_loc=x2)
-			# print(canvas.gettags(ALL))
-			# specgram = self.Spectrogram.canvas.find_all()[0]
-			# self.TextGrid.fillCanvases()
-			self.TextGrid.genFrameList(widg=canvas,x_loc=x2, SI=True)
+				while current_loc < x2:
+					if current_loc > x1:
+						tag = self.TextGrid.frames_canvas.gettags(frame_i)[0]
+						canvas.addtag_all(tag)
+					frame_i += 1
+					current_loc = self.TextGrid.frames_canvas.coords(frame_i)[0]
+				canvas.addtag_all('minTime'+str(self.Spectrogram.xToTime(x1)))
+				canvas.addtag_all('maxTime'+str(self.Spectrogram.xToTime(x2)))
+				self.TextGrid.selectedItem = (canvas, canvas.find_all()[0])
+				self.TextGrid.setSelectedIntvlFrames(self.TextGrid.selectedItem)
+				# self.TextGrid.paintCanvases()
+				# self.Spectrogram.drawInterval(l_loc=x1,r_loc=x2)
+				# print(canvas.gettags(ALL))
+				# specgram = self.Spectrogram.canvas.find_all()[0]
+				# self.TextGrid.fillCanvases()
+				self.TextGrid.genFrameList(widg=canvas,x_loc=x2, SI=True)
 			self.Spectrogram.specClick = False
 			self.Spectrogram.clicktime = -1
 
