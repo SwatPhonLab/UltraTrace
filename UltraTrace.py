@@ -2587,12 +2587,20 @@ class DicomModule(object):
 		#print(self.app.Data.data['files'])
 		if self.app.Data.getFileLevel( '.dicom' ) == None:
 			self.loadBtn[ 'state' ] = DISABLED
+			self.grid_remove()
+			self.frame.grid()
+			self.loadBtn.grid()
 		else:
 			self.loadBtn[ 'state' ] = NORMAL
 			# and check if data is already processed
 			if self.app.Data.getFileLevel( 'processed' ) != None:
 				self.load()
 				self.zoomReset()
+			else:
+				self.grid_remove()
+				self.frame.grid()
+				self.loadBtn.grid()
+				self.zframe.canvas.delete(ALL)
 
 	def grid(self):
 		'''
@@ -2606,17 +2614,17 @@ class DicomModule(object):
 		self.zoomResetBtn.grid( row=7 )
 		self.app.Control.grid()
 
-	# def grid_remove(self):
-	# 	'''
-	# 	Remove widgets from grid
-	# 	'''
-	# 	self.app.framesHeader.grid_remove()
-	# 	self.app.framesPrevBtn.grid_remove()
-	# 	self.app.framesEntryText.grid_remove()
-	# 	self.app.framesEntryBtn.grid_remove()
-	# 	self.app.framesNextBtn.grid_remove()
-	# 	self.zoomResetBtn.grid_remove()
-	# 	self.app.Control.grid_remove()
+	def grid_remove(self):
+		'''
+		Remove widgets from grid
+		'''
+		self.app.framesHeader.grid_remove()
+		self.app.framesPrevBtn.grid_remove()
+		self.app.framesEntryText.grid_remove()
+		self.app.framesEntryBtn.grid_remove()
+		self.app.framesNextBtn.grid_remove()
+		self.zoomResetBtn.grid_remove()
+		self.app.Control.grid_remove()
 
 class ControlModule(object):
 	'''
