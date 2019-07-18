@@ -1591,64 +1591,65 @@ class SpectrogramModule(object):
 		'''
 		Extracts spectrogram data from sound, and draws it to canvas
 		'''
-		sound = parselmouth.Sound(self.app.Audio.current)
+		if self.app.Audio.current:
+			sound = parselmouth.Sound(self.app.Audio.current)
 
-		ts_fac = decimal.Decimal(10000.0)
-		wl = decimal.Decimal(self.wl.get())
-		start_time = self.app.TextGrid.start
-		end_time = self.app.TextGrid.end
-		duration = end_time - start_time
-		self.ts = duration / ts_fac
-		# the amount taken off in spectrogram creation seems to be
-		# ( 2 * ts * floor( wl / ts ) ) + ( duration % ts )
-		# but we've defined ts as duration / 10000, so duration % ts = 0
-		# so the amount to increase the length by is ts * floor( wl / ts )
-		# at either end - D.S.
-		extra = self.ts * math.floor( wl / self.ts )
-		start_time = max(0, start_time - extra)
-		end_time = min(end_time + extra, sound.get_total_duration())
-		sound_clip = sound.extract_part(from_time=start_time, to_time=end_time)
+			ts_fac = decimal.Decimal(10000.0)
+			wl = decimal.Decimal(self.wl.get())
+			start_time = self.app.TextGrid.start
+			end_time = self.app.TextGrid.end
+			duration = end_time - start_time
+			self.ts = duration / ts_fac
+			# the amount taken off in spectrogram creation seems to be
+			# ( 2 * ts * floor( wl / ts ) ) + ( duration % ts )
+			# but we've defined ts as duration / 10000, so duration % ts = 0
+			# so the amount to increase the length by is ts * floor( wl / ts )
+			# at either end - D.S.
+			extra = self.ts * math.floor( wl / self.ts )
+			start_time = max(0, start_time - extra)
+			end_time = min(end_time + extra, sound.get_total_duration())
+			sound_clip = sound.extract_part(from_time=start_time, to_time=end_time)
 
-		spec = sound_clip.to_spectrogram(window_length=wl, time_step=self.ts, maximum_frequency=self.spec_freq_max.get())
-		self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
+			spec = sound_clip.to_spectrogram(window_length=wl, time_step=self.ts, maximum_frequency=self.spec_freq_max.get())
+			self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
 
-		# self.spectrogram += self.spectrogram.min()
-		# self.spectrogram *= (60.0 / self.spectrogram.max())
+			# self.spectrogram += self.spectrogram.min()
+			# self.spectrogram *= (60.0 / self.spectrogram.max())
 
-		mx = self.spectrogram.max()
-		dyn = self.dyn_range.get()
-		# print(self.spectrogram.min(), self.spectrogram.max())
-		self.spectrogram = self.spectrogram.clip(mx-dyn, mx) - mx
-		# print(self.spectrogram.min(), self.spectrogram.max())
-		self.spectrogram *= (-255.0 / dyn)
-		# self.spectrogram += 60
-		# print(self.spectrogram.min(), self.spectrogram.max())
+			mx = self.spectrogram.max()
+			dyn = self.dyn_range.get()
+			# print(self.spectrogram.min(), self.spectrogram.max())
+			self.spectrogram = self.spectrogram.clip(mx-dyn, mx) - mx
+			# print(self.spectrogram.min(), self.spectrogram.max())
+			self.spectrogram *= (-255.0 / dyn)
+			# self.spectrogram += 60
+			# print(self.spectrogram.min(), self.spectrogram.max())
 
-		img = Image.fromarray(self.spectrogram)
-		if img.mode != 'RGB':
-			img = img.convert('RGB')
-		# contrast = ImageEnhance.Contrast(img)
-		# img = contrast.enhance(5)
-		# self.canvas_height = img.height
-		img = img.resize((self.canvas_width, self.canvas_height))
+			img = Image.fromarray(self.spectrogram)
+			if img.mode != 'RGB':
+				img = img.convert('RGB')
+			# contrast = ImageEnhance.Contrast(img)
+			# img = contrast.enhance(5)
+			# self.canvas_height = img.height
+			img = img.resize((self.canvas_width, self.canvas_height))
 
-		photo_img = ImageTk.PhotoImage(img)
-		self.canvas.config(height=self.canvas_height)
+			photo_img = ImageTk.PhotoImage(img)
+			self.canvas.config(height=self.canvas_height)
 
-		# self.canvas.create_image(0,0, anchor=NW, image=photo_img)
-		# self.canvas.create_image(self.canvas_width/2,self.canvas_height/2, image=photo_img)
-		if self.app.TextGrid.selectedItem:
-			tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
-		self.canvas.delete(ALL)
-		img = self.canvas.create_image(self.canvas_width, self.canvas_height, anchor=SE, image=photo_img)
-		self.img = photo_img
-		#pass on selected-ness
-		if self.app.TextGrid.selectedItem:
-			if self.app.TextGrid.selectedItem[0] == self.canvas:
-				self.app.TextGrid.selectedItem = (self.canvas, img)
-				#pass on tags
-				for tag in tags:
-					self.canvas.addtag_all(tag)
+			# self.canvas.create_image(0,0, anchor=NW, image=photo_img)
+			# self.canvas.create_image(self.canvas_width/2,self.canvas_height/2, image=photo_img)
+			if self.app.TextGrid.selectedItem:
+				tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
+			self.canvas.delete(ALL)
+			img = self.canvas.create_image(self.canvas_width, self.canvas_height, anchor=SE, image=photo_img)
+			self.img = photo_img
+			#pass on selected-ness
+			if self.app.TextGrid.selectedItem:
+				if self.app.TextGrid.selectedItem[0] == self.canvas:
+					self.app.TextGrid.selectedItem = (self.canvas, img)
+					#pass on tags
+					for tag in tags:
+						self.canvas.addtag_all(tag)
 
 	def drawInterval(self):
 		'''
