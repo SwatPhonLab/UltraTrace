@@ -900,7 +900,6 @@ class TextGridModule(object):
 			Shift value is relative to 0, i.e. inputting the same shift amount a second time will not change the shift
 		Redisplay shifted points
 		'''
-
 		shift = self.frame_shift.get()
 		if type(shift) == float:
 			self.app.Data.setFileLevel( 'offset', shift )
@@ -1465,11 +1464,11 @@ class TextGridModule(object):
 		'''
 
 		'''
-		# try:
-		# 	bloop = self.frames_canvas
-		# except AttributeError:
-		# 	print("you've been blooped")
-		# 	self.reset()
+		try:
+			bloop = self.frames_canvas
+		except AttributeError:
+			print("you've been blooped")
+			self.reset()
 
 		# print(self.frames_canvas)
 		#create list of displayed frames' tags
@@ -1779,7 +1778,7 @@ class TraceModule(object):
 		# listbox to contain all of our traces
 		lbframe = Frame(self.frame)
 		self.scrollbar = Scrollbar(lbframe)
-		self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12)
+		self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12, exportselection=False)
 		self.scrollbar.config(command=self.listbox.yview)
 		for trace in self.available:
 			self.listbox.insert(END, trace)
@@ -1911,7 +1910,7 @@ class TraceModule(object):
 
 		try:
 			return self.listbox.get(self.listbox.curselection())
-		except _tkinter.TclError:
+		except:# _tkinter.TclError:
 			print( 'Can\'t select from empty listbox!' )
 	def setDefaultTraceName(self):
 		'''
@@ -2143,6 +2142,7 @@ class PlaybackModule(object):
 			self.started = False
 			self.paused = False
 			self.sync = threading.Event()
+			self.stoprequest = threading.Event()
 
 			# widget management
 			self.frame = Frame(self.app.BOTTOM)
@@ -2218,12 +2218,12 @@ class PlaybackModule(object):
 			# 		self.dicomframeQ.put(self.pngs[i])
 			# 	self.playVideoNoAudio()
 
-			if _VIDEO_LIBS_INSTALLED:
+			if self.app.Dicom.isLoaded:
 				self.readyVideo()
 			if _AUDIO_LIBS_INSTALLED:
 				self.readyAudio(start, end)
 				self.playAudio()
-			elif _VIDEO_LIBS_INSTALLED:
+			elif self.app.Dicom.isLoaded:
 				self.dicomframeQ = queue.Queue()
 				for i in range(len(self.pngs)):
 					self.dicomframeQ.put(self.pngs[i])
@@ -2284,7 +2284,6 @@ class PlaybackModule(object):
 		self.dicomframeQ.put(self.pngs[0]) #put now, because audio callback puts frames when audio segments end
 		# for i in range(len(self.pngs)):
 		# 	self.dicomframeQ.put(self.pngs[i])
-		self.stoprequest = threading.Event()
 
 	def callback(self, in_data, frame_count, time_info, status):
 		'''
@@ -2297,7 +2296,7 @@ class PlaybackModule(object):
 		# print(len(data), 'line 1960')
 		self.audioframe+=frame_count
 
-		if _VIDEO_LIBS_INSTALLED:
+		if self.app.Dicom.isLoaded:
 			#check & update video frame
 			canvas = self.app.Dicom.zframe.canvas
 			callbacklen = frame_count/self.seg.frame_rate
@@ -2327,7 +2326,7 @@ class PlaybackModule(object):
 	def playAudio(self):
 		self.stream.start_stream()
 		self.started = True
-		if _VIDEO_LIBS_INSTALLED:
+		if self.app.Dicom.isLoaded:
 			self.playVideoWithAudio()
 		else:
 			pass #write a loop that keeps audio playing
