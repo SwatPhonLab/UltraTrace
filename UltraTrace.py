@@ -880,6 +880,12 @@ class TextGridModule(object):
 					self.end = self.TextGrid.maxTime
 					#make other widgets
 					# self.makeFrameWidget()
+					#reset offset
+					offset = self.app.Data.getFileLevel( 'offset' )
+					if offset != None:
+						self.frame_shift.set(offset)
+					else:
+						self.frame_shift.set(0)
 					# self.makeTimeWidget()
 					#put items on canvases
 					self.fillCanvases()
