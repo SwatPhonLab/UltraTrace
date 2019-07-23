@@ -1453,7 +1453,7 @@ class TextGridModule(object):
 
 			#paint frames
 			frames = wdg.gettags(itm)
-			print(frames, wdg, 'line1453')
+			# print(frames, wdg, 'line1453')
 			for frame in frames:
 				if frame[:5] == 'frame':
 					frame_obj = self.frames_canvas.find_withtag(frame)
@@ -1494,7 +1494,7 @@ class TextGridModule(object):
 			self.end = new_time + (duration/2)
 			#redraw
 			self.fillCanvases()
-		# self.wipeFill()
+		self.wipeFill()
 		#if selected frame outside selected interval, select interval on same tier containing frame
 		if self.selectedItem:
 			if self.selectedItem[0] in self.tier_pairs.keys() or self.selectedItem[0] in self.tier_pairs.values():
