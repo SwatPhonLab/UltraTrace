@@ -818,6 +818,7 @@ class TextGridModule(object):
 					self.TkWidgets = []
 					# iterate the tiers
 					self.frameTierName = self.getFrameTierName()
+					self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
 					for tier in self.TextGrid.getNames():
 						if tier != self.frameTierName and tier != self.frameTierName + '.original':
 							# make some widgets for each tier
@@ -871,6 +872,7 @@ class TextGridModule(object):
 					# self.TkWidgets = []
 					# iterate the tiers
 					self.frameTierName = self.getFrameTierName()
+					self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
 					# for tier in self.TextGrid.getNames():
 					# 	if tier != self.frameTierName and tier != self.frameTierName + '.original':
 					# 		# make some widgets for each tier
@@ -928,7 +930,7 @@ class TextGridModule(object):
 				if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
 					self.TextGrid.getFirst(self.frameTierName).add(new_time, point.mark)
 
-			self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))			#FIXME I feel like I shouldn't have to run the getFirst function every time, but I'm not sure when I have to go back to the original textgrid, and when I can just use a variable...
+			# self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))			#FIXME I feel like I shouldn't have to run the getFirst function every time, but I'm not sure when I have to go back to the original textgrid, and when I can just use a variable...
 			self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark)
 			self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark)
 			self.app.Data.data['offset'] = shift
@@ -1379,8 +1381,10 @@ class TextGridModule(object):
 			self.frames_canvas.itemconfig('frame'+str(frame), fill=fill)
 		if self.selectedItem:
 			wdg,itm = self.selectedItem
-			if wdg.type(itm) != 'text':
+			# print('line 1381', len(wdg.find_withtag(itm+1)), len(wdg.find_withtag(itm-1)))
+			if wdg.type(itm) != 'text' and wdg.type(itm) != None:
 				# print(self.selectedItem,self.app.Spectrogram.oldSelected,'line 1374')
+				# print(wdg.type(itm),'line 1374')
 				wdg,itm = self.app.Spectrogram.oldSelected
 			wdg.itemconfig(itm, fill='black')
 			if len(wdg.find_withtag(itm+1)) > 0:
@@ -1449,7 +1453,7 @@ class TextGridModule(object):
 
 			#paint frames
 			frames = wdg.gettags(itm)
-			# print(frames, wdg, 'line1442')
+			print(frames, wdg, 'line1453')
 			for frame in frames:
 				if frame[:5] == 'frame':
 					frame_obj = self.frames_canvas.find_withtag(frame)
@@ -1470,11 +1474,11 @@ class TextGridModule(object):
 		'''
 
 		'''
-		try:
-			bloop = self.frames_canvas
-		except AttributeError:
-			print("you've been blooped")
-			self.reset()
+		# try:
+		# 	bloop = self.frames_canvas
+		# except AttributeError:
+		# 	print("you've been blooped")
+		# 	self.reset()
 
 		# print(self.frames_canvas)
 		#create list of displayed frames' tags
@@ -1490,7 +1494,7 @@ class TextGridModule(object):
 			self.end = new_time + (duration/2)
 			#redraw
 			self.fillCanvases()
-		self.wipeFill()
+		# self.wipeFill()
 		#if selected frame outside selected interval, select interval on same tier containing frame
 		if self.selectedItem:
 			if self.selectedItem[0] in self.tier_pairs.keys() or self.selectedItem[0] in self.tier_pairs.values():
@@ -2474,8 +2478,8 @@ class DicomModule(object):
 				processed = self.app.Data.getFileLevel( 'processed' )
 				if processed == None:
 					return self.process()
-				else:
-					self.app.frames = len(processed)
+				# else:
+				# 	self.app.frames = len(processed)
 
 				# reset variables
 				self.app.frame = 1
@@ -3282,7 +3286,8 @@ class App(ThemedTk):
 		'''
 		controls self.framesPrevBtn for panning between frames
 		'''
-		if self.Dicom.isLoaded and self.frame > self.TextGrid.startFrame:
+		# if self.Dicom.isLoaded and self.frame > self.TextGrid.startFrame:
+		if self.frame > self.TextGrid.startFrame:
 			self.frame -= 1
 			# if len(self.TextGrid.selectedIntvlFrames) != 0:
 			# 	while str(self.frame) not in self.TextGrid.selectedIntvlFrames or self.frame > self.TextGrid.last_frame:
@@ -3295,7 +3300,8 @@ class App(ThemedTk):
 		'''
 		controls self.framesNextBtn for panning between frames
 		'''
-		if self.Dicom.isLoaded and self.frame < self.TextGrid.endFrame:
+		# if self.Dicom.isLoaded and self.frame < self.TextGrid.endFrame:
+		if self.frame < self.TextGrid.endFrame:
 			self.frame += 1
 			# if len(self.TextGrid.selectedIntvlFrames) != 0:
 			# 	while str(self.frame) not in self.TextGrid.selectedIntvlFrames or self.frame < self.TextGrid.first_frame:
