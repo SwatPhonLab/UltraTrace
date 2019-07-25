@@ -193,7 +193,7 @@ class ZoomFrame(Frame):
 			self.canvas.lower(image)
 			self.canvas.imagetk = imagetk
 			self.shown = True
-			# self.app.Trace.update()
+			self.app.Trace.update()
 
 	def wheel(self, event):
 		print(event)
@@ -1828,6 +1828,9 @@ class TraceModule(object):
 	def update(self):
 		''' on change frames '''
 		# self.grid()
+		#NOTE this is called during zoom and pan
+			#this means the crosshairs are redrawn for every <Motion> call, which is a lot
+			#we could probably just move them instead
 		self.reset() # clear our crosshairs
 		self.read()  # read from file
 		#self.frame.update()
