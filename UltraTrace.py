@@ -87,7 +87,7 @@ except (ImportError):
 
 # some globals
 _CROSSHAIR_DRAG_BUFFER = 20
-_CROSSHAIR_SELECT_RADIUS = 12
+_CROSSHAIR_SELECT_RADIUS = 9#12
 _TEXTGRID_ALIGNMENT_TIER_NAMES = [ 'frames', 'all frames', 'dicom frames', 'ultrasound frames' ]
 
 class ZoomFrame(Frame):
@@ -304,9 +304,9 @@ class Crosshairs(object):
 		# set defaults here
 		self.selectedColor  = 'blue'
 		self.unselectedColor= color
-		self.selectedWidth  = 3
-		self.unselectedWidth= 2
-		self.defaultLength  = 12
+		self.selectedWidth  = 1.5#3
+		self.unselectedWidth= 1#2
+		self.defaultLength  = _CROSSHAIR_SELECT_RADIUS
 
 		# store position data
 		self.x, self.y = x, y
