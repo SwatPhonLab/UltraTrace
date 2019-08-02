@@ -468,7 +468,7 @@ class MetadataModule(object):
 			self.path = os.path.abspath(self.path)
 			print( "   - creating new metadata file: `%s`" % self.mdfile )
 			self.data = {
-				'path': self.path,
+				'firstrun_path': self.path,
 				'defaultTraceName': 'tongue',
 				'traces': {
 					'tongue': {
@@ -2527,7 +2527,8 @@ class DicomModule(object):
 
 		# write to a special directory
 		outputpath = os.path.join(
-			self.app.Data.getTopLevel('path'),
+			# self.app.Data.getTopLevel('path'),
+			os.path.abspath(self.app.Data.path),
 			self.app.Data.getFileLevel('name')+'_dicom_to_png' )
 		if os.path.exists( outputpath ) == False:
 			os.mkdir( outputpath )
