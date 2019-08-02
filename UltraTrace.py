@@ -2479,8 +2479,11 @@ class DicomModule(object):
 			if self.isLoaded == False:
 
 				processed = self.app.Data.getFileLevel( 'processed' )
+				# print(os.path.exists(self.app.Data.unrelativize(self.app.Data.getFileLevel( 'processed' )['1'])))
 				if processed == None:
 					return self.process()
+				# elif :
+				# 	self.process()
 				# else:
 				# 	self.app.frames = len(processed)
 
@@ -2596,9 +2599,13 @@ class DicomModule(object):
 		self.isLoaded = False
 		self.dicom = None
 		self.zframe.shown = False
+		pngs_missing = False
 
+		# detect if processed pngs listed in metadata file actually exist on system
+		if self.app.Data.getFileLevel( 'processed' ) != None:
+			if not os.path.exists(self.app.Data.unrelativize(self.app.Data.getFileLevel( 'processed' )['1'])):
+				pngs_missing = True
 		# update buttons
-		#print(self.app.Data.data['files'])
 		if self.app.Data.getFileLevel( '.dicom' ) == None:
 			self.loadBtn[ 'state' ] = DISABLED
 			self.grid_remove()
@@ -2607,7 +2614,7 @@ class DicomModule(object):
 		else:
 			self.loadBtn[ 'state' ] = NORMAL
 			# and check if data is already processed
-			if self.app.Data.getFileLevel( 'processed' ) != None:
+			if self.app.Data.getFileLevel( 'processed' ) != None and pngs_missing==False:
 				self.load()
 				self.zoomReset()
 			else:
