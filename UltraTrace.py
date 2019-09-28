@@ -967,6 +967,7 @@ class TextGridModule(object):
 		go_btn = Button(sbframe, text='Offset', command=self.shiftFrames)
 		# minmax = len(self.app.Audio.sfile)*1000
 		txtbox = Spinbox(sbframe, textvariable=self.frame_shift, width=7, from_=-10000000, to=10000000)
+		txtbox.bind('<Escape>', lambda ev: sbframe.focus())
 		go_btn.grid(row=0, column=0, sticky=E)
 		txtbox.grid(row=0, column=1, sticky=E)
 		# put subframe on canvas
@@ -1552,10 +1553,13 @@ class SpectrogramModule(object):
 		#spinboxes
 		axis_ceil_box = Spinbox(self.spinwin, textvariable=self.spec_freq_max, command=self.drawSpectrogram, width=7, increment=100, from_=0, to_=100000)
 		axis_ceil_box.bind('<Return>',self.drawSpectrogram)
+		axis_ceil_box.bind('<Escape>',lambda ev: self.spinwin.focus())
 		wl_box = Spinbox(self.spinwin, textvariable=self.wl, command=self.drawSpectrogram, width=7, increment=0.0005, from_=0, to_=1)
 		wl_box.bind('<Return>',self.drawSpectrogram)
+		wl_box.bind('<Escape>',lambda ev: self.spinwin.focus())
 		dyn_range_box = Spinbox(self.spinwin, textvariable=self.dyn_range, command=self.drawSpectrogram, width=7, increment=10, from_=0, to_=10000)
 		dyn_range_box.bind('<Return>',self.drawSpectrogram)
+		dyn_range_box.bind('<Escape>',lambda ev: self.spinwin.focus())
 		#buttons
 		default_btn = Button(self.spinwin, text='Standards', command=self.restoreDefaults)
 		apply_btn = Button(self.spinwin, text='Apply', command=self.drawSpectrogram)
@@ -1811,6 +1815,12 @@ class TraceModule(object):
 			self.getWidget( Entry( self.frame, width=12, textvariable=self.traceSV), row=100, column=0, sticky=W ),
 			self.getWidget( Button(self.frame, text='New', command=self.newTrace), row=100, column=2 ),
 			self.getWidget( Button(self.frame, text='Rename', command=self.renameTrace), row=100, column=3 ) ]
+
+		# there's probably a better way to do this than indexing into self.TkWidgets
+		self.TkWidgets[6]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
+		self.TkWidgets[6]['widget'].bind('<Escape>', lambda ev: self.TkWidgets[0]['widget'].focus())
+		self.TkWidgets[9]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
+		self.TkWidgets[9]['widget'].bind('<Escape>', lambda ev: self.TkWidgets[0]['widget'].focus())
 
 		if _PLATFORM == 'Linux':
 			self.app.bind('<Control-r>', self.recolor )
@@ -2965,6 +2975,9 @@ class App(ThemedTk):
 		self.bind('<Escape>', self.onEscape )
 		# self.count = 0
 
+		self.framesEntryText.bind('<Return>', self.unfocusAndJump)
+		self.framesEntryText.bind('<Escape>', lambda ev: self.framesFrame.focus())
+
 		# force window to front
 		self.lift()
 
@@ -3330,6 +3343,9 @@ class App(ThemedTk):
 			# 			break
 			# 		self.frame += 1
 			self.framesUpdate()
+	def unfocusAndJump(self, event):
+		self.framesJumpTo()
+		self.framesFrame.focus()
 	def framesJumpTo(self):
 		'''
 		jump directly to a frame (from the Entry widget)
