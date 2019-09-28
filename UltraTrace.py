@@ -196,8 +196,6 @@ class ZoomFrame(Frame):
 			self.app.Trace.update()
 
 	def wheel(self, event):
-		print(event)
-		print("HARGLE BARGLE")
 		if self.image != None:
 			if event.keysym == 'equal' or event.keysym == 'minus': #what is this for?
 				x = self.canvas_width/2
@@ -220,7 +218,6 @@ class ZoomFrame(Frame):
 			bbox = self.canvas.coords(self.container)
 			self.panX = bbox[0]
 			self.panY = bbox[1]
-			# print(bbox, 'line 221')
 			self.showImage()
 
 	def scrollY(self, *args, **kwargs):
@@ -2856,6 +2853,10 @@ class App(ThemedTk):
 
 		print()
 
+		# to deal with resize handler being called multiple times
+		# in a single window resize
+		self.isResizing = False
+
 		self.after(300,self.afterstartup)
 
 	def setWidgetDefaults(self):
@@ -2977,10 +2978,15 @@ class App(ThemedTk):
 		'''
 
 		'''
-		self.bind('<Configure>', self.alignBottomLeft )
+		self.bind('<Configure>', self.alignBottomLeftWrapper )
 		self.alignBottomLeft()
 		self.getWinSize()
 		self.alignBottomRight(self.oldwidth-self.leftwidth)
+
+	def alignBottomLeftWrapper(self, event=None):
+		if self.isResizing: return
+		self.isResizing = True
+		self.after(100, lambda: self.alignBottomLeft(event))
 
 	def alignBottomLeft(self, event=None):
 		'''
@@ -2995,6 +3001,9 @@ class App(ThemedTk):
 			if 'canvas' in tierWidgets:
 				tierWidgets['canvas-label'].config(width=self.leftwidth)
 				tierWidgets['canvas-label'].coords(ALL,(self.leftwidth,tierWidgets['canvas-label'].coords(1)[1]))
+		if event and event.widget == self:
+			self.alignBottomRight(self.winfo_width() - self.leftwidth)
+		self.isResizing = False
 	def alignBottomRight(self,x):
 		''' '''
 		self.Spectrogram.canvas_width = x
