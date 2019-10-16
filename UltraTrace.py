@@ -753,6 +753,7 @@ class TextGridModule(object):
 		self.tg_zoom_factor = 1.5
 		self.canvas_width=800
 		self.canvas_height=60
+		self.collapse_height=15
 		self.selectedIntvlFrames = []
 		self.selectedItem = None
 		self.start = 0
@@ -1019,6 +1020,7 @@ class TextGridModule(object):
 		# print('line 807')
 		tier_obj = self.TextGrid.getFirst(tier)
 		widgets = { 'name':tier,
+						 'collapsed': True,
 						 #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
 						 'canvas-label':Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0),
 						 # 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
@@ -1033,6 +1035,7 @@ class TextGridModule(object):
 
 		canvas.bind("<Button-1>", self.genFrameList)
 		label.bind("<Button-1>", self.genFrameList)
+		label.bind("<Double-Button-1>", self.collapse)
 
 		return widgets
 
@@ -1429,6 +1432,17 @@ class TextGridModule(object):
 		else:
 			self.paintCanvases()
 			self.app.Spectrogram.update()
+
+	def collapse(self, event):
+		'''
+		collapse or uncollapse selected tier
+		'''
+		h = self.collapse_height
+		if int(self.selectedItem[0]['height']) == h:
+			h = self.canvas_height
+		self.tier_pairs[self.selectedItem[0]].configure(height=h)
+		self.selectedItem[0].configure(height=h)
+		self.app.event_generate('<Configure>')
 
 	def paintCanvases(self):
 		'''
@@ -3018,7 +3032,7 @@ class App(ThemedTk):
 			if 'canvas' in tierWidgets:
 				tierWidgets['canvas-label'].config(width=self.leftwidth)
 				tierWidgets['canvas-label'].coords(ALL,(self.leftwidth,tierWidgets['canvas-label'].coords(1)[1]))
-		if event and event.widget == self:
+		if event == None or event.widget == self:
 			self.alignBottomRight(self.winfo_width() - self.leftwidth)
 			self.Dicom.zframe.setImage(self.Dicom.zframe.image)
 		self.isResizing = False
