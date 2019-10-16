@@ -169,14 +169,16 @@ class ZoomFrame(Frame):
 		if self.width == 0:
 			self.width, self.height = self.image.size
 			self.aspect_ratio = self.width/self.height
-		# else:
-		self.width = self.app.RIGHT.winfo_width()
-		self.height = self.app.RIGHT.winfo_height()
-		# print(x,y)
-		if self.width > self.height*self.aspect_ratio:
-			self.height = round(self.width*(1/self.aspect_ratio))
+		win_width = self.app.RIGHT.winfo_width()
+		asp_height = round(win_width / self.aspect_ratio)
+		win_height = self.app.RIGHT.winfo_height()
+		asp_width = round(win_height * self.aspect_ratio)
+		if asp_height > win_height:
+			self.height = win_height
+			self.width = asp_width
 		else:
-			self.width = round(self.height*self.aspect_ratio)
+			self.height = asp_height
+			self.width = win_width
 		self.showImage()
 
 	def showImage(self, event=None):
@@ -2995,6 +2997,8 @@ class App(ThemedTk):
 		self.alignBottomLeft()
 		self.getWinSize()
 		self.alignBottomRight(self.oldwidth-self.leftwidth)
+		if self.Dicom.zframe.image:
+			self.Dicom.zframe.setImage(self.Dicom.zframe.image)
 
 	def alignBottomLeftWrapper(self, event=None):
 		if self.isResizing: return
@@ -3016,6 +3020,7 @@ class App(ThemedTk):
 				tierWidgets['canvas-label'].coords(ALL,(self.leftwidth,tierWidgets['canvas-label'].coords(1)[1]))
 		if event and event.widget == self:
 			self.alignBottomRight(self.winfo_width() - self.leftwidth)
+			self.Dicom.zframe.setImage(self.Dicom.zframe.image)
 		self.isResizing = False
 	def alignBottomRight(self,x):
 		''' '''
