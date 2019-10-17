@@ -1020,7 +1020,6 @@ class TextGridModule(object):
 		# print('line 807')
 		tier_obj = self.TextGrid.getFirst(tier)
 		widgets = { 'name':tier,
-						 'collapsed': True,
 						 #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
 						 'canvas-label':Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0),
 						 # 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
@@ -1443,7 +1442,8 @@ class TextGridModule(object):
 			widg = self.selectedItem[0]
 		else:
 			widg = event.widget
-		if event.type == 'ButtonPress':
+
+		if event.num == 1:
 			h = self.collapse_height
 			if int(widg['height']) == h:
 				h = self.canvas_height
@@ -1451,8 +1451,19 @@ class TextGridModule(object):
 			h = self.canvas_height
 		else:
 			h = self.collapse_height
+
+		if int(widg['height']) == h:
+			return
+		elif h == self.canvas_height:
+			mv = (self.canvas_height - self.collapse_height - 14) / 2
+		else:
+			mv = (self.collapse_height + 14 - self.canvas_height) / 2
+		# manually shifting the text by 7 pixels is a rather ugly hack,
+		# but it works - DS
+
 		self.tier_pairs[widg].configure(height=h)
 		widg.configure(height=h)
+		widg.move('all', 0, mv)
 		self.app.event_generate('<Configure>')
 
 	def paintCanvases(self):
