@@ -1036,6 +1036,8 @@ class TextGridModule(object):
 		canvas.bind("<Button-1>", self.genFrameList)
 		label.bind("<Button-1>", self.genFrameList)
 		label.bind("<Double-Button-1>", self.collapse)
+		label.bind("<Button-4>", self.collapse)
+		label.bind("<Button-5>", self.collapse)
 
 		return widgets
 
@@ -1437,11 +1439,20 @@ class TextGridModule(object):
 		'''
 		collapse or uncollapse selected tier
 		'''
-		h = self.collapse_height
-		if int(self.selectedItem[0]['height']) == h:
+		if self.selectedItem != None:
+			widg = self.selectedItem[0]
+		else:
+			widg = event.widget
+		if event.type == 'ButtonPress':
+			h = self.collapse_height
+			if int(widg['height']) == h:
+				h = self.canvas_height
+		elif event.num == 4 or event.delta > 0:
 			h = self.canvas_height
-		self.tier_pairs[self.selectedItem[0]].configure(height=h)
-		self.selectedItem[0].configure(height=h)
+		else:
+			h = self.collapse_height
+		self.tier_pairs[widg].configure(height=h)
+		widg.configure(height=h)
 		self.app.event_generate('<Configure>')
 
 	def paintCanvases(self):
