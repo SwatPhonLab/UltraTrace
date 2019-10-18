@@ -1037,6 +1037,8 @@ class TextGridModule(object):
 		label.bind("<Double-Button-1>", self.collapse)
 		label.bind("<Button-4>", self.collapse)
 		label.bind("<Button-5>", self.collapse)
+		canvas.bind("<Button-4>", self.collapse)
+		canvas.bind("<Button-5>", self.collapse)
 
 		return widgets
 
@@ -1461,9 +1463,18 @@ class TextGridModule(object):
 		# manually shifting the text by 7 pixels is a rather ugly hack,
 		# but it works - DS
 
-		self.tier_pairs[widg].configure(height=h)
-		widg.configure(height=h)
-		widg.move('all', 0, mv)
+		if widg in self.tier_pairs:
+				l, c = widg, self.tier_pairs[widg]
+		else:
+				c = widg
+				l = None
+				for k in self.tier_pairs:
+						if self.tier_pairs[k] == widg:
+								l = k
+								break
+		l.configure(height=h)
+		c.configure(height=h)
+		l.move('all', 0, mv)
 		self.app.event_generate('<Configure>')
 
 	def paintCanvases(self):
