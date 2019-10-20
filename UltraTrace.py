@@ -1037,8 +1037,10 @@ class TextGridModule(object):
 		label.bind("<Double-Button-1>", self.collapse)
 		label.bind("<Button-4>", self.collapse)
 		label.bind("<Button-5>", self.collapse)
+		label.bind("<MouseWheel>", self.collapse)
 		canvas.bind("<Button-4>", self.collapse)
 		canvas.bind("<Button-5>", self.collapse)
+		canvas.bind("<MouseWheel>", self.collapse)
 
 		return widgets
 
@@ -2607,7 +2609,7 @@ class DicomModule(object):
 			outputfilepath = os.path.join( rel_outputpath, outputfilename )
 			# print(outputpath, outputfilename,'line 2457')
 			# print(outputfilepath)
-			img.save( os.path.join(self.app.Data.path,outputfilepath), format='PNG' )
+			img.save( os.path.join(self.app.Data.path,outputfilepath), format='PNG', compress_level=1 )
 
 			# keep track of all the processing we've finished
 			# print(os.path.join(outputpath,outputfilename))
