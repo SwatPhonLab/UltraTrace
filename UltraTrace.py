@@ -28,7 +28,7 @@ getMIMEType = Magic(mime=True).from_file
 try:
 	import numpy as np				# sudo -H pip3 install -U numpy
 	import pydicom as dicom 		# sudo -H pip3 install -U pydicom
-	from PIL import Image, ImageTk, ImageEnhance  # sudo -H pip3 install -U pillow
+	from PIL import Image, ImageTk, ImageEnhance, ImageDraw  # sudo -H pip3 install -U pillow
 	_DICOM_LIBS_INSTALLED = True
 except (ImportError):
 	warnings.warn('Dicom library failed to load')
@@ -2349,7 +2349,23 @@ class PlaybackModule(object):
 		canvas = self.app.Dicom.zframe.canvas
 		bbox = canvas.bbox(canvas.find_all()[0])
 		dim = (bbox[2] - bbox[0], bbox[3] - bbox[1])
-		self.pngs = [ImageTk.PhotoImage(Image.open(png).resize(dim)) for png in png_locs]
+		imgs = [Image.open(png).resize(dim) for png in png_locs]
+		self.pngs = []
+		traces = self.app.Data.getTopLevel('traces')
+		file = self.app.Data.getCurrentFilename()
+		l = _CROSSHAIR_SELECT_RADIUS
+		for frame, img in zip(framenums, imgs):
+			draw = ImageDraw.Draw(img)
+			for name in traces:
+				color = traces[name]['color']
+				if file in traces[name]['files'] and frame in traces[name]['files'][file]:
+					for pt in traces[name]['files'][file][frame]:
+						x = int(pt['x'] * img.width)
+						y = int(pt['y'] * img.height)
+						draw.line((x-l, y, x+l, y), fill=color)
+						draw.line((x, y-l, x, y+l), fill=color)
+			del draw
+			self.pngs.append(ImageTk.PhotoImage(img))
 
 		#video w/audio stuff
 		self.dicomframe_timer = 0
