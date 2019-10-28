@@ -2344,7 +2344,10 @@ class PlaybackModule(object):
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
 		self.framestart = int(framenums[0])
 		png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
-		self.pngs = [ImageTk.PhotoImage(Image.open(png)) for png in png_locs]
+		canvas = self.app.Dicom.zframe.canvas
+		bbox = canvas.bbox(canvas.find_all()[0])
+		dim = (bbox[2] - bbox[0], bbox[3] - bbox[1])
+		self.pngs = [ImageTk.PhotoImage(Image.open(png).resize(dim)) for png in png_locs]
 
 		#video w/audio stuff
 		self.dicomframe_timer = 0
@@ -2421,7 +2424,7 @@ class PlaybackModule(object):
 		# print(self.dicomframeQ.qsize(),'line 1991')
 		try:
 			pic = self.dicomframeQ.get(timeout=.5)
-			canvas.itemconfig( canvas.find_all()[0], image=pic )
+			canvas.itemconfig(canvas.find_all()[0] , image=pic )
 			# canvas.lift(pic)
 			# canvas.img = pic
 			canvas.update()
