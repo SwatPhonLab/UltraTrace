@@ -2473,6 +2473,7 @@ class PlaybackModule(object):
 		self.started = False
 		self.paused = False
 		self.app.framesJumpTo()
+		self.stoprequest.clear()
 
 	def grid(self):
 		''' grid widgets '''
