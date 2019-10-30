@@ -2472,6 +2472,7 @@ class PlaybackModule(object):
 			self.stream.close()
 		self.started = False
 		self.paused = False
+		self.app.framesJumpTo()
 
 	def grid(self):
 		''' grid widgets '''
