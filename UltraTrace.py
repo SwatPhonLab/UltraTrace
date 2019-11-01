@@ -830,9 +830,9 @@ class TextGridModule(object):
 					#put items on canvases
 					self.fillCanvases()
 					#calculate first and last frames
-					self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark)
+					self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark) + 1
 					self.startFrame = self.firstFrame
-					self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark)
+					self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
 					self.endFrame = self.lastFrame
 				except:
 					pass
@@ -892,9 +892,9 @@ class TextGridModule(object):
 					#put items on canvases
 					self.fillCanvases()
 					#calculate first and last frames
-					self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark)
+					self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark) + 1
 					self.startFrame = self.firstFrame
-					self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark)
+					self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
 					self.endFrame = self.lastFrame
 				except:
 					pass
@@ -931,8 +931,8 @@ class TextGridModule(object):
 					self.TextGrid.getFirst(self.frameTierName).add(new_time, point.mark)
 
 			# self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))			#FIXME I feel like I shouldn't have to run the getFirst function every time, but I'm not sure when I have to go back to the original textgrid, and when I can just use a variable...
-			self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark)
-			self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark)
+			self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark) + 1
+			self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
 			self.app.Data.data['offset'] = shift
 			# self.frame_shift.set(shift)
 			self.app.Data.write()
@@ -1303,7 +1303,7 @@ class TextGridModule(object):
 							fill = 'gray50'
 						frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags="frame"+tier[i].mark, fill=fill)
 						if first_frame_found == False:
-							self.firstFrame = int(tier[i].mark)
+							self.firstFrame = int(tier[i].mark) + 1
 							first_frame_found = True
 							self.frame_len = tier[i+1].time - tier[i].time
 						CanvasTooltip(frames, frame,text=tier[i].mark)
@@ -1311,7 +1311,11 @@ class TextGridModule(object):
 				self.lastFrame = int(tier[i-1].mark)
 
 		self.paintCanvases()
-		self.app.Spectrogram.reset()
+		try:
+			self.app.Spectrogram.reset()
+			# during startup this gets called before app.Spectrogram is initialized
+		except AttributeError:
+			pass
 
 	def updateTimeLabels(self):
 		'''
@@ -3395,6 +3399,7 @@ class App(ThemedTk):
 		controls self.framesPrevBtn for panning between frames
 		'''
 		# if self.Dicom.isLoaded and self.frame > self.TextGrid.startFrame:
+		if isinstance(self.focus_get(), (Entry, Spinbox)): return
 		if self.frame > self.TextGrid.startFrame:
 			self.frame -= 1
 			# if len(self.TextGrid.selectedIntvlFrames) != 0:
@@ -3409,6 +3414,7 @@ class App(ThemedTk):
 		controls self.framesNextBtn for panning between frames
 		'''
 		# if self.Dicom.isLoaded and self.frame < self.TextGrid.endFrame:
+		if isinstance(self.focus_get(), (Entry, Spinbox)): return
 		if self.frame < self.TextGrid.endFrame:
 			self.frame += 1
 			# if len(self.TextGrid.selectedIntvlFrames) != 0:
