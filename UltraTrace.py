@@ -758,6 +758,7 @@ class TextGridModule(object):
 		self.selectedItem = None
 		self.start = 0
 		self.end = 0
+		self.current = 0
 		self.frame_shift = DoubleVar()
 
 		self.startup()
@@ -880,6 +881,7 @@ class TextGridModule(object):
 					# 		self.TkWidgets.append( tierWidgets )
 					self.start = self.TextGrid.minTime
 					self.end = self.TextGrid.maxTime
+					self.current = self.TextGrid.getFirst(self.frameTierName)[self.app.frame-1].time
 					#make other widgets
 					# self.makeFrameWidget()
 					#reset offset
@@ -949,6 +951,7 @@ class TextGridModule(object):
 		self.time_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height/3, highlightthickness=0)
 		s = self.time_canvas.create_text(3,0, anchor=NW, text=self.start)
 		e = self.time_canvas.create_text(self.canvas_width,0, anchor=NE, text=self.end)
+		c = self.time_canvas.create_text(self.canvas_width/2,0, anchor=NE, text=self.current)
 		self.TkWidgets.append({'times':self.time_canvas})
 
 	def makeFrameWidget(self):
@@ -1321,8 +1324,10 @@ class TextGridModule(object):
 		'''
 
 		'''
+		self.current = self.TextGrid.getFirst(self.frameTierName)[self.app.frame-1].time
 		self.TkWidgets[-1]['times'].itemconfig(1,text='{:.6f}'.format(self.start))
 		self.TkWidgets[-1]['times'].itemconfig(2,text='{:.6f}'.format(self.end))
+		self.TkWidgets[-1]['times'].itemconfig(3,text='{:.6f}'.format(self.current))
 
 	def updateTierLabels(self):
 		'''
@@ -1560,6 +1565,7 @@ class TextGridModule(object):
 
 		# repaint all frames
 		self.paintCanvases()
+		self.updateTimeLabels()
 
 	def grid(self, event=None):
 		'''
