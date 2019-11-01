@@ -967,7 +967,7 @@ class TextGridModule(object):
 		offset = self.app.Data.getFileLevel( 'offset' )
 		if offset != None:
 			self.frame_shift.set(offset)
-		go_btn = Button(sbframe, text='Offset', command=self.shiftFrames)
+		go_btn = Button(sbframe, text='Offset', command=self.shiftFrames, takefocus=0)
 		# minmax = len(self.app.Audio.sfile)*1000
 		txtbox = Spinbox(sbframe, textvariable=self.frame_shift, width=7, from_=-10000000, to=10000000)
 		txtbox.bind('<Escape>', lambda ev: sbframe.focus())
@@ -1616,8 +1616,8 @@ class SpectrogramModule(object):
 		dyn_range_box.bind('<Return>',self.drawSpectrogram)
 		dyn_range_box.bind('<Escape>',lambda ev: self.spinwin.focus())
 		#buttons
-		default_btn = Button(self.spinwin, text='Standards', command=self.restoreDefaults)
-		apply_btn = Button(self.spinwin, text='Apply', command=self.drawSpectrogram)
+		default_btn = Button(self.spinwin, text='Standards', command=self.restoreDefaults, takefocus=0)
+		apply_btn = Button(self.spinwin, text='Apply', command=self.drawSpectrogram, takefocus=0)
 
 		# self.axis_frame.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor=NE)
 		#grid spinboxes & buttons on subframe
@@ -1860,16 +1860,16 @@ class TraceModule(object):
 		self.TkWidgets = [
 			self.getWidget( Header(self.frame, text="Choose a trace"), row=5, column=0, columnspan=4 ),
 			self.getWidget( lbframe, row=10, column=0, rowspan=50 ),
-			self.getWidget( Button(self.frame, text='Set as default', command=self.setDefaultTraceName), row=10, column=2, columnspan=2 ),
-			self.getWidget( Button(self.frame, text='Select all', command=self.selectAll), row=11, column=2, columnspan=2 ),
-			self.getWidget( Button(self.frame, image=self.img_copy, command=self.copy), row=12, column=2 ), # FIXME: add tooltip for "Copy"
-			self.getWidget( Button(self.frame, image=self.img_paste, command=self.paste), row=12, column=3 ), # FIXME: add tooltip for "Paste"
+			self.getWidget( Button(self.frame, text='Set as default', command=self.setDefaultTraceName, takefocus=0), row=10, column=2, columnspan=2 ),
+			self.getWidget( Button(self.frame, text='Select all', command=self.selectAll, takefocus=0), row=11, column=2, columnspan=2 ),
+			self.getWidget( Button(self.frame, image=self.img_copy, command=self.copy, takefocus=0), row=12, column=2 ), # FIXME: add tooltip for "Copy"
+			self.getWidget( Button(self.frame, image=self.img_paste, command=self.paste, takefocus=0), row=12, column=3 ), # FIXME: add tooltip for "Paste"
 			self.getWidget( Entry( self.frame, width=8, textvariable=self.displayedColour), row=13, column=1, columnspan=2, sticky=W ),
-			self.getWidget( Button(self.frame, text='Recolor', command=self.recolor), row=13, column=3 ),
-			self.getWidget( Button(self.frame, text='Clear', command=self.clear), row=15, column=2, columnspan=2 ),
+			self.getWidget( Button(self.frame, text='Recolor', command=self.recolor, takefocus=0), row=13, column=3 ),
+			self.getWidget( Button(self.frame, text='Clear', command=self.clear, takefocus=0), row=15, column=2, columnspan=2 ),
 			self.getWidget( Entry( self.frame, width=12, textvariable=self.traceSV), row=100, column=0, sticky=W ),
-			self.getWidget( Button(self.frame, text='New', command=self.newTrace), row=100, column=2 ),
-			self.getWidget( Button(self.frame, text='Rename', command=self.renameTrace), row=100, column=3 ) ]
+			self.getWidget( Button(self.frame, text='New', command=self.newTrace, takefocus=0), row=100, column=2 ),
+			self.getWidget( Button(self.frame, text='Rename', command=self.renameTrace, takefocus=0), row=100, column=3 ) ]
 
 		# there's probably a better way to do this than indexing into self.TkWidgets
 		self.TkWidgets[6]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
@@ -2221,7 +2221,7 @@ class PlaybackModule(object):
 
 			# widget management
 			self.frame = Frame(self.app.BOTTOM)
-			self.playBtn = Button(self.frame, text="Play/Pause", command=self.playpauseAV, state=DISABLED) # NOTE: not currently appearing
+			self.playBtn = Button(self.frame, text="Play/Pause", command=self.playpauseAV, state=DISABLED, takefocus=0) # NOTE: not currently appearing
 			self.app.bind('<space>', self.playpauseAV )
 			self.app.bind('<Escape>', self.stopAV )
 		if _VIDEO_LIBS_INSTALLED:
@@ -2516,14 +2516,14 @@ class DicomModule(object):
 			# grid load button
 			self.frame = Frame(self.app.LEFT)#, pady=7)
 			self.frame.grid( row=2 )
-			self.loadBtn = Button(self.frame, text='Load DICOM', command=self.process)
+			self.loadBtn = Button(self.frame, text='Load DICOM', command=self.process, takefocus=0)
 			self.loadBtn.grid()
 
 			# zoom frame (contains our tracing canvas)
 			self.zframe = ZoomFrame(self.app.RIGHT, 1.3, app)
 
 			# reset zoom button
-			self.zoomResetBtn = Button(self.app.LEFT, text='Reset image', command=self.zoomReset)#, pady=7 )
+			self.zoomResetBtn = Button(self.app.LEFT, text='Reset image', command=self.zoomReset, takefocus=0)#, pady=7 )
 
 			# reset zoom keyboard shortcut
 			if _PLATFORM == 'Linux':
@@ -2759,8 +2759,8 @@ class ControlModule(object):
 		# also make some buttons and bind them
 		self.frame = Frame(self.app.LEFT)#, pady=7)
 		self.frame.grid( row=5 )
-		self.undoBtn = Button(self.frame, text='Undo', command=self.undo)
-		self.redoBtn = Button(self.frame, text='Redo', command=self.redo)
+		self.undoBtn = Button(self.frame, text='Undo', command=self.undo, takefocus=0)
+		self.redoBtn = Button(self.frame, text='Redo', command=self.redo, takefocus=0)
 		self.updateButtons()
 	def push(self, item):
 		'''
@@ -3019,9 +3019,9 @@ class App(ThemedTk):
 
 		# navigate between all available filenames in this directory
 		self.filesFrame = Frame(self.LEFT)#, pady=7)
-		self.filesPrevBtn = Button(self.filesFrame, text='<', command=self.filesPrev)
+		self.filesPrevBtn = Button(self.filesFrame, text='<', command=self.filesPrev, takefocus=0)
 		self.filesJumpToMenu = OptionMenu(self.filesFrame, self.currentFileSV, *self.Data.files, command=self.filesJumpTo)
-		self.filesNextBtn= Button(self.filesFrame, text='>', command=self.filesNext)
+		self.filesNextBtn= Button(self.filesFrame, text='>', command=self.filesNext, takefocus=0)
 		self.filesFrame.grid( row=1 )
 		self.filesPrevBtn.grid( row=1, column=0 )
 		self.filesJumpToMenu.grid( row=1, column=1 )
@@ -3031,10 +3031,10 @@ class App(ThemedTk):
 		# navigate between frames
 		self.framesFrame = Frame(self.LEFT)#, pady=7)
 		self.framesSubframe = Frame(self.framesFrame)
-		self.framesPrevBtn = Button(self.framesSubframe, text='<', command=self.framesPrev)
+		self.framesPrevBtn = Button(self.framesSubframe, text='<', command=self.framesPrev, takefocus=0)
 		self.framesEntryText = Entry(self.framesSubframe, width=5, textvariable=self.frameSV)
-		self.framesEntryBtn = Button(self.framesSubframe, text='Go', command=self.framesJumpTo)
-		self.framesNextBtn= Button(self.framesSubframe, text='>', command=self.framesNext)
+		self.framesEntryBtn = Button(self.framesSubframe, text='Go', command=self.framesJumpTo, takefocus=0)
+		self.framesNextBtn= Button(self.framesSubframe, text='>', command=self.framesNext, takefocus=0)
 		self.framesHeader = Header(self.framesFrame, text="Choose a frame:")
 		self.framesFrame.grid( row=3 )
 		self.framesSubframe.grid( row=1 )
