@@ -951,7 +951,7 @@ class TextGridModule(object):
 		self.time_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height/3, highlightthickness=0)
 		s = self.time_canvas.create_text(3,0, anchor=NW, text=self.start)
 		e = self.time_canvas.create_text(self.canvas_width,0, anchor=NE, text=self.end)
-		c = self.time_canvas.create_text(self.canvas_width/2,0, anchor=NE, text=self.current)
+		c = self.time_canvas.create_text(self.canvas_width/2,0, anchor=N, text=self.current)
 		self.TkWidgets.append({'times':self.time_canvas})
 
 	def makeFrameWidget(self):
@@ -3117,6 +3117,7 @@ class App(ThemedTk):
 			if 'times' in tierWidgets:
 				tierWidgets['times'].config(width=x)
 				tierWidgets['times'].coords(2,(x,tierWidgets['times'].coords(2)[1])) #move end time
+				tierWidgets['times'].coords(3,(x/2,tierWidgets['times'].coords(3)[1]))
 		self.TextGrid.fillCanvases() #calls Spectrogram.reset
 
 	# def onWindowResize(self, event):
