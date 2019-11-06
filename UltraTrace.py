@@ -1,86 +1,87 @@
 #!/usr/bin/env python3
 
 # core libs
+import argparse
+import base64
+import copy
+import datetime
+import decimal
+import json
+import math
+import os
+import parselmouth
+import random
+import shutil
+import sys
+
+from magic import Magic
 from tkinter import *
 from tkinter.ttk import *
 from tkinter import filedialog
-# import soundfile as sf
-# import numpy as np
-# import scipy.fftpack as fftpack
-# import urllib.request as request
-import argparse, datetime, json, \
-	math, os, sys, random, shutil, warnings, decimal,\
-	soundfile as sf, scipy.fftpack as fftpack, urllib.request as request #FIXME should I put these with non-critical dependencies?
 
-import parselmouth
-import copy
+import scipy.fftpack as fftpack
+import soundfile as sf
+import urllib.request as request
 
-import base64
+getMimeType = Magic(mime=True).from_file
 
-# monkeypatch the warnings module
-warnings.showwarning = lambda msg, *args : print( 'WARNING: %s' % msg )
-
-# critical dependencies
-from magic import Magic # sudo -H pip3 install -U python-magic
-getMIMEType = Magic(mime=True).from_file
+def warn(message):
+    print('WARNING:', message, file=sys.stderr)
 
 # non-critical dependencies
 try:
-	import numpy as np				# sudo -H pip3 install -U numpy
-	import pydicom as dicom 		# sudo -H pip3 install -U pydicom
-	from PIL import Image, ImageTk, ImageEnhance, ImageDraw  # sudo -H pip3 install -U pillow
+	import numpy as np
+	import pydicom as dicom
+	from PIL import Image, ImageTk, ImageEnhance, ImageDraw
 	_DICOM_LIBS_INSTALLED = True
 except (ImportError):
-	warnings.warn('Dicom library failed to load')
+	warn('Dicom library failed to load')
 	_DICOM_LIBS_INSTALLED = False
+
 try:
-	# import pygame 	# sudo -H pip3 install pygame pygame.mixer && brew install sdl sdl_mixer
-	# assert("pygame.mixer" in sys.modules)
-	from pydub import AudioSegment
-	# from pydub.playback import play
 	import pyaudio
-	# import wave
-	# import simpleaudio as sa
+	from pydub import AudioSegment
 	_AUDIO_LIBS_INSTALLED = True
 except (ImportError, AssertionError):
-	warnings.warn('Audio library failed to load')
+	warn('Audio library failed to load')
 	_AUDIO_LIBS_INSTALLED = False
+
 try:
-	import cairosvg # sudo -H pip3 install cairosvg && brew install cairo
-	import wav2vec  # sudo -H pip3 install wav2vec
+	import cairosvg
+	import wav2vec
 	_WAV_VIS_LIBS_INSTALLED = True
 except (ImportError):
-	warnings.warn('Waveform visualization library failed to load')
+	warn('Waveform visualization library failed to load')
 	_WAV_VIS_LIBS_INSTALLED = False
+
 try:
-	from textgrid import TextGrid, IntervalTier, PointTier # sudo -H pip3 install -U textgrid
+	from textgrid import TextGrid, IntervalTier, PointTier
 	_TEXTGRID_LIBS_INSTALLED = True
 except (ImportError):
-	warnings.warn('TextGrid library failed to load')
+	warn('TextGrid library failed to load')
 	_TEXTGRID_LIBS_INSTALLED = False
+
 try:
-	# import vlc
-	# import tempfile
-	# from multiprocessing import Process
-	import threading, queue
+	import threading
 	import time
+        import queue
 	_VIDEO_LIBS_INSTALLED = True
 except (ImportError):
-	warnings.warn('VLC library failed to load')
+	warn('VLC library failed to load')
 	_VIDEO_LIBS_INSTALLED = False
+
 try:
-	#print('checking OS')
 	import platform
 	_PLATFORM = platform.system()
 	print('Loading platform-specific enhancements for ' + _PLATFORM)
 	if _PLATFORM == 'Linux':
 		import xrp  # pip3 install xparser
-		from ttkthemes import ThemedTk
 		from pathlib import Path
+		from ttkthemes import ThemedTk
 	else:
 		from ttkthemes import ThemedTk
 except (ImportError):
-	warnings.warn('Can\'t load platform-specific enhancements')
+	warn('Can\'t load platform-specific enhancements')
 	_PLATFORM = 'generic'
 	ThemedTk = Tk
 
@@ -501,7 +502,7 @@ class MetadataModule(object):
 					#make file path relative to metadata file
 					filepath = os.path.relpath(filepath,start=self.path)
 
-					MIME = getMIMEType(real_filepath)
+					MIME = getMimeType(real_filepath)
 					if (MIME == 'text/plain' or MIME == 'application/json') and extension == '.measurement':
 						print('Found old measurement file {}'.format(filename))
 						self.importOldMeasurement(real_filepath, filename)
