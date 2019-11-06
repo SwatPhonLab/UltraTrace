@@ -1,0 +1,38 @@
+import argparse
+
+from app import App
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--path',
+            default=None,
+            help='path (unique to a participant) where subdirectories contain raw data')
+    parser.add_argument('--no-audio',
+            dest='audio',
+            action='store_false',
+            help="don't try to load the audio widget")
+    parser.add_argument('--no-dicom',
+            dest='dicom',
+            action='store_false',
+            help="don't try to load the dicom widget")
+    parser.add_argument('--no-textgrid',
+            dest='textgrid',
+            action='store_false',
+            help="don't try to load the textgrid widget")
+    parser.add_argument('--no-spectrogram',
+            dest='spectrogram',
+            action='store_false',
+            help="don't try to load the spectrogram widget")
+    parser.add_argument('--no-video',
+            dest='video',
+            action='store_false',
+            help="don't try to load the video widget")
+    parser.add_argument('--theme',
+            help='TtkTheme to use for application')
+
+    args = parser.parse_args()
+
+    app = App(args)
+    app.mainloop()
