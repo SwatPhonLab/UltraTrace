@@ -11,10 +11,14 @@ class Recolor(Action): pass
 class Rename(Action): pass
 
 class Stack:
-    def __init__(self):
+    def __init__(self, args):
         self.items = []
+        self.max_len = args.max_undo_memory
     def push(self, action):
         self.items.append(action)
+        if len(self) == self.max_undo_memory:
+            utils.warn('Max undo/redo memory reached, dropping last item')
+            self.items.pop(0)
     def pop(self):
         return self.items.pop()
     def __len__(self):
@@ -22,11 +26,11 @@ class Stack:
     def clear(self):
         self.items = []
 
-class UndoRedo:
-    def __init__(self, app):
+class UndoManager:
+    def __init__(self, app, args):
         self.app = app
-        self.undos = Stack()
-        self.redos = Stack()
+        self.undos = Stack(args)
+        self.redos = Stack(args)
 
     def clear(self):
         self.undos.clear()

@@ -31,8 +31,12 @@ if __name__ == '__main__':
             help="don't try to load the video widget")
     parser.add_argument('--theme',
             help='TtkTheme to use for application')
+    parser.add_argument('--max-undo-memory',
+            type=int,
+            default=1000,
+            help='number of operations to remember in the UndoManager')
 
     args = parser.parse_args()
 
     app = App(args)
-    app.mainloop()
+    app.main()

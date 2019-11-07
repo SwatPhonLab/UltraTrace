@@ -14,16 +14,12 @@ import random
 import shutil
 import sys
 
-from magic import Magic
 from tkinter import *
 from tkinter.ttk import *
-from tkinter import filedialog
 
 import scipy.fftpack as fftpack
 import soundfile as sf
 import urllib.request as request
-
-getMimeType = Magic(mime=True).from_file
 
 def warn(message):
     print('WARNING:', message, file=sys.stderr)
@@ -438,111 +434,83 @@ class MetadataModule(object):
             for example, it will try to locate files that have the same base filename and
             each of a set of required extensions
         '''
-        print( ' - initializing module: Data')
-        if path == None:
-            app.update()
-            path = filedialog.askdirectory(initialdir=os.getcwd(), title="Choose a directory")
+        print( "   - creating new metadata file: `%s`" % self.mdfile )
+        self.data = {
+            'firstrun_path': self.path,
+            'defaultTraceName': 'tongue',
+            'traces': {
+                'tongue': {
+                    'color': 'red',
+                    'files': {} } },
+            'offset':0,
+            'files': {} }
 
-        print( '   - parsing directory: `%s`' % path )
+        # we want each object to have entries for everything here
+        fileKeys = { '_prev', '_next', 'processed', 'offset' } # and `processed`
+        MIMEs = {
+            'audio/x-wav'        :    ['.wav'],
+            'audio/x-flac'        :    ['.flac'],
+            'audio/wav'        :    ['.wav'],
+            'audio/flac'        :    ['.flac'],
+            'application/dicom'    :    ['.dicom', '.dcm'],
+            'text/plain'        :    ['.TextGrid']
+        }
+        files = {}
 
-        if os.path.exists( path ) == False:
-            print( "   - ERROR: `%s` could not be located" % path )
-            exit(1)
+        # now get the objects in subdirectories
+        for path, dirs, fs in os.walk( self.path ):
+            for f in fs:
+                # exclude some filetypes explicitly here by MIME type
+                filepath = os.path.join( path, f )
+                filename, extension = os.path.splitext( f )
 
-        self.app = app
-        self.path = path
+                # allow us to follow symlinks
+                real_filepath = os.path.realpath(filepath)
 
-        self.mdfile = os.path.join( self.path, 'metadata.json' )
+                #make file path relative to metadata file
+                filepath = os.path.relpath(filepath,start=self.path)
 
-        # either load up existing metadata
-        if os.path.exists( self.mdfile ):
-            print( "   - found metadata file: `%s`" % self.mdfile )
-            with open( self.mdfile, 'r' ) as f:
-                self.data = json.load( f )
+                MIME = getMimeType(real_filepath)
+                if (MIME == 'text/plain' or MIME == 'application/json') and extension == '.measurement':
+                    print('Found old measurement file {}'.format(filename))
+                    self.importOldMeasurement(real_filepath, filename)
+                elif MIME in MIMEs:
+                    # add `good` files
+                    if extension in MIMEs[ MIME ]:
+                        if filename not in files:
+                            files[filename] = { key:None for key in fileKeys }
+                        files[filename][extension] = filepath
+                elif MIME == 'image/png' and '_dicom_to_png' in path:
+                    # check for preprocessed dicom files
+                    name, frame = filename.split( '_frame_' )
+                    #print(files)
+                    # if len(files) > 0:
+                    # might be able to combine the following; check
+                    if name not in files:
+                        files[name] = {'processed': None}
+                    if files[name]['processed'] == None:
+                        files[name]['processed'] = {}
+                    files[name]['processed'][str(int(frame))] = filepath
 
-        # or create new stuff
-        else:
-            if "trace.old files exist":
-                "read the files"
+        # check that we find at least one file
+        if len(files) == 0:
+            print( '   - ERROR: `%s` contains no supported files' % path )
+            exit()
 
-            self.path = os.path.abspath(self.path)
-            print( "   - creating new metadata file: `%s`" % self.mdfile )
-            self.data = {
-                'firstrun_path': self.path,
-                'defaultTraceName': 'tongue',
-                'traces': {
-                    'tongue': {
-                        'color': 'red',
-                        'files': {} } },
-                'offset':0,
-                'files': {} }
+        # sort the files so that we can guess about left/right ... extrema get None/null
+        # also add in the "traces" bit here
+        _prev = None
+        for key in sorted( files.keys() ):
+            if _prev != None:
+                files[_prev]['_next'] = key
+            files[key]['_prev'] = _prev
+            _prev = key
+            files[key]['name'] = key
 
-            # we want each object to have entries for everything here
-            fileKeys = { '_prev', '_next', 'processed', 'offset' } # and `processed`
-            MIMEs = {
-                'audio/x-wav'        :    ['.wav'],
-                'audio/x-flac'        :    ['.flac'],
-                'audio/wav'        :    ['.wav'],
-                'audio/flac'        :    ['.flac'],
-                'application/dicom'    :    ['.dicom'],
-                'text/plain'        :    ['.TextGrid']
-            }
-            files = {}
-
-            # now get the objects in subdirectories
-            for path, dirs, fs in os.walk( self.path ):
-                for f in fs:
-                    # exclude some filetypes explicitly here by MIME type
-                    filepath = os.path.join( path, f )
-                    filename, extension = os.path.splitext( f )
-
-                    # allow us to follow symlinks
-                    real_filepath = os.path.realpath(filepath)
-
-                    #make file path relative to metadata file
-                    filepath = os.path.relpath(filepath,start=self.path)
-
-                    MIME = getMimeType(real_filepath)
-                    if (MIME == 'text/plain' or MIME == 'application/json') and extension == '.measurement':
-                        print('Found old measurement file {}'.format(filename))
-                        self.importOldMeasurement(real_filepath, filename)
-                    elif MIME in MIMEs:
-                        # add `good` files
-                        if extension in MIMEs[ MIME ]:
-                            if filename not in files:
-                                files[filename] = { key:None for key in fileKeys }
-                            files[filename][extension] = filepath
-                    elif MIME == 'image/png' and '_dicom_to_png' in path:
-                        # check for preprocessed dicom files
-                        name, frame = filename.split( '_frame_' )
-                        #print(files)
-                        # if len(files) > 0:
-                        # might be able to combine the following; check
-                        if name not in files:
-                            files[name] = {'processed': None}
-                        if files[name]['processed'] == None:
-                            files[name]['processed'] = {}
-                        files[name]['processed'][str(int(frame))] = filepath
-
-            # check that we find at least one file
-            if len(files) == 0:
-                print( '   - ERROR: `%s` contains no supported files' % path )
-                exit()
-
-            # sort the files so that we can guess about left/right ... extrema get None/null
-            # also add in the "traces" bit here
-            _prev = None
-            for key in sorted( files.keys() ):
-                if _prev != None:
-                    files[_prev]['_next'] = key
-                files[key]['_prev'] = _prev
-                _prev = key
-                files[key]['name'] = key
-
-            # sort files, set the geometry, and write
-            self.data[ 'files' ] = [ files[key] for key in sorted(files.keys()) ]
-            self.data[ 'geometry' ] = '1150x800+1400+480'
-            self.write()
+        # sort files, set the geometry, and write
+        self.data[ 'files' ] = [ files[key] for key in sorted(files.keys()) ]
+        self.data[ 'geometry' ] = '1150x800+1400+480'
+        self.write()
 
         self.app.geometry( self.getTopLevel('geometry') )
         self.files = self.getFilenames()
