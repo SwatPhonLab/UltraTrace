@@ -1677,6 +1677,8 @@ class SpectrogramModule(object):
             # but we've defined ts as duration / 10000, so duration % ts = 0
             # so the amount to increase the length by is ts * floor( wl / ts )
             # at either end - D.S.
+            while True:
+                pass
             extra = self.ts * math.floor( wl / self.ts )
             start_time = max(0, start_time - extra)
             end_time = min(end_time + extra, sound.get_total_duration())

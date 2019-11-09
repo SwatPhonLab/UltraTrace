@@ -4,6 +4,7 @@ import utils
 
 from collections import defaultdict
 from .files import FilesList
+from .traces import TracesList
 
 METADATA_FILENAME = '.ultratrace.pickle'
 
