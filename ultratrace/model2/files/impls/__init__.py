@@ -1,3 +1,3 @@
 from .alignment import Alignment
-from .image import Image
+from .image import ImageSet
 from .sound import Sound

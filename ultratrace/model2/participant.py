@@ -4,7 +4,7 @@ from .files.bundle import FileBundleList
 from .. import utils
 
 class Participant:
-    def __init__(self, path: str):
+    def __init__(self, path):
         print(f'\nParticipant.__init__({path})')
         self.path = path
         #self.name = None # extract from path

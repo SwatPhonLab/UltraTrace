@@ -17,5 +17,3 @@ from ultratrace.model2.participant import Participant
 from ultratrace.model2.project import Project
 
 p = Project('./test-data')
-
-
