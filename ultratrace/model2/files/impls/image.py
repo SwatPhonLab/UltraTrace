@@ -9,22 +9,16 @@ from ..ADT import FileLoadError, TypedFile, TypedFileImpl
 
 class ImageSet(TypedFile):
 
-    class PNGSet(TypedFileImpl):
-        mimetypes = ['image/png']
-        extensions = ['.png']
-        def load(self):
-            raise NotImplementedError()
-
     class DICOM(TypedFileImpl):
         mimetypes = ['application/dicom']
         extensions = ['.dicom', '.dcm']
 
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.png_path = f'{self.path}-frames'
+
         def load(self):
-
-            png_path = f'{self.path}-frames'
-
-            if os.path.exists(png_path):
-                print('exists!') # FIXME
+            if os.path.exists(self.png_path):
                 return
 
             try:
@@ -55,9 +49,9 @@ class ImageSet(TypedFile):
             else:
                 raise FileLoadError('Invalid DICOM ({self.path}), unknown shape {pixels.shape}')
 
-            os.mkdir(png_path)
+            os.mkdir(self.png_path)
             for i in tqdm(range(frames), desc='converting to PNG'):
-                filename = os.path.join(png_path, f'{i:06}.png')
+                filename = os.path.join(self.png_path, f'{i:06}.png')
                 arr = pixels[ i,:,: ] if is_greyscale else pixels[ i,:,:,: ]
                 img = PIL.Image.fromarray(arr)
                 img.save(filename, format='PNG', compress_level=1)
@@ -65,7 +59,7 @@ class ImageSet(TypedFile):
         def convert_to_png(self, *args, **kwargs):
             print('converting')
 
-    preferred_impls = [PNGSet, DICOM]
+    preferred_impls = [DICOM]
 
     def __init__(self):
         super().__init__()

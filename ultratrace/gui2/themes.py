@@ -1,6 +1,7 @@
 import os
 import platform
-import utils
+
+from .. import utils
 
 try:
     from ttkthemes import ThemedTk

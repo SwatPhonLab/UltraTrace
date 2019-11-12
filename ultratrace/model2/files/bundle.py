@@ -8,25 +8,25 @@ class FileBundle:
     def __init__(self, name):
         self.name = name
         self.alignment_file = Alignment()
-        self.image_files = ImageSet()
+        self.image_file = ImageSet()
         self.sound_file = Sound()
 
     def interpret(self, path):
         return self.alignment_file.interpret(path) \
-                or self.image_files.interpret(path) \
+                or self.image_file.interpret(path) \
                 or self.sound_file.interpret(path)
 
     def has_impl(self):
-        return self.alignment_file.has_impl or self.image_files.has_impl or self.sound_file.has_impl
+        return self.alignment_file.has_impl or self.image_file.has_impl or self.sound_file.has_impl
 
     def __repr__(self):
-        return f'Bundle("{self.name}",{self.alignment_file},{self.image_files},{self.sound_file})'
+        return f'Bundle("{self.name}",{self.alignment_file},{self.image_file},{self.sound_file})'
 
 class FileBundleList:
     def __init__(self, path):
         self.path = path
         self.has_alignment_impl = False
-        self.has_images_impl = False
+        self.has_image_impl = False
         self.has_sound_impl = False
 
         self.current_bundle = None
@@ -54,7 +54,7 @@ class FileBundleList:
             # build up self.bundles here
             if not self.has_alignment_impl and bundle.alignment_file.has_impl():
                 self.has_alignment_impl = True
-            if not self.has_images_impl and bundle.image_files.has_impl():
-                self.has_images_impl = True
+            if not self.has_image_impl and bundle.image_file.has_impl():
+                self.has_image_impl = True
             if not self.has_sound_impl and bundle.sound_file.has_impl():
                 self.has_sound_impl = True
