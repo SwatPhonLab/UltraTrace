@@ -9,7 +9,7 @@ from tkinter import filedialog
 # import scipy.fftpack as fftpack
 # import urllib.request as request
 import argparse, datetime, json, \
-	math, os, sys, random, shutil, warnings, decimal,\
+	math, os, sys, random, shutil, warnings, decimal, re,\
 	soundfile as sf, scipy.fftpack as fftpack, urllib.request as request #FIXME should I put these with non-critical dependencies?
 
 import parselmouth
@@ -769,6 +769,7 @@ class TextGridModule(object):
 			self.app.bind("<Control-a>", self.getBounds)
 			self.app.bind("<Control-i>", self.getBounds)
 			self.app.bind("<Control-o>", self.getBounds)
+			self.app.bind("<Control-f>", self.openSearch)
 			# Command is Alt in Linux, apparently
 			self.app.bind("<Command-Up>", self.changeTiers)
 			self.app.bind("<Command-Down>", self.changeTiers)
@@ -779,6 +780,7 @@ class TextGridModule(object):
 			self.app.bind("<Command-a>", self.getBounds)
 			self.app.bind("<Command-i>", self.getBounds)
 			self.app.bind("<Command-o>", self.getBounds)
+			self.app.bind("<Command-f>", self.openSearch)
 			self.app.bind("<Option-Up>", self.changeTiers)
 			self.app.bind("<Option-Down>", self.changeTiers)
 			self.app.bind("<Option-Left>", self.changeIntervals)
@@ -789,6 +791,7 @@ class TextGridModule(object):
 			self.app.bind("<Command-a>", self.getBounds)
 			self.app.bind("<Command-i>", self.getBounds)
 			self.app.bind("<Command-o>", self.getBounds)
+			self.app.bind("<Command-f>", self.openSearch)
 			self.app.bind("<Command-Up>", self.changeTiers)
 			self.app.bind("<Command-Down>", self.changeTiers)
 			self.app.bind("<Command-Left>", self.changeIntervals)
@@ -1586,6 +1589,11 @@ class TextGridModule(object):
 				self.tier_pairs[tierWidgets['canvas-label']] = tierWidgets['canvas']
 			if 'times' in tierWidgets:
 				tierWidgets['times'].grid(row=t, column=2, sticky=S)
+
+	def openSearch(self, event=None):
+		if self.app.Search == None:
+			self.app.Search = SearchModule(self.app)
+		self.app.Search.getFocus()
 
 class SpectrogramModule(object):
 	def __init__(self,app):
@@ -2878,6 +2886,91 @@ class ControlModule(object):
 		self.undoBtn.grid_remove()
 		self.redoBtn.grid_remove()
 
+class SearchModule:
+	def __init__(self, app):
+		print('opening search window')
+		self.app = app
+		self.window = Toplevel(self.app)
+		self.window.title('Search')
+		self.regex = StringVar(self.app)
+		self.input = Entry(self.window, textvariable=self.regex)
+		self.input.grid(row=0, column=0)
+		self.searchButton = Button(self.window, text='Search', command=self.search)
+		self.searchButton.grid(row=0, column=1)
+		self.prevBtn = Button(self.window, text='<', command=self.prevPage)
+		self.nextBtn = Button(self.window, text='>', command=self.nextPage)
+		self.prevBtn.grid(row=1, column=0, sticky=NE)
+		self.nextBtn.grid(row=1, column=2, sticky=NW)
+		self.pageNumber = Label(self.window, text='page 1 of 1')
+		self.pageNumber.grid(row=1, column=1)
+		self.resultList = Frame(self.window)
+		self.resultList.grid(row=2, column=0, columnspan=3)
+		self.widgets = []
+
+		self.page = 0
+		self.results = []
+		self.pageSize = 10
+
+		# if anything ever changes the contents of any intervals
+		# it should call SearchModule.loadIntervals()
+		self.intervals = []
+		self.loadIntervals()
+	def getFocus(self):
+		self.window.lift()
+		self.input.focus()
+	def loadIntervals(self):
+		filecount = len(self.app.Data.getTopLevel('files'))
+		self.intervals = []
+		for f in range(filecount):
+			filename = self.app.Data.getFileLevel('name', f)
+			tg = self.app.Data.getFileLevel('.TextGrid', f)
+			if tg:
+				grid = TextGrid.fromFile(self.app.Data.unrelativize(tg))
+				for tier in grid:
+					if isinstance(tier, IntervalTier):
+						for el in tier:
+							if el.mark:
+								self.intervals.append((el, tier.name, filename))
+	def search(self):
+		print('searching for %s' % self.regex.get())
+		pat = re.compile(self.regex.get(), re.IGNORECASE | re.MULTILINE | re.DOTALL)
+		self.results = [x for x in self.intervals if pat.search(x[0].mark)]
+		self.page = 0
+		self.display()
+	def display(self):
+		self.resultList.destroy()
+		self.resultList = Frame(self.window)
+		self.resultList.grid(row=2, column=0, columnspan=3)
+		self.widgets = [
+			Label(self.resultList, text='file'),
+			Label(self.resultList, text='tier'),
+			Label(self.resultList, text='time'),
+			Label(self.resultList, text='text')
+		]
+		for c, w in enumerate(self.widgets):
+			w.grid(row=0, column=c, padx=10, pady=(0,10))
+		pagecount = math.ceil(len(self.results) / self.pageSize)
+		self.pageNumber.configure(text = 'page %s of %s' % (self.page+1, pagecount))
+		start = self.page * self.pageSize
+		for row, res in enumerate(self.results[start:start+10]):
+			stuff = [
+				Label(self.resultList, text=res[2]),
+				Label(self.resultList, text=res[1]),
+				Label(self.resultList, text='%s-%s' % (res[0].minTime, res[0].maxTime)),
+				Label(self.resultList, text=res[0].mark, wraplength=400)
+			]
+			for c, w in enumerate(stuff):
+				w.grid(row=row+1, column=c, padx=10)
+			self.widgets += stuff
+	def prevPage(self, event=None):
+		if self.page > 0:
+			self.page -= 1
+			self.display()
+	def nextPage(self, event=None):
+		if (self.page + 1) * self.pageSize < len(self.results):
+			self.page += 1
+			self.display()
+
 class App(ThemedTk):
 	'''
 	This class is neatly wraps all the functionality of our application.  By itself,
@@ -2936,6 +3029,7 @@ class App(ThemedTk):
 		self.Audio = PlaybackModule(self)
 		self.TextGrid = TextGridModule(self)
 		self.Spectrogram = SpectrogramModule(self)
+		self.Search = None
 
 		print( ' - loading widgets' )
 
