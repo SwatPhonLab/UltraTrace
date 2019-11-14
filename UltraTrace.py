@@ -2894,7 +2894,7 @@ class SearchModule:
 		self.regex = StringVar(self.app)
 		self.input = Entry(self.window, textvariable=self.regex)
 		self.input.grid(row=0, column=0)
-		self.input.bind('<Enter>', self.search)
+		#self.input.bind('<Enter>', self.search)
 		self.searchButton = Button(self.window, text='Search', command=self.search)
 		self.searchButton.grid(row=0, column=1)
 		self.resultCount = Label(self.window, text='0 results')
