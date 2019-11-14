@@ -3027,6 +3027,7 @@ class App(ThemedTk):
 				super().__init__()
 		else:
 			super().__init__()
+		self.title('UltraTrace')
 
 		# check if we were passed a command line argument
 		parser = argparse.ArgumentParser()
