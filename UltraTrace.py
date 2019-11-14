@@ -2888,15 +2888,17 @@ class ControlModule(object):
 
 class SearchModule:
 	def __init__(self, app):
-		print('opening search window')
 		self.app = app
 		self.window = Toplevel(self.app)
 		self.window.title('Search')
 		self.regex = StringVar(self.app)
 		self.input = Entry(self.window, textvariable=self.regex)
 		self.input.grid(row=0, column=0)
+		self.input.bind('<Enter>', self.search)
 		self.searchButton = Button(self.window, text='Search', command=self.search)
 		self.searchButton.grid(row=0, column=1)
+		self.resultCount = Label(self.window, text='0 results')
+		self.resultCount.grid(row=0, column=2)
 		self.prevBtn = Button(self.window, text='<', command=self.prevPage)
 		self.nextBtn = Button(self.window, text='>', command=self.nextPage)
 		self.prevBtn.grid(row=1, column=0, sticky=NE)
@@ -2931,11 +2933,14 @@ class SearchModule:
 						for el in tier:
 							if el.mark:
 								self.intervals.append((el, tier.name, filename))
-	def search(self):
-		print('searching for %s' % self.regex.get())
-		pat = re.compile(self.regex.get(), re.IGNORECASE | re.MULTILINE | re.DOTALL)
-		self.results = [x for x in self.intervals if pat.search(x[0].mark)]
+	def search(self, event=None):
+		if self.regex.get() == '':
+			self.results = []
+		else:
+			pat = re.compile(self.regex.get(), re.IGNORECASE | re.MULTILINE | re.DOTALL)
+			self.results = [x for x in self.intervals if pat.search(x[0].mark)]
 		self.page = 0
+		self.resultCount.configure(text='%s results' % len(self.results))
 		self.display()
 	def display(self):
 		self.resultList.destroy()
@@ -2959,8 +2964,10 @@ class SearchModule:
 				Label(self.resultList, text='%s-%s' % (res[0].minTime, res[0].maxTime)),
 				Label(self.resultList, text=res[0].mark, wraplength=400)
 			]
+			n = row+start
 			for c, w in enumerate(stuff):
 				w.grid(row=row+1, column=c, padx=10)
+				w.bind('<Button-1>', lambda e, n=n: self.jumpTo(n))
 			self.widgets += stuff
 	def prevPage(self, event=None):
 		if self.page > 0:
@@ -2970,6 +2977,17 @@ class SearchModule:
 		if (self.page + 1) * self.pageSize < len(self.results):
 			self.page += 1
 			self.display()
+	def jumpTo(self, index):
+		self.app.filesJumpTo(self.results[index][2])
+		self.app.TextGrid.selectedTier.set(self.results[index][1])
+		self.app.TextGrid.start = self.results[index][0].minTime
+		self.app.TextGrid.end = self.results[index][0].maxTime
+		for i, f in enumerate(self.app.TextGrid.frameTier):
+			if f.time >= self.results[index][0].minTime:
+				self.app.frameSV.set(str(i))
+				self.app.framesJumpTo()
+				break
+		self.app.TextGrid.fillCanvases()
 
 class App(ThemedTk):
 	'''
