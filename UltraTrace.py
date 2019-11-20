@@ -53,7 +53,7 @@ except (ImportError):
 	warnings.warn('Waveform visualization library failed to load')
 	_WAV_VIS_LIBS_INSTALLED = False
 try:
-	from textgrid import TextGrid, IntervalTier, PointTier # sudo -H pip3 install -U textgrid
+	from textgrid import TextGrid, IntervalTier, PointTier, Point # sudo -H pip3 install -U textgrid
 	_TEXTGRID_LIBS_INSTALLED = True
 except (ImportError):
 	warnings.warn('TextGrid library failed to load')
@@ -817,29 +817,57 @@ class TextGridModule(object):
 				try:
 					# try to load up our TextGrid using the textgrid lib
 					self.TextGrid = TextGrid.fromFile( self.app.Data.unrelativize(filename) )
-					# reset default Label to actually be useful
-					# self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
-					self.TkWidgets = []
-					# iterate the tiers
-					self.frameTierName = self.getFrameTierName()
-					self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
-					for tier in self.TextGrid.getNames():
-						if tier != self.frameTierName and tier != self.frameTierName + '.original':
-							# make some widgets for each tier
-							tierWidgets = self.makeTierWidgets( tier )
-							self.TkWidgets.append( tierWidgets )
-					#make other widgets
-					self.makeFrameWidget()
-					self.makeTimeWidget()
-					#put items on canvases
-					self.fillCanvases()
-					#calculate first and last frames
-					self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark) + 1
-					self.startFrame = self.firstFrame
-					self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
-					self.endFrame = self.lastFrame
 				except:
 					pass
+			else:
+				#print(self.app.Audio.duration)
+				minTime = 0.
+				maxTime = self.app.Audio.duration
+				self.TextGrid = TextGrid(maxTime=self.app.Audio.duration)
+				self.TkWidgets = []
+				frameTime = self.app.Data.getFileLevel("FrameTime")
+				numberOfFrames = self.app.Data.getFileLevel("NumberOfFrames")
+				framesTier = PointTier(name="frames", maxTime=maxTime)
+				if frameTime is not None and numberOfFrames is not None:
+					for frameNum in range(1,numberOfFrames+1):
+						pointTime = (frameTime*frameNum)/1000
+						point = Point(pointTime,str(frameNum))
+						framesTier.addPoint(point)
+				else:
+					for i, pointTime in enumerate([1.,2.,3.,4.]):
+						point = Point(pointTime,str(i))
+						framesTier.addPoint(point)
+				self.TextGrid.tiers.append(framesTier)
+				sentenceTier = IntervalTier("text")
+				sentenceTier.add(minTime, maxTime, "text")
+				self.TextGrid.tiers.append(sentenceTier)
+
+			try:
+				# reset default Label to actually be useful
+				# self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
+				self.TkWidgets = []
+				# iterate the tiers
+				self.frameTierName = self.getFrameTierName()
+				self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
+				for tier in self.TextGrid.getNames():
+					if tier != self.frameTierName and tier != self.frameTierName + '.original':
+						# make some widgets for each tier
+						tierWidgets = self.makeTierWidgets( tier )
+						self.TkWidgets.append( tierWidgets )
+				#make other widgets
+				self.makeFrameWidget()
+				self.makeTimeWidget()
+				#put items on canvases
+				self.fillCanvases()
+				#calculate first and last frames
+				self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark) + 1
+				self.startFrame = self.firstFrame
+				self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
+				self.endFrame = self.lastFrame
+			except Exception as e:
+				print("exception: ", e)
+				pass
+
 			self.grid()
 
 	def reset(self, event=None):
@@ -1676,8 +1704,17 @@ class SpectrogramModule(object):
 			ts_fac = decimal.Decimal(10000.0)
 			wl = decimal.Decimal(self.wl.get())
 			start_time = self.app.TextGrid.start
-			end_time = self.app.TextGrid.end
-			duration = end_time - start_time
+			end_time = decimal.Decimal(self.app.TextGrid.end)
+
+			# the spectrogram is for the audio file, so it makes sense
+			# to get the duration from the audio file and not from the
+			# textgrid -JNW
+			#duration = end_time - start_time
+			duration = decimal.Decimal(sound.get_total_duration())
+			# in case there isn't a TextGrid or there's some other issue: -JNW
+			if start_time == end_time:
+				end_time = duration
+
 			self.ts = duration / ts_fac
 			# the amount taken off in spectrogram creation seems to be
 			# ( 2 * ts * floor( wl / ts ) ) + ( duration % ts )
@@ -1686,7 +1723,7 @@ class SpectrogramModule(object):
 			# at either end - D.S.
 			extra = self.ts * math.floor( wl / self.ts )
 			start_time = max(0, start_time - extra)
-			end_time = min(end_time + extra, sound.get_total_duration())
+			end_time = min(end_time + extra, duration)
 			sound_clip = sound.extract_part(from_time=start_time, to_time=end_time)
 
 			spec = sound_clip.to_spectrogram(window_length=wl, time_step=self.ts, maximum_frequency=self.spec_freq_max.get())
@@ -2242,6 +2279,7 @@ class PlaybackModule(object):
 			print( ' - initializing module: Video' )
 			self.app.bind('<space>', self.playpauseAV )
 			self.app.bind('<Escape>', self.stopAV )
+		self.reset()
 
 	def update(self):
 		'''
@@ -2271,6 +2309,7 @@ class PlaybackModule(object):
 				audiofile = self.app.Data.unrelativize(audiofile)
 				self.sfile = AudioSegment.from_file( audiofile )
 				self.current = audiofile
+				self.duration = len(self.sfile)/1000.0
 				return True
 			except:
 				print('Unable to load audio file: `%s`' % audiofile)
@@ -2543,6 +2582,7 @@ class DicomModule(object):
 			if _PLATFORM == 'Linux':
 				self.app.bind('<Control-0>', self.zoomReset )
 			else: self.app.bind('<Command-0>', self.zoomReset )
+			self.reset()
 
 	def zoomReset(self, fromButton=False):
 		'''
@@ -2610,6 +2650,10 @@ class DicomModule(object):
 				return False
 
 		pixels = self.dicom.pixel_array # np.array
+		self.frametime = self.dicom.get('FrameTime')
+		self.numframes = self.dicom.get('NumberOfFrames')
+		self.app.Data.setFileLevel('FrameTime', self.frametime)
+		self.app.Data.setFileLevel('NumberOfFrames', self.numframes)
 
 		# check encoding, manipulate array if we need to
 		if len(pixels.shape) == 3:		# greyscale
