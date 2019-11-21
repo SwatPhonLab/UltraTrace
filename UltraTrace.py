@@ -1707,11 +1707,11 @@ class SpectrogramModule(object):
 			# the spectrogram is for the audio file, so it makes sense
 			# to get the duration from the audio file and not from the
 			# textgrid -JNW
+			if start_time == end_time:
+				end_time = decimal.Decimal(sound.get_total_duration())
 			duration = end_time - start_time
 			#duration = decimal.Decimal(sound.get_total_duration())
 			# in case there isn't a TextGrid or there's some other issue: -JNW
-			if start_time == end_time:
-				end_time = decimal.Decimal(sound.get_total_duration())
 
 			self.ts = duration / ts_fac
 			# the amount taken off in spectrogram creation seems to be
