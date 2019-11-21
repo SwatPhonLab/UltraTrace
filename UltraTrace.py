@@ -1619,9 +1619,7 @@ class TextGridModule(object):
 				tierWidgets['times'].grid(row=t, column=2, sticky=S)
 
 	def openSearch(self, event=None):
-		if self.app.Search == None:
-			self.app.Search = SearchModule(self.app)
-		self.app.Search.getFocus()
+		self.app.Search.openSearch()
 
 class SpectrogramModule(object):
 	def __init__(self,app):
@@ -2933,9 +2931,23 @@ class ControlModule(object):
 class SearchModule:
 	def __init__(self, app):
 		self.app = app
+		self.window = None
+
+		self.context_size = 3
+		self.results = []
+		self.regex = StringVar(self.app)
+
+		# if anything ever changes the contents of any intervals
+		# it should call SearchModule.loadIntervals()
+		self.intervals = []
+		self.loadIntervals()
+	def handleClose(self, event=None):
+		self.window.destroy()
+		self.window = None
+	def createWindow(self):
 		self.window = Toplevel(self.app)
 		self.window.title('Search')
-		self.regex = StringVar(self.app)
+		self.window.protocol("WM_DELETE_WINDOW", self.handleClose)
 		self.input = Entry(self.window, textvariable=self.regex)
 		self.input.grid(row=0, column=0)
 		#self.input.bind('<Enter>', self.search)
@@ -2943,25 +2955,21 @@ class SearchModule:
 		self.searchButton.grid(row=0, column=1)
 		self.resultCount = Label(self.window, text='0 results')
 		self.resultCount.grid(row=0, column=2)
-		self.prevBtn = Button(self.window, text='<', command=self.prevPage)
-		self.nextBtn = Button(self.window, text='>', command=self.nextPage)
-		self.prevBtn.grid(row=1, column=0, sticky=NE)
-		self.nextBtn.grid(row=1, column=2, sticky=NW)
-		self.pageNumber = Label(self.window, text='page 1 of 1')
-		self.pageNumber.grid(row=1, column=1)
-		self.resultList = Frame(self.window)
-		self.resultList.grid(row=2, column=0, columnspan=3)
-		self.widgets = []
-
-		self.page = 0
-		self.results = []
-		self.pageSize = 10
-
-		# if anything ever changes the contents of any intervals
-		# it should call SearchModule.loadIntervals()
-		self.intervals = []
-		self.loadIntervals()
-	def getFocus(self):
+		cols = ('File', 'Tier', 'Time', 'Text')
+		self.scroll = Scrollbar(self.window, orient='vertical')
+		self.resultList = Treeview(self.window, columns=cols, show="headings", yscrollcommand=self.scroll.set, selectmode='browse')
+		self.scroll.config(command=self.resultList.yview)
+		for col in cols:
+			self.resultList.heading(col, text=col)
+		self.resultList.grid(row=2, column=0, columnspan=3, sticky=N+S+E+W)
+		self.resultList.bind('<Double-1>', self.onClick)
+		Grid.rowconfigure(self.window, 2, weight=1)
+		Grid.columnconfigure(self.window, 0, weight=1)
+		self.scroll.grid(row=2, column=3, sticky=N+S)
+	def openSearch(self):
+		if self.window == None:
+			self.createWindow()
+		self.getFocus()
 		self.window.lift()
 		self.input.focus()
 	def loadIntervals(self):
@@ -2982,45 +2990,22 @@ class SearchModule:
 			self.results = []
 		else:
 			pat = re.compile(self.regex.get(), re.IGNORECASE | re.MULTILINE | re.DOTALL)
-			self.results = [x for x in self.intervals if pat.search(x[0].mark)]
-		self.page = 0
+			self.results = []
+			for i in self.intervals:
+				s = pat.search(i[0].mark)
+				if s:
+					disp = i[0].mark
+					a = max(0, s.start()-self.context_size)
+					b = min(s.end()+self.context_size, len(disp))
+					self.results.append(i + (('...' if a > 0 else '')+disp[a:b]+('...' if b < len(disp) else ''),))
 		self.resultCount.configure(text='%s results' % len(self.results))
-		self.display()
-	def display(self):
-		self.resultList.destroy()
-		self.resultList = Frame(self.window)
-		self.resultList.grid(row=2, column=0, columnspan=3)
-		self.widgets = [
-			Label(self.resultList, text='file'),
-			Label(self.resultList, text='tier'),
-			Label(self.resultList, text='time'),
-			Label(self.resultList, text='text')
-		]
-		for c, w in enumerate(self.widgets):
-			w.grid(row=0, column=c, padx=10, pady=(0,10))
-		pagecount = math.ceil(len(self.results) / self.pageSize)
-		self.pageNumber.configure(text = 'page %s of %s' % (self.page+1, pagecount))
-		start = self.page * self.pageSize
-		for row, res in enumerate(self.results[start:start+10]):
-			stuff = [
-				Label(self.resultList, text=res[2]),
-				Label(self.resultList, text=res[1]),
-				Label(self.resultList, text='%s-%s' % (res[0].minTime, res[0].maxTime)),
-				Label(self.resultList, text=res[0].mark, wraplength=400)
-			]
-			n = row+start
-			for c, w in enumerate(stuff):
-				w.grid(row=row+1, column=c, padx=10)
-				w.bind('<Button-1>', lambda e, n=n: self.jumpTo(n))
-			self.widgets += stuff
-	def prevPage(self, event=None):
-		if self.page > 0:
-			self.page -= 1
-			self.display()
-	def nextPage(self, event=None):
-		if (self.page + 1) * self.pageSize < len(self.results):
-			self.page += 1
-			self.display()
+		for kid in self.resultList.get_children():
+			self.resultList.delete(kid)
+		for row, res in enumerate(self.results):
+			ls = (res[2], res[1], '%s-%s' % (res[0].minTime, res[0].maxTime), res[3])
+			self.resultList.insert('', 'end', iid=str(row), values=ls)
+	def onClick(self, event=None):
+		self.jumpTo(int(self.resultList.selection()[0]))
 	def jumpTo(self, index):
 		self.app.filesJumpTo(self.results[index][2])
 		self.app.TextGrid.selectedTier.set(self.results[index][1])
@@ -3092,7 +3077,7 @@ class App(ThemedTk):
 		self.Audio = PlaybackModule(self)
 		self.TextGrid = TextGridModule(self)
 		self.Spectrogram = SpectrogramModule(self)
-		self.Search = None
+		self.Search = SearchModule(self)
 
 		print( ' - loading widgets' )
 
