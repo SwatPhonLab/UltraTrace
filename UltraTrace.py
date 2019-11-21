@@ -1707,11 +1707,11 @@ class SpectrogramModule(object):
 			# the spectrogram is for the audio file, so it makes sense
 			# to get the duration from the audio file and not from the
 			# textgrid -JNW
-			#duration = end_time - start_time
-			duration = decimal.Decimal(sound.get_total_duration())
+			duration = end_time - start_time
+			#duration = decimal.Decimal(sound.get_total_duration())
 			# in case there isn't a TextGrid or there's some other issue: -JNW
 			if start_time == end_time:
-				end_time = duration
+				end_time = decimal.Decimal(sound.get_total_duration())
 
 			self.ts = duration / ts_fac
 			# the amount taken off in spectrogram creation seems to be
@@ -1721,7 +1721,7 @@ class SpectrogramModule(object):
 			# at either end - D.S.
 			extra = self.ts * math.floor( wl / self.ts )
 			start_time = max(0, start_time - extra)
-			end_time = min(end_time + extra, duration)
+			end_time = min(end_time + extra, sound.get_total_duration())
 			sound_clip = sound.extract_part(from_time=start_time, to_time=end_time)
 
 			spec = sound_clip.to_spectrogram(window_length=wl, time_step=self.ts, maximum_frequency=self.spec_freq_max.get())
@@ -2969,7 +2969,6 @@ class SearchModule:
 	def openSearch(self):
 		if self.window == None:
 			self.createWindow()
-		self.getFocus()
 		self.window.lift()
 		self.input.focus()
 	def loadIntervals(self):
