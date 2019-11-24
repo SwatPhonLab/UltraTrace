@@ -3093,6 +3093,8 @@ class App(ThemedTk):
 		# in a single window resize
 		self.isResizing = False
 
+		self.oldwidth = self.winfo_width()
+
 		self.after(300,self.afterstartup)
 
 	def setWidgetDefaults(self):
