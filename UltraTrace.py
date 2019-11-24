@@ -941,6 +941,7 @@ class TextGridModule(object):
 			Shift value is relative to 0, i.e. inputting the same shift amount a second time will not change the shift
 		Redisplay shifted points
 		'''
+		self.app.focus()
 		shift = self.frame_shift.get()
 		if type(shift) == float:
 			self.app.Data.setFileLevel( 'offset', shift )
@@ -1005,6 +1006,7 @@ class TextGridModule(object):
 		# minmax = len(self.app.Audio.sfile)*1000
 		txtbox = Spinbox(sbframe, textvariable=self.frame_shift, width=7, from_=-10000000, to=10000000)
 		txtbox.bind('<Escape>', lambda ev: sbframe.focus())
+		txtbox.bind('<Return>', lambda ev: self.shiftFrames())
 		go_btn.grid(row=0, column=0, sticky=E)
 		txtbox.grid(row=0, column=1, sticky=E)
 		# put subframe on canvas
