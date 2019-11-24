@@ -1895,7 +1895,7 @@ class TraceModule(object):
 		# listbox to contain all of our traces
 		lbframe = Frame(self.frame)
 		self.scrollbar = Scrollbar(lbframe)
-		self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12, exportselection=False)
+		self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12, exportselection=False, takefocus=0)
 		self.scrollbar.config(command=self.listbox.yview)
 		for trace in self.available:
 			self.listbox.insert(END, trace)
@@ -2954,7 +2954,7 @@ class SearchModule:
 		self.input.grid(row=0, column=0)
 		self.input.bind('<Return>', self.search)
 		self.input.bind('<Escape>', lambda ev: self.window.focus())
-		self.searchButton = Button(self.window, text='Search', command=self.search)
+		self.searchButton = Button(self.window, text='Search', command=self.search, takefocus=0)
 		self.searchButton.grid(row=0, column=1)
 		self.resultCount = Label(self.window, text='0 results')
 		self.resultCount.grid(row=0, column=2)
