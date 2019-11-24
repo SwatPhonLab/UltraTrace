@@ -2399,6 +2399,7 @@ class PlaybackModule(object):
 		'''
 
 		'''
+		self.app.Trace.reset()
 		tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
 		framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
 		self.framestart = int(framenums[0])
