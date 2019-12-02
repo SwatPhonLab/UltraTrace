@@ -8,3 +8,7 @@ data
 
 # or virtualenv/pipenv files
 Pipfile*
+
+# python caches
+__pycache__
+*.pyc
