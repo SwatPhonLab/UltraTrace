@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from .logging import *
+from .util.logging import *
 
 # core libs
 from tkinter import *
