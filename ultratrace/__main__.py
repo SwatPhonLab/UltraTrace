@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from . import util
 from .util.logging import *
 
 # core libs
@@ -71,10 +72,8 @@ except (ImportError):
 	warnings.warn('VLC library failed to load')
 	_VIDEO_LIBS_INSTALLED = False
 try:
-	import platform
-	_PLATFORM = platform.system()
-	debug('Loading platform-specific enhancements for ' + _PLATFORM)
-	if _PLATFORM == 'Linux':
+	debug('Loading platform-specific enhancements for ' + util.get_platform())
+	if util.get_platform() == 'Linux':
 		import xrp  # pip3 install xparser
 		from ttkthemes import ThemedTk
 		from pathlib import Path
@@ -82,7 +81,6 @@ try:
 		from ttkthemes import ThemedTk
 except (ImportError):
 	warnings.warn('Can\'t load platform-specific enhancements')
-	_PLATFORM = 'generic'
 	ThemedTk = Tk
 
 
@@ -1909,7 +1907,7 @@ class TraceModule(object):
 		self.TkWidgets[9]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
 		self.TkWidgets[9]['widget'].bind('<Escape>', lambda ev: self.TkWidgets[0]['widget'].focus())
 
-		if _PLATFORM == 'Linux':
+		if util.get_platform() == 'Linux':
 			self.app.bind('<Control-r>', self.recolor )
 			self.app.bind('<Control-c>', self.copy )
 			self.app.bind('<Control-v>', self.paste )
@@ -2561,7 +2559,7 @@ class DicomModule(object):
 			self.zoomResetBtn = Button(self.app.LEFT, text='Reset image', command=self.zoomReset, takefocus=0)#, pady=7 )
 
 			# reset zoom keyboard shortcut
-			if _PLATFORM == 'Linux':
+			if util.get_platform() == 'Linux':
 				self.app.bind('<Control-0>', self.zoomReset )
 			else: self.app.bind('<Command-0>', self.zoomReset )
 			self.reset()
@@ -2788,7 +2786,7 @@ class ControlModule(object):
 		# initialize our stacks
 		self.reset()
 		# bind Ctrl+z to UNDO and Ctrl+Shift+Z to REDO
-		if _PLATFORM == 'Linux':
+		if util.get_platform() == 'Linux':
 			self.app.bind('<Control-z>', self.undo )
 			self.app.bind('<Control-Z>', self.redo )
 		else:
@@ -3019,7 +3017,7 @@ class App(ThemedTk):
 		info( 'initializing UltraTrace' )
 
 		# do the normal Tk init stuff
-		if _PLATFORM=='Linux':
+		if util.get_platform()=='Linux':
 			try:
 				Xresources = xrp.parse_file(os.path.join(str(Path.home()), '.Xresources'))
 				if '*TtkTheme' in Xresources.resources:
