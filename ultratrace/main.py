@@ -3062,7 +3062,7 @@ class App(ThemedTk):
 		self.title('UltraTrace')
 
 		# check if we were passed a command line argument
-		parser = argparse.ArgumentParser()
+		parser = argparse.ArgumentParser(prog='UltraTrace')
 		parser.add_argument('path', help='path (unique to a participant) where subdirectories contain raw data', default=None, nargs='?')
 		args = parser.parse_args()
 
