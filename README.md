@@ -9,7 +9,7 @@ This is a tool for [currently] manual annotation of UTI (Ultrasound Tongue Imagi
 ## Use
 
 ```bash
-$ python3 ultratrace/main.py /path/to/data
+$ python3 -m ultratrace /path/to/data
 ```
 
 ### Themes

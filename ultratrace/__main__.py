@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from .logging import *
+
 # core libs
 from tkinter import *
 from tkinter.ttk import *
@@ -18,7 +20,7 @@ import copy
 import base64
 
 # monkeypatch the warnings module
-warnings.showwarning = lambda msg, *args : print( 'WARNING: %s' % msg )
+warnings.showwarning = lambda msg, *args : warn(msg)
 
 # critical dependencies
 from magic import Magic # sudo -H pip3 install -U python-magic
@@ -69,10 +71,9 @@ except (ImportError):
 	warnings.warn('VLC library failed to load')
 	_VIDEO_LIBS_INSTALLED = False
 try:
-	#print('checking OS')
 	import platform
 	_PLATFORM = platform.system()
-	print('Loading platform-specific enhancements for ' + _PLATFORM)
+	debug('Loading platform-specific enhancements for ' + _PLATFORM)
 	if _PLATFORM == 'Linux':
 		import xrp  # pip3 install xparser
 		from ttkthemes import ThemedTk
@@ -182,7 +183,6 @@ class ZoomFrame(Frame):
 		self.showImage()
 
 	def showImage(self, event=None):
-		# print(self.width, self.height, 'line 183')
 		if self.image != None:
 			self.canvas.delete('delendum')
 			self.container = self.canvas.create_rectangle(0,0,self.width,self.height,width=0, tags='delendum')
@@ -349,7 +349,7 @@ class Crosshairs(object):
 		truey = (y-self.zframe.panY)/(self.zframe.height*self.zframe.imgscale)
 		# truex = (x-self.zframe.panX)/self.zframe.imgscale
 		# truey = (y-self.zframe.panY)/self.zframe.imgscale
-		# print(truex, truey)
+		debug(truex, truey)
 		return truex, truey
 
 	def transformTrueToCoords(self, truex, truey):
@@ -437,15 +437,15 @@ class MetadataModule(object):
 			for example, it will try to locate files that have the same base filename and
 			each of a set of required extensions
 		'''
-		print( ' - initializing module: Data')
+		info( ' - initializing module: Data')
 		if path == None:
 			app.update()
 			path = filedialog.askdirectory(initialdir=os.getcwd(), title="Choose a directory")
 
-		print( '   - parsing directory: `%s`' % path )
+		debug( '   - parsing directory: `%s`' % path )
 
 		if os.path.exists( path ) == False:
-			print( "   - ERROR: `%s` could not be located" % path )
+			severe( "   - ERROR: `%s` could not be located" % path )
 			exit(1)
 
 		self.app = app
@@ -455,7 +455,7 @@ class MetadataModule(object):
 
 		# either load up existing metadata
 		if os.path.exists( self.mdfile ):
-			print( "   - found metadata file: `%s`" % self.mdfile )
+			debug( "   - found metadata file: `%s`" % self.mdfile )
 			with open( self.mdfile, 'r' ) as f:
 				self.data = json.load( f )
 
@@ -465,7 +465,7 @@ class MetadataModule(object):
 				"read the files"
 
 			self.path = os.path.abspath(self.path)
-			print( "   - creating new metadata file: `%s`" % self.mdfile )
+			debug( "   - creating new metadata file: `%s`" % self.mdfile )
 			self.data = {
 				'firstrun_path': self.path,
 				'defaultTraceName': 'tongue',
@@ -503,7 +503,7 @@ class MetadataModule(object):
 
 					MIME = getMIMEType(real_filepath)
 					if (MIME == 'text/plain' or MIME == 'application/json') and extension == '.measurement':
-						print('Found old measurement file {}'.format(filename))
+						debug('Found old measurement file {}'.format(filename))
 						self.importOldMeasurement(real_filepath, filename)
 					elif MIME in MIMEs:
 						# add `good` files
@@ -514,7 +514,7 @@ class MetadataModule(object):
 					elif MIME == 'image/png' and '_dicom_to_png' in path:
 						# check for preprocessed dicom files
 						name, frame = filename.split( '_frame_' )
-						#print(files)
+						#debug(files)
 						# if len(files) > 0:
 						# might be able to combine the following; check
 						if name not in files:
@@ -525,7 +525,7 @@ class MetadataModule(object):
 
 			# check that we find at least one file
 			if len(files) == 0:
-				print( '   - ERROR: `%s` contains no supported files' % path )
+				severe( '   - ERROR: `%s` contains no supported files' % path )
 				exit()
 
 			# sort the files so that we can guess about left/right ... extrema get None/null
@@ -576,9 +576,7 @@ class MetadataModule(object):
 		'''
 		Write metadata out to file
 		'''
-		# print()
-		# print(self.data, 'write')
-		# print()
+		# debug(self.data, 'write')
 		mdfile = self.mdfile if _mdfile==None else _mdfile
 		with open( mdfile, 'w' ) as f:
 			json.dump( self.data, f, indent=3 )
@@ -631,8 +629,7 @@ class MetadataModule(object):
 			# 		mddict[key][el] = os.path.join(self.path, mddict[key][el])
 			# else:
 			# 	mddict[key] = os.path.join(self.path, mddict[key])
-			# print(mddict[key])
-			# print()
+			# debug(mddict[key])
 			return mddict[key]
 		else:
 			return None
@@ -717,7 +714,6 @@ class MetadataModule(object):
 		if filename not in self.data[ 'traces' ][ trace ][ 'files' ]:
 			self.data[ 'traces' ][ trace ][ 'files' ][ filename ] = {}
 		self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ str(frame) ] = crosshairs
-		# print('line 701')
 		self.write()
 
 	def tracesExist( self, trace ):
@@ -727,7 +723,7 @@ class MetadataModule(object):
 		filename = self.getCurrentFilename()
 		try:
 			dict = self.data[ 'traces' ][ trace ][ 'files' ][ filename ]
-			# print(dict)
+			# debug(dict)
 			return [x for x in dict if dict[x] != []]
 		except KeyError:
 			return []
@@ -741,7 +737,7 @@ class TextGridModule(object):
 		'''
 		Keep a reference to the master object for binding the widgets we create
 		'''
-		print( ' - initializing module: TextGrid' )
+		info( ' - initializing module: TextGrid' )
 		self.app = app
 		self.frame = Frame(self.app.BOTTOM)
 		self.label_padx = 0
@@ -812,7 +808,7 @@ class TextGridModule(object):
 			self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
 			# the Data module will pass this filename=None if it can't find an appropriate .TextGrid file
 			filename = self.app.Data.getFileLevel( '.TextGrid' )
-			# print(filename)
+			# debug(filename)
 			if filename:
 				try:
 					# try to load up our TextGrid using the textgrid lib
@@ -820,7 +816,7 @@ class TextGridModule(object):
 				except:
 					pass
 			else:
-				#print(self.app.Audio.duration)
+				#debug(self.app.Audio.duration)
 				minTime = 0.
 				maxTime = self.app.Audio.duration
 				self.TextGrid = TextGrid(maxTime=self.app.Audio.duration)
@@ -865,7 +861,7 @@ class TextGridModule(object):
 				self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
 				self.endFrame = self.lastFrame
 			except Exception as e:
-				print("exception: ", e)
+				error("exception: ", e)
 				pass
 
 			self.grid()
@@ -874,7 +870,6 @@ class TextGridModule(object):
 		'''
 		Try to load a TextGrid file based on information stored in the metadata
 		'''
-		# print(self.app.LEFT.winfo_width(), 'line 714')
 		# for t in range(len(self.TkWidgets)):
 		# 	tierWidgets = self.TkWidgets[t]
 		# 	if 'canvas' in tierWidgets:
@@ -882,7 +877,6 @@ class TextGridModule(object):
 		# 		tierWidgets['canvas-label'].update()
 		# 	if 'frames' in tierWidgets:
 		# 		tierWidgets['frames-label'].config(width=self.app.LEFT.winfo_width())
-		# print(self.pp)
 		self.selectedIntvlFrames = []
 		self.selectedItem = None
 		#destroy
@@ -894,7 +888,7 @@ class TextGridModule(object):
 			# self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
 			# the Data module will pass this filename=None if it can't find an appropriate .TextGrid file
 			filename = self.app.Data.getFileLevel( '.TextGrid' )
-			# print(filename)
+			# debug(filename)
 			if filename:
 				try:
 					# try to load up our TextGrid using the textgrid lib
@@ -977,7 +971,7 @@ class TextGridModule(object):
 
 		#except ValueError:
 		else:
-			print('Not a float!')
+			error('Not a float!')
 
 	def makeTimeWidget(self):
 		self.time_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height/3, highlightthickness=0)
@@ -1048,12 +1042,9 @@ class TextGridModule(object):
 
 		# self.app.Trace.frame.update()
 		self.label_width=300#self.app.Trace.frame.winfo_width()+self.label_padx
-		# print(self.label_width, 739)
 		self.end = self.TextGrid.maxTime#float(self.TextGrid.maxTime)
 		# self.first_frame = 1
-		# print('line 805')
 		# self.last_frame = self.TextGrid.getFirst(self.frameTierName)[-1].mark
-		# print('line 807')
 		tier_obj = self.TextGrid.getFirst(tier)
 		widgets = { 'name':tier,
 						 #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
@@ -1195,8 +1186,8 @@ class TextGridModule(object):
 		'''
 
 		'''
-		# print(event.char, event.keysym, event.keycode)
-		# print(self.app.frame)
+		# debug(event.char, event.keysym, event.keycode)
+		# debug(self.app.frame)
 		f = decimal.Decimal(self.tg_zoom_factor)
 		a = self.end - self.start
 		z_out = (a-(a/f))/2
@@ -1270,7 +1261,7 @@ class TextGridModule(object):
 		for el in self.TkWidgets:
 			if 'name' in el:
 				tier = self.TextGrid.getFirst(el['name'])
-				# print(tier)
+				# debug(tier)
 			if 'canvas' in el:
 				canvas = el['canvas']
 				#remove previous intervals
@@ -1328,7 +1319,7 @@ class TextGridModule(object):
 				frames.delete(ALL)
 				first_frame_found = False
 				while i < len(tier) and tier[i].time <= self.end :
-					# print(tier[i].time, i,'frame time and frame number (line 1076)')
+					# debug(tier[i].time, i,'frame time and frame number (line 1076)')
 					if tier[i].time >= self.start:
 						# x_coord = (tier[i].time-self.start)/duration*self.canvas_width
 						x_coord = ((tier[i].time-self.start)*self.canvas_width)/duration
@@ -1431,10 +1422,7 @@ class TextGridModule(object):
 			self.frames_canvas.itemconfig('frame'+str(frame), fill=fill)
 		if self.selectedItem:
 			wdg,itm = self.selectedItem
-			# print('line 1381', len(wdg.find_withtag(itm+1)), len(wdg.find_withtag(itm-1)))
 			if wdg.type(itm) != 'text' and wdg.type(itm) != None:
-				# print(self.selectedItem,self.app.Spectrogram.oldSelected,'line 1374')
-				# print(wdg.type(itm),'line 1374')
 				wdg,itm = self.app.Spectrogram.oldSelected
 			wdg.itemconfig(itm, fill='black')
 			if len(wdg.find_withtag(itm+1)) > 0:
@@ -1544,7 +1532,6 @@ class TextGridModule(object):
 
 			#paint frames
 			frames = wdg.gettags(itm)
-			# print(frames, wdg, 'line1453')
 			for frame in frames:
 				if frame[:5] == 'frame':
 					frame_obj = self.frames_canvas.find_withtag(frame)
@@ -1565,13 +1552,7 @@ class TextGridModule(object):
 		'''
 
 		'''
-		# try:
-		# 	bloop = self.frames_canvas
-		# except AttributeError:
-		# 	print("you've been blooped")
-		# 	self.reset()
-
-		# print(self.frames_canvas)
+		# debug(self.frames_canvas)
 		#create list of displayed frames' tags
 		itrobj = []
 		for itm in self.frames_canvas.find_all():
@@ -1625,7 +1606,7 @@ class TextGridModule(object):
 
 class SpectrogramModule(object):
 	def __init__(self,app):
-		print( ' - initializing module: Spectrogram' )
+		info( ' - initializing module: Spectrogram' )
 
 		self.app = app
 
@@ -1734,12 +1715,12 @@ class SpectrogramModule(object):
 
 			mx = self.spectrogram.max()
 			dyn = self.dyn_range.get()
-			# print(self.spectrogram.min(), self.spectrogram.max())
+			# debug(self.spectrogram.min(), self.spectrogram.max())
 			self.spectrogram = self.spectrogram.clip(mx-dyn, mx) - mx
-			# print(self.spectrogram.min(), self.spectrogram.max())
+			# debug(self.spectrogram.min(), self.spectrogram.max())
 			self.spectrogram *= (-255.0 / dyn)
 			# self.spectrogram += 60
-			# print(self.spectrogram.min(), self.spectrogram.max())
+			# debug(self.spectrogram.min(), self.spectrogram.max())
 
 			img = Image.fromarray(self.spectrogram)
 			if img.mode != 'RGB':
@@ -1855,7 +1836,7 @@ class TraceModule(object):
 	of traces and crosshairs.
 	'''
 	def __init__(self, app):
-		print( ' - initializing module: Trace' )
+		info( ' - initializing module: Trace' )
 
 		self.app = app
 
@@ -1947,7 +1928,7 @@ class TraceModule(object):
 		self.reset() # clear our crosshairs
 		self.read()  # read from file
 		#self.frame.update()
-		#print("TraceModule", self.frame.winfo_width())
+		#debug("TraceModule", self.frame.winfo_width())
 	def reset(self):
 		''' on change files '''
 		# undraw all the crosshairs
@@ -2037,7 +2018,7 @@ class TraceModule(object):
 		try:
 			return self.listbox.get(self.listbox.curselection())
 		except:# _tkinter.TclError:
-			print( 'Can\'t select from empty listbox!' )
+			error( 'Can\'t select from empty listbox!' )
 	def setDefaultTraceName(self):
 		'''
 		wrapper for changing the default trace
@@ -2123,7 +2104,7 @@ class TraceModule(object):
 
 	def copy(self, event=None):
 		''' copies relative positions of selected crosshairs for pasting'''
-		# print('copy')
+		# debug('copy')
 		self.copied = []
 		if len(self.selected) > 0:
 			for ch in self.selected:
@@ -2261,7 +2242,7 @@ class PlaybackModule(object):
 		self.app = app
 		self.current = None
 		if _AUDIO_LIBS_INSTALLED:
-			print( ' - initializing module: Audio' )
+			info( ' - initializing module: Audio' )
 			self.sfile = None
 			self.p = pyaudio.PyAudio()
 			self.currentInterval = None
@@ -2276,7 +2257,7 @@ class PlaybackModule(object):
 			self.app.bind('<space>', self.playpauseAV )
 			self.app.bind('<Escape>', self.stopAV )
 		if _VIDEO_LIBS_INSTALLED:
-			print( ' - initializing module: Video' )
+			info( ' - initializing module: Video' )
 			self.app.bind('<space>', self.playpauseAV )
 			self.app.bind('<Escape>', self.stopAV )
 		self.reset()
@@ -2312,14 +2293,14 @@ class PlaybackModule(object):
 				self.duration = len(self.sfile)/1000.0
 				return True
 			except:
-				print('Unable to load audio file: `%s`' % audiofile)
+				error('Unable to load audio file: `%s`' % audiofile)
 				return False
 
 	def playpauseAV(self, event):
 		'''
 
 		'''
-		# print(self.started, self.paused, '1858')
+		# debug(self.started, self.paused, '1858')
 		if self.started == False or self.currentInterval != self.app.TextGrid.selectedItem: #if we haven't started playing or we're in a new interval
 			#reset monitoring variables
 			self.currentInterval = self.app.TextGrid.selectedItem
@@ -2391,8 +2372,8 @@ class PlaybackModule(object):
 						start=False,
 		                stream_callback=self.callback)
 
-		# print(self.seg.frame_count()/fpb, 'number of chunks')
-		# print(self.seg.frame_count()%fpb, 'last chunk size')
+		# debug(self.seg.frame_count()/fpb, 'number of chunks')
+		# debug(self.seg.frame_count()%fpb, 'last chunk size')
 		# self.chunkcount = 0
 
 	def readyVideo(self):
@@ -2441,7 +2422,7 @@ class PlaybackModule(object):
 		# self.sync.clear()
 		# self.chunkcount+=1
 		data = b''.join([self.seg.get_frame(i) for i in range(self.audioframe, self.audioframe+frame_count)])
-		# print(len(data), 'line 1960')
+		# debug(len(data), 'line 1960')
 		self.audioframe+=frame_count
 
 		if self.app.Dicom.isLoaded:
@@ -2452,11 +2433,11 @@ class PlaybackModule(object):
 			#go to next frame
 			if self.dicomframe_timer % self.flen != self.dicomframe_timer and self.dicomframe_num < len(self.pngs):
 				floor = math.floor(self.dicomframe_timer/self.flen)
-				# print(floor, 'line 1961')
+				# debug(floor, 'line 1961')
 				self.dicomframe_timer = self.dicomframe_timer-self.flen*floor
 				if floor > 1:
 					for i in range(floor-1):
-						# print(self.dicomframe_num+self.framestart+i, 'putting frame into Q')
+						# debug(self.dicomframe_num+self.framestart+i, 'putting frame into Q')
 						if self.dicomframe_num+i < len(self.pngs):
 							self.dicomframeQ.put(self.pngs[self.dicomframe_num+i])
 				else:
@@ -2464,7 +2445,7 @@ class PlaybackModule(object):
 				# self.sync.set()
 				self.dicomframe_num+=floor
 
-				# print(self.dicomframe_num, len(self.pngs), 'line 1968')
+				# debug(self.dicomframe_num, len(self.pngs), 'line 1968')
 			# else: #stop video loop
 				if self.dicomframe_num >= len(self.pngs):
 					self.stoprequest.set()
@@ -2485,7 +2466,7 @@ class PlaybackModule(object):
 		# if self.stoprequest.is_set():
 		# 	self.stream.close()
 		# 	self.started = False
-		# print(self.chunkcount)
+		# debug(self.chunkcount)
 		# close PyAudio (7)
 		# self.p.terminate() # NOTE: needs to be removed in order to play multiple audio files in a row
 
@@ -2497,7 +2478,7 @@ class PlaybackModule(object):
 		if self.paused == True:
 			return
 		canvas = self.app.Dicom.zframe.canvas
-		# print(self.dicomframeQ.qsize(),'line 1991')
+		# debug(self.dicomframeQ.qsize(),'line 1991')
 		try:
 			pic = self.dicomframeQ.get(timeout=.5)
 			canvas.itemconfig(canvas.find_all()[0] , image=pic )
@@ -2505,8 +2486,8 @@ class PlaybackModule(object):
 			# canvas.img = pic
 			canvas.update()
 		except: pass
-		# print(pic, 'displayed')
-		# print(self.dicomframe_num+self.framestart, 'displayed')
+		# debug(pic, 'displayed')
+		# debug(self.dicomframe_num+self.framestart, 'displayed')
 		if not self.stoprequest.is_set() or not self.dicomframeQ.empty(): #should this if be at the top?
 			self.playVideoWithAudio()
 			# canvas.after(10, self.playVideoWithAudio)
@@ -2561,7 +2542,7 @@ class DicomModule(object):
 			from a test dataset uses 1.5GB and the corresponding PNG files use )
 	'''
 	def __init__(self, app):
-		print( ' - initializing module: Dicom')
+		info( ' - initializing module: Dicom')
 
 		self.app = app
 		self.isLoaded = False
@@ -2617,7 +2598,7 @@ class DicomModule(object):
 			if self.isLoaded == False:
 
 				processed = self.app.Data.getFileLevel( 'processed' )
-				# print(os.path.exists(self.app.Data.unrelativize(self.app.Data.getFileLevel( 'processed' )['1'])))
+				# debug(os.path.exists(self.app.Data.unrelativize(self.app.Data.getFileLevel( 'processed' )['1'])))
 				if processed == None:
 					return self.process()
 				# elif :
@@ -2639,7 +2620,7 @@ class DicomModule(object):
 		'''
 		perform the dicom->PNG operation
 		'''
-		print( 'Reading DICOM data ...', end='\r' )
+		info( 'Reading DICOM data ...', end='\r' )
 
 		if self.isLoaded == False:
 			try:
@@ -2647,7 +2628,7 @@ class DicomModule(object):
 				self.dicom = dicom.read_file( self.app.Data.unrelativize(dicomfile) )
 
 			except dicom.errors.InvalidDicomError:
-				print( 'Unable to read DICOM file: %s' % dicomfile )
+				error( 'Unable to read DICOM file: %s' % dicomfile )
 				return False
 
 		pixels = self.dicom.pixel_array # np.array
@@ -2678,8 +2659,7 @@ class DicomModule(object):
 		if os.path.exists( outputpath ) == False:
 			os.mkdir( outputpath )
 		rel_outputpath = os.path.relpath(outputpath,start=self.app.Data.path)
-		# print(self.app.Data.getFileLevel('name'))
-		# print()
+		# debug(self.app.Data.getFileLevel('name'))
 		# grab one frame at a time to write (and provide a progress indicator)
 		printProgressBar(0, frames, prefix = 'Processing:', suffix = 'complete')
 		for f in range( frames ):
@@ -2691,14 +2671,13 @@ class DicomModule(object):
 
 			outputfilename = '%s_frame_%04d.png' % ( os.path.basename(self.app.Data.getFileLevel('name')), f+1 )
 			outputfilepath = os.path.join( rel_outputpath, outputfilename )
-			# print(outputpath, outputfilename,'line 2457')
-			# print(outputfilepath)
+			# debug(outputfilepath)
 			img.save( os.path.join(self.app.Data.path,outputfilepath), format='PNG', compress_level=1 )
 
 			# keep track of all the processing we've finished
-			# print(os.path.join(outputpath,outputfilename))
+			# debug(os.path.join(outputpath,outputfilename))
 			processedData[ str(f+1) ] = outputfilepath
-		# print(processedData)
+		# debug(processedData)
 		self.app.Data.setFileLevel( 'processed', processedData )
 		self.app.lift()
 		self.load()
@@ -2803,7 +2782,7 @@ class ControlModule(object):
 		- Dicom.resetZoom()
 	'''
 	def __init__(self, app):
-		print( ' - initializing module: Control' )
+		info( ' - initializing module: Control' )
 		# reference to our main object containing other functionality managers
 		self.app = app
 		# initialize our stacks
@@ -2865,14 +2844,14 @@ class ControlModule(object):
 				self.app.Trace.renameTrace( newName=item['old'], oldName=item['new'] ) # this is backwards on purpose
 				self.rStack.append({ 'type':'rename', 'old':item['old'], 'new':item['new'] })
 			else:
-				print (item)
+				error(item)
 				raise NotImplementedError
 
 			self.app.Trace.unselectAll()
 			self.app.Trace.write()
 			self.updateButtons()
 		else:
-			print( 'Nothing to undo!' )
+			warn( 'Nothing to undo!' )
 	def redo(self, event=None):
 		''' perform the redo-ing '''
 
@@ -2902,14 +2881,14 @@ class ControlModule(object):
 				self.app.Trace.renameTrace( newName=item['new'], oldName=item['old'] )
 				self.uStack.append({ 'type':'rename', 'old':item['old'], 'new':item['new'] })
 			else:
-				print (item)
+				error(item)
 				raise NotImplementedError
 
 			self.app.Trace.unselectAll()
 			self.app.Trace.write()
 			self.updateButtons()
 		else:
-			print( 'Nothing to redo!' )
+			warn( 'Nothing to redo!' )
 	def updateButtons(self):
 		'''
 		Don't allow clicking buttons that wrap empty stacks.  However, users will
@@ -3037,8 +3016,7 @@ class App(ThemedTk):
 	'''
 	def __init__(self):
 
-		print()
-		print( 'initializing UltraTrace' )
+		info( 'initializing UltraTrace' )
 
 		# do the normal Tk init stuff
 		if _PLATFORM=='Linux':
@@ -3046,16 +3024,16 @@ class App(ThemedTk):
 				Xresources = xrp.parse_file(os.path.join(str(Path.home()), '.Xresources'))
 				if '*TtkTheme' in Xresources.resources:
 					ttktheme = Xresources.resources['*TtkTheme']
-					print("Setting Linux Ttk theme to {}".format(ttktheme))
+					info("Setting Linux Ttk theme to {}".format(ttktheme))
 				elif '*TkTheme' in Xresources.resources:
 					ttktheme = Xresources.resources['*TkTheme']
-					print("Setting Linux Tk theme to {}".format(ttktheme))
+					info("Setting Linux Tk theme to {}".format(ttktheme))
 				else:
 					ttktheme = "clam"  # alt, clam, classic, default
-					print("Falling back to default Linux Tk theme: {}".format(ttktheme))
+					info("Falling back to default Linux Tk theme: {}".format(ttktheme))
 				super().__init__(theme=ttktheme)
 			except Exception as e:
-				print("exception: ", e)
+				error("exception: ", e)
 				super().__init__()
 		else:
 			super().__init__()
@@ -3082,13 +3060,12 @@ class App(ThemedTk):
 		self.Spectrogram = SpectrogramModule(self)
 		self.Search = SearchModule(self)
 
-		print( ' - loading widgets' )
+		info( ' - loading widgets' )
 
 		self.filesUpdate()
 		# self.framesUpdate()
 		# self.TextGrid.startup() #NOTE why does TextGridModule have to reset a second time? Is there a more economical way to do this?
 
-		print()
 
 		# to deal with resize handler being called multiple times
 		# in a single window resize
@@ -3396,7 +3373,7 @@ class App(ThemedTk):
 				self.TextGrid.setSelectedIntvlFrames(self.TextGrid.selectedItem)
 				# self.TextGrid.paintCanvases()
 				# self.Spectrogram.drawInterval(l_loc=x1,r_loc=x2)
-				# print(canvas.gettags(ALL))
+				# debug(canvas.gettags(ALL))
 				# specgram = self.Spectrogram.canvas.find_all()[0]
 				# self.TextGrid.fillCanvases()
 				self.TextGrid.genFrameList(widg=canvas,x_loc=x2, SI=True)
@@ -3599,7 +3576,7 @@ class App(ThemedTk):
 			self.framesUpdate()
 
 		except ValueError:
-			print( 'Please enter an integer!' )
+			error( 'Please enter an integer!' )
 
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 25, fill = '█'):
 	"""
@@ -3766,7 +3743,7 @@ if __name__=='__main__':
 	try:
 		app.mainloop()
 	except UnicodeDecodeError:
-		print( 'App encountered a UnicodeDecodeError when attempting to bind a \
+		severe( 'App encountered a UnicodeDecodeError when attempting to bind a \
 <MouseWheel> event.  This is a known bug with Tcl/Tk 8.5 and can be fixed by \
 changing a file in the Tkinter module in the python3 std libraries.  To make this \
 change, copy the file `tkinter__init__.py` from this directory to the library for \
