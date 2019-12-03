@@ -1,3 +1,4 @@
+from .control import ControlModule
 from .dicom import DicomModule
 from .metadata import MetadataModule
 from .playback import PlaybackModule
