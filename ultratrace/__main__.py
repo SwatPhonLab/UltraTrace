@@ -27,6 +27,7 @@ warnings.showwarning = lambda msg, *args : warn(msg)
 # critical dependencies
 from magic import Magic # sudo -H pip3 install -U python-magic
 getMIMEType = Magic(mime=True).from_file
+import PIL
 
 # non-critical dependencies
 try:
@@ -838,7 +839,7 @@ class SpectrogramModule(object):
 			# self.spectrogram += 60
 			# debug(self.spectrogram.min(), self.spectrogram.max())
 
-			img = Image.fromarray(self.spectrogram)
+			img = PIL.Image.fromarray(self.spectrogram)
 			if img.mode != 'RGB':
 				img = img.convert('RGB')
 			# contrast = ImageEnhance.Contrast(img)
@@ -1504,13 +1505,13 @@ class PlaybackModule(object):
 		canvas = self.app.Dicom.zframe.canvas
 		bbox = canvas.bbox(canvas.find_all()[0])
 		dim = (bbox[2] - bbox[0], bbox[3] - bbox[1])
-		imgs = [Image.open(png).resize(dim) for png in png_locs]
+		imgs = [PIL.Image.open(png).resize(dim) for png in png_locs]
 		self.pngs = []
 		traces = self.app.Data.getTopLevel('traces')
 		file = self.app.Data.getCurrentFilename()
 		l = _CROSSHAIR_SELECT_RADIUS
 		for frame, img in zip(framenums, imgs):
-			draw = ImageDraw.Draw(img)
+			draw = PIL.ImageDraw.Draw(img)
 			for name in traces:
 				color = traces[name]['color']
 				if file in traces[name]['files'] and frame in traces[name]['files'][file]:
@@ -2509,7 +2510,7 @@ class App(ThemedTk):
 			# self.resized = False
 			#resize dicom image
 			png_loc = self.Data.getPreprocessedDicom(self.frame)
-			image = Image.open( png_loc )
+			image = PIL.Image.open( png_loc )
 			self.Dicom.zframe.setImage(image)
 			# x = self.Dicom.zframe.width
 			x = self.winfo_width() - self.LEFT.winfo_width()
