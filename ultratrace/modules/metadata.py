@@ -5,6 +5,7 @@ import json
 import os
 
 from tkinter import filedialog
+from magic import Magic # python-magic
 
 class MetadataModule(Module):
     def __init__(self, app, path):
@@ -80,17 +81,17 @@ class MetadataModule(Module):
                     #make file path relative to metadata file
                     filepath = os.path.relpath(filepath,start=self.path)
 
-                    MIME = getMIMEType(real_filepath)
-                    if (MIME == 'text/plain' or MIME == 'application/json') and extension == '.measurement':
+                    mime_type = Magic(mime=True).from_file(real_filepath)
+                    if (mime_type == 'text/plain' or mime_type == 'application/json') and extension == '.measurement':
                         debug('Found old measurement file {}'.format(filename))
                         self.importOldMeasurement(real_filepath, filename)
-                    elif MIME in MIMEs:
+                    elif mime_type in mime_types:
                         # add `good` files
-                        if extension in MIMEs[ MIME ]:
+                        if extension in MIMEs[ mime_type ]:
                             if filename not in files:
                                 files[filename] = { key:None for key in fileKeys }
                             files[filename][extension] = filepath
-                    elif MIME == 'image/png' and '_dicom_to_png' in path:
+                    elif mime_type == 'image/png' and '_dicom_to_png' in path:
                         # check for preprocessed dicom files
                         name, frame = filename.split( '_frame_' )
                         #debug(files)
