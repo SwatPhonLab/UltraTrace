@@ -63,6 +63,7 @@ try:
 	# from multiprocessing import Process
 	import threading, queue
 	import time
+	from PIL import ImageTk
 	_VIDEO_LIBS_INSTALLED = True
 except (ImportError):
 	warnings.warn('VLC library failed to load')
@@ -796,6 +797,9 @@ class SpectrogramModule(object):
 		'''
 		Extracts spectrogram data from sound, and draws it to canvas
 		'''
+		if not _SPECTROGRAM_LIBS_INSTALLED:
+			return
+
 		if self.app.Audio.current:
 			sound = parselmouth.Sound(self.app.Audio.current)
 
