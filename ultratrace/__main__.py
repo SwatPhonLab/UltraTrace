@@ -600,22 +600,4 @@ class App(ThemedTk):
 
 if __name__=='__main__':
 	app = App()
-	while True:
-		try:
-			app.mainloop()
-			break
-		except UnicodeDecodeError:
-			pass
-
-	try:
-		app.mainloop()
-	except UnicodeDecodeError:
-		severe( 'App encountered a UnicodeDecodeError when attempting to bind a \
-<MouseWheel> event.  This is a known bug with Tcl/Tk 8.5 and can be fixed by \
-changing a file in the Tkinter module in the python3 std libraries.  To make this \
-change, copy the file `tkinter__init__.py` from this directory to the library for \
-your standard system installation of python3.  For example, your command might \
-look like this:\n\n\t$ cp ./tkinter__init__.py /Library/Frameworks/Python.\
-frameworks/Versions/3.6/lib/python3.6/tkinter/__init__.py\n \
-or\t$ cp ./tkinter__init__.py /usr/local/Frameworks/Python.framework/Versions/3.\
-6/lib/python3.6/tkinter/__init__.py\nDepending on your python deployment.' )
+	app.mainloop()
