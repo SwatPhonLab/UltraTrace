@@ -1,0 +1,9 @@
+#!/bin/bash
+#
+# Executable wrapper around the ultratrace module so
+# that it can be executed from anywhere on the system.
+# This _should_ support both MacOS and Linux, but not
+# Windows.
+
+cd "$(dirname $0)/.."
+python3 -m ultratrace $@
