@@ -3,6 +3,7 @@
 from .modules import *
 from . import util
 from .util.logging import *
+from .widgets import *
 
 # core libs
 from tkinter import *
@@ -83,13 +84,6 @@ except (ImportError):
 # some globals
 _CROSSHAIR_DRAG_BUFFER = 20
 _CROSSHAIR_SELECT_RADIUS = 9#12
-
-class Header(Label):
-	def __init__(self, master, text):
-		'''
-		Wrapper for Tk Label() object with a specified font
-		'''
-		Label.__init__(self, master, text=text, font='TkDefaultFont 12 bold')
 
 class Crosshairs(object):
 	def __init__(self, zframe, x, y, color, transform=True):
