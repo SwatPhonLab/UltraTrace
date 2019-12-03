@@ -5,5 +5,5 @@
 # This _should_ support both MacOS and Linux, but not
 # Windows.
 
-cd "$(dirname $0)/.."
+cd "$(dirname "$(readlink $0)")/.."
 python3 -m ultratrace $@
