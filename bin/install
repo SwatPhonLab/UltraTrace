@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Utility script to symbolically link the bin/ultratrace script into a user's
+# path.  By default, this installs the symbolic link into /usr/local/bin, but
+# this can be overridden by specifying a --path (or -p) command line arg.
+#
+# As with bin/ultratrace, this is expected to work on Linux and MacOS, but not
+# on Windows.
+
+set -euo pipefail
+
+usage() {
+    echo "usage: $0 [ [-h|--help] | [-p|--prefix] /path/to/install/to ]"
+    exit 1
+}
+
+# FIXME: This should maybe do something about system dependencies (i.e. things
+#        that need to be installed with a package manager) AND python dependencies
+#        (i.e. things that need to be installed with pip/conda/etc).
+
+prefix=/usr/local/bin
+
+if [[ $# -eq 0 ]]; then
+    true # do nothing
+elif [[ $# -eq 1 ]]; then
+    # calling with -h|--help should just print usage anyway
+    usage
+elif [[ $# -eq 2 ]]; then
+    if [[ $1 == "-p" || $1 == "--prefix" ]]; then
+        prefix="$2"
+    else
+        usage
+    fi
+else
+    usage
+fi
+
+# probably need superuser permissions
+ln -sf "$(realpath "$(dirname $0)")/ultratrace" "$prefix/ultratrace"
+
