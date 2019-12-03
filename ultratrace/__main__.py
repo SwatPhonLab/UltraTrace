@@ -81,10 +81,6 @@ except (ImportError):
 	_SPECTROGRAM_LIBS_INSTALLED = False
 
 
-# some globals
-_CROSSHAIR_DRAG_BUFFER = 20
-_CROSSHAIR_SELECT_RADIUS = 9#12
-
 class Crosshairs(object):
 	def __init__(self, zframe, x, y, color, transform=True):
 		'''
@@ -1322,7 +1318,7 @@ class PlaybackModule(object):
 		self.pngs = []
 		traces = self.app.Data.getTopLevel('traces')
 		file = self.app.Data.getCurrentFilename()
-		l = _CROSSHAIR_SELECT_RADIUS
+		l = util.CROSSHAIR_SELECT_RADIUS
 		for frame, img in zip(framenums, imgs):
 			draw = PIL.ImageDraw.Draw(img)
 			for name in traces:
@@ -2121,7 +2117,7 @@ class App(ThemedTk):
 				# enforce minimum distance b/w new crosshairs
 				dx = abs(thisClick[0] - lastClick[0]) / self.Dicom.zframe.imgscale
 				dy = abs(thisClick[1] - lastClick[1]) / self.Dicom.zframe.imgscale
-				if dx > _CROSSHAIR_DRAG_BUFFER or dy > _CROSSHAIR_DRAG_BUFFER:
+				if dx > util.CROSSHAIR_DRAG_BUFFER or dy > util.CROSSHAIR_DRAG_BUFFER:
 					self.click = thisClick
 					ch = self.Trace.add( *self.click )
 					self.Control.push({ 'type':'add', 'chs':[ch] })

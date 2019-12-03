@@ -11,3 +11,6 @@ def get_platform():
         except ImportError:
             __platform = 'generic'
         return __platform
+
+CROSSHAIR_SELECT_RADIUS = 9
+CROSSHAIR_DRAG_BUFFER = 20
