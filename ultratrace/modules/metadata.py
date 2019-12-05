@@ -262,7 +262,8 @@ class Metadata(Module):
         filename = self.getCurrentFilename()
         try:
             return self.data[ 'traces' ][ trace ][ 'files' ][ filename ]
-        except KeyError:
+        except KeyError as e:
+            warn(e)
             return {}
 
     def getCurrentTraceTracedFrames(self):
@@ -283,7 +284,8 @@ class Metadata(Module):
         frame    = str(self.app.frame)# if _frame==None else str(_frame)
         try:
             return self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ frame ]
-        except KeyError:
+        except KeyError as e:
+            warn(e)
             return []
 
     def setCurrentTraceCurrentFrame( self, crosshairs ):
@@ -310,7 +312,8 @@ class Metadata(Module):
             dict = self.data[ 'traces' ][ trace ][ 'files' ][ filename ]
             # debug(dict)
             return [x for x in dict if dict[x] != []]
-        except KeyError:
+        except KeyError as e:
+            warn(e)
             return []
 
     def reset(self, *args, **kwargs):

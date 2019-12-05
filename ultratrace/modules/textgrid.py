@@ -680,8 +680,8 @@ class TextGrid(Module):
         try:
             self.app.Spectrogram.reset()
             # during startup this gets called before app.Spectrogram is initialized
-        except AttributeError:
-            pass
+        except AttributeError as e:
+            error(e)
 
     def updateTimeLabels(self):
         '''
