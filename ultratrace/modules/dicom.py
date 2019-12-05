@@ -145,7 +145,7 @@ class Dicom(Module):
         else:
             self.mode = None
 
-        self.methodMenu = OptionMenu(self.frame, self.method, *[x.label for x in READERS[self.mode]], command=self.chooseMethod)
+        self.methodMenu = OptionMenu(self.frame, self.method, *[x.label for x in READERS[self.mode]] or ['[no ultrasound]'], command=self.chooseMethod)
         self.methodMenu.grid(row=0)
         self.loadBtn = Button(self.frame, text='Load frames', command=self.load, takefocus=0)
         self.loadBtn.grid(row=1)

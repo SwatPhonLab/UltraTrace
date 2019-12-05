@@ -115,7 +115,7 @@ class CanvasTooltip:
                           text=self.text,
                           justify='left',
                           background=bg,
-                          relief=SOLID,
+                          relief="solid",
                           borderwidth=0,
                           wraplength=self.wraplength)
 

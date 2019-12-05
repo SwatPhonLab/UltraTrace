@@ -108,25 +108,17 @@ class TextGrid(Module):
             else:
                 #debug(self.app.Audio.duration)
                 minTime = 0.
-                maxTime = self.app.Audio.duration
-                self.TextGrid = TextGridFile(maxTime=self.app.Audio.duration)
+                try:
+                    maxTime = self.app.Audio.duration
+                except AttributeError:
+                    self.app.Audio.reset()
+                    maxTime = self.app.Audio.duration
+                self.TextGrid = TextGridFile(maxTime=maxTime)
                 self.TkWidgets = []
-                frameTime = self.app.Data.getFileLevel("FrameTime")
-                numberOfFrames = self.app.Data.getFileLevel("NumberOfFrames")
-                framesTier = PointTier(name="frames", maxTime=maxTime)
-                if frameTime is not None and numberOfFrames is not None:
-                    for frameNum in range(1,numberOfFrames+1):
-                        pointTime = (frameTime*frameNum)/1000
-                        point = Point(pointTime,str(frameNum))
-                        framesTier.addPoint(point)
-                else:
-                    for i, pointTime in enumerate([1.,2.,3.,4.]):
-                        point = Point(pointTime,str(i))
-                        framesTier.addPoint(point)
-                self.TextGrid.tiers.append(framesTier)
                 sentenceTier = IntervalTier("text")
                 sentenceTier.add(minTime, maxTime, "text")
                 self.TextGrid.tiers.append(sentenceTier)
+                self.genFramesTier()
 
             try:
                 # reset default Label to actually be useful
@@ -251,11 +243,19 @@ class TextGrid(Module):
             return None
 
     def genFramesTier(self):
+        debug('generating frames tier')
         self.frameTierName = 'frames'
         times = self.app.Dicom.getFrameTimes()
-        tier = PointTier('frames')
+        self.app.Data.setFileLevel("NumberOfFrames", len(times))
+        try:
+            maxTime = max(self.app.Audio.duration, times[-1])
+        except AttributeError:
+            maxTime = times[-1]
+        tier = PointTier('frames', maxTime=maxTime)
         for f, t in enumerate(times):
             tier.addPoint(Point(t, str(f)))
+        if not self.TextGrid.maxTime or maxTime > self.TextGrid.maxTime:
+            self.TextGrid.maxTime = maxTime
         self.TextGrid.append(tier)
         self.TextGrid.write(self.app.Data.unrelativize(self.app.Data.getFileLevel( '.TextGrid' )))
 

@@ -83,9 +83,18 @@ class Metadata(Module):
                     filepath = os.path.relpath(filepath,start=self.path)
 
                     mime_type = Magic(mime=True).from_file(real_filepath)
+
+                    # name mangling for ULT directories
                     if mime_type == 'text/plain' and extension == '.txt' and filename.endswith('US'):
                         filename = filename[:-2]
                         extension = 'US.txt'
+                    if extension == '.wav' and filename.endswith('_Track0'):
+                        debug(filename)
+                        filename = filename[:-7]
+                        debug(filename, mime_type)
+                    elif extension == '.wav' and filename.endswith('_Track1'):
+                        continue
+
                     if (mime_type == 'text/plain' or mime_type == 'application/json') and extension == '.measurement':
                         debug('Found old measurement file {}'.format(filename))
                         self.importOldMeasurement(real_filepath, filename)
@@ -263,7 +272,6 @@ class Metadata(Module):
         try:
             return self.data[ 'traces' ][ trace ][ 'files' ][ filename ]
         except KeyError as e:
-            warn(e)
             return {}
 
     def getCurrentTraceTracedFrames(self):
@@ -285,7 +293,6 @@ class Metadata(Module):
         try:
             return self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ frame ]
         except KeyError as e:
-            warn(e)
             return []
 
     def setCurrentTraceCurrentFrame( self, crosshairs ):
@@ -313,7 +320,6 @@ class Metadata(Module):
             # debug(dict)
             return [x for x in dict if dict[x] != []]
         except KeyError as e:
-            warn(e)
             return []
 
     def reset(self, *args, **kwargs):
