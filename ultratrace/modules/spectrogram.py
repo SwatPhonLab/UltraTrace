@@ -100,7 +100,7 @@ class Spectrogram(Module):
 
             ts_fac = decimal.Decimal(10000.0)
             wl = decimal.Decimal(self.wl.get())
-            start_time = self.app.TextGrid.start
+            start_time = decimal.Decimal(self.app.TextGrid.start)
             end_time = decimal.Decimal(self.app.TextGrid.end)
 
             # the spectrogram is for the audio file, so it makes sense
