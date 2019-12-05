@@ -7,7 +7,7 @@ import threading
 import time
 import math
 
-from tkinter import Button, Frame
+from tkinter import Button, Frame, NORMAL, DISABLED
 
 AUDIO_LIBS_INSTALLED = False
 try:

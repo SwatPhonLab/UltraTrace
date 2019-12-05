@@ -1,8 +1,9 @@
-from .textgrid import TextGridModule
+from .textgrid import TextGrid
 from .base import Module
 from ..util.logging import *
 
-from tkinter import Button, Entry, Label, Scrollbar, Toplevel
+from tkinter import Button, Entry, Label, Scrollbar, Toplevel, StringVar
+from tkinter.ttk import Treeview
 
 class Search(Module):
     def __init__(self, app):
@@ -34,7 +35,7 @@ class Search(Module):
         self.resultCount.grid(row=0, column=2)
         cols = ('File', 'Tier', 'Time', 'Text')
         self.scroll = Scrollbar(self.window, orient='vertical')
-        self.resultList = Treeview(self.window, columns=cols, show="headings", yscrollcommand=self.scroll.set, selectmode='browse') # what is this?
+        self.resultList = Treeview(self.window, columns=cols, show="headings", yscrollcommand=self.scroll.set, selectmode='browse')
         self.scroll.config(command=self.resultList.yview)
         for col in cols:
             self.resultList.heading(col, text=col)
@@ -57,7 +58,7 @@ class Search(Module):
             if tg:
                 grid = self.app.TextGrid.fromFile(tg)
                 for tier in grid:
-                    if TextGridModule.isIntervalTier(tier):
+                    if TextGrid.isIntervalTier(tier):
                         for el in tier:
                             if el.mark:
                                 self.intervals.append((el, tier.name, filename))

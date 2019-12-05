@@ -5,7 +5,7 @@ import decimal
 import math
 import PIL
 
-from tkinter import Button, Canvas, Frame, Spinbox
+from tkinter import Button, Canvas, Frame, Spinbox, N, E, S, W, NE, SE, DoubleVar, ALL
 
 LIBS_INSTALLED = False
 

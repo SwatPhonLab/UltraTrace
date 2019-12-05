@@ -2,7 +2,7 @@ from .base import Module
 from .. import util
 from ..util.logging import *
 
-from tkinter import Button, Frame
+from tkinter import Button, Frame, DISABLED, NORMAL
 
 class Control(Module):
     '''

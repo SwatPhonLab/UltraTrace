@@ -6,7 +6,7 @@ from ..widgets import Crosshairs, Header
 import PIL
 import random
 
-from tkinter import Button, Entry, Frame, Listbox, Scrollbar
+from tkinter import Button, Entry, Frame, Listbox, Scrollbar, PhotoImage, StringVar, END, N, W, S, E, LEFT, RIGHT, Y
 
 class Trace(Module):
     '''

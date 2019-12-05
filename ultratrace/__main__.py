@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-import modules
+#import modules
+from . import modules
 from . import util
 from .util.logging import *
 from .widgets import Header
@@ -9,7 +10,7 @@ import argparse
 import os
 import PIL
 
-from tkinter import Button, Entry, Frame, Tk
+from tkinter import Button, Entry, Frame, Tk, StringVar, N, S, E, W, OptionMenu, NORMAL, DISABLED
 
 try:
     from ttkthemes import ThemedTk

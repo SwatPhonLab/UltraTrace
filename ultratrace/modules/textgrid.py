@@ -3,14 +3,14 @@ from .. import util
 from ..util.logging import *
 from ..widgets import CanvasTooltip
 
-from tkinter import Button, Canvas, Frame, Label, Spinbox
+from tkinter import Button, Canvas, Frame, Label, Spinbox, NE, StringVar, DoubleVar
 import decimal
 import tempfile
 
 LIBS_INSTALLED = False
 
 try:
-    from textgrid import TextGrid, IntervalTier, PointTier, Point # textgrid
+    from textgrid import TextGrid as TextGridFile, IntervalTier, PointTier, Point # textgrid
     LIBS_INSTALLED = True
 except ImportError as e:
     warn(e)
@@ -109,7 +109,7 @@ class TextGrid(Module):
                 #debug(self.app.Audio.duration)
                 minTime = 0.
                 maxTime = self.app.Audio.duration
-                self.TextGrid = TextGrid(maxTime=self.app.Audio.duration)
+                self.TextGrid = TextGridFile(maxTime=self.app.Audio.duration)
                 self.TkWidgets = []
                 frameTime = self.app.Data.getFileLevel("FrameTime")
                 numberOfFrames = self.app.Data.getFileLevel("NumberOfFrames")
@@ -223,7 +223,7 @@ class TextGrid(Module):
     def fromFile(self, filename):
         if LIBS_INSTALLED:
             try:
-                return TextGrid.fromFile(self.app.Data.unrelativize(filename))
+                return TextGridFile.fromFile(self.app.Data.unrelativize(filename))
             except UnicodeDecodeError:
                 pth = self.app.Data.unrelativize(filename)
                 f = open(pth, 'rb')
@@ -243,7 +243,7 @@ class TextGrid(Module):
                 if not found:
                     raise
                 else:
-                    ret = TextGrid.fromFile(tmp.name)
+                    ret = TextGridFile.fromFile(tmp.name)
                     tmp.close()
                     return ret
         else:

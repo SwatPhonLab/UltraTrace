@@ -158,7 +158,7 @@ class ULTScanLineReader(FrameReader):
 		f = open(metadata)
 		for l in f.readlines():
 			k, v = l.strip().split('=')
-			if ',' in v:
+			if ',' in v or '.' in v:
 				self.__dict__[k] = float(v.replace(',', '.'))
 			else:
 				self.__dict__[k] = int(v)
