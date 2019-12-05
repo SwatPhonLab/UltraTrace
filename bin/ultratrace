@@ -5,5 +5,6 @@
 # This _should_ support both MacOS and Linux, but not
 # Windows.
 
-cd "$(dirname "$(readlink $0)")/.."
+cd "$(dirname "$(readlink $0)")"
+[[ "$(basename "$(pwd)")" == bin ]] && cd ..
 python3 -m ultratrace $@
