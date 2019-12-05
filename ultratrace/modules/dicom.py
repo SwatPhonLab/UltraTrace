@@ -1,6 +1,7 @@
 from .base import Module
 from .. import util
 from ..util.logging import *
+from ..util.framereader import *
 
 import os
 import PIL
@@ -18,34 +19,20 @@ except ImportError as e:
     warn(e)
 
 class DicomModule(Module):
-    '''
-    This module wraps app interaction with dicom data.  The first time executing a
-    program for which we find relevant dicom files, the user will have to `Load DICOM,`
-    which iterates over each frame of the dicom file and copies it to a folder in PNG
-    format.
-
-    advantages (over loading each frame as a one-off image):
-        - avoid weird inconsistencies in trying to build PIL Images directly from arrays
-        - avoid unnecessary direct interaction with the (usually massive and therefore
-            painfully slow) dicom files
-
-    drawbacks:
-        - VERY slow upfront operation to do the dicom extraction (3m56s on my dev machine)
-        - a tiny amount of extra storage (for comparison, 1045-frame RGB dicom file
-            from a test dataset uses 1.5GB and the corresponding PNG files use )
-    '''
     def __init__(self, app):
         info( ' - initializing module: Dicom')
 
         self.app = app
-        self.isLoaded = False
 
         if LIBS_INSTALLED:
             # grid load button
-            self.frame = Frame(self.app.LEFT)#, pady=7)
-            self.frame.grid( row=2 )
-            self.loadBtn = Button(self.frame, text='Load DICOM', command=self.process, takefocus=0)
-            self.loadBtn.grid()
+            self.frame_holder = Frame(self.app.LEFT)#, pady=7)
+            self.frame_holder.grid( row=2 )
+            self.frame = Frame(self.frame_holder)
+            self.frame.pack(expand=True)
+            self.method = StringVar(self.app)
+            self.mode = None
+            self.reader = None
 
             # zoom frame (contains our tracing canvas)
             self.zframe = ZoomFrame(self.app.RIGHT, 1.3, app)
@@ -63,7 +50,7 @@ class DicomModule(Module):
         '''
         reset zoom frame canvas and rebind it
         '''
-        if self.isLoaded:
+        if self.isLoaded():
             # creates a new canvas object and we redraw everything to it
             self.zframe.resetCanvas()
             # self.zframe.canvas.bind('<Button-1>', self.app.onClickZoom )
@@ -77,131 +64,51 @@ class DicomModule(Module):
         '''
         change the image on the zoom frame
         '''
-        if self.isLoaded:
-            image = self.app.Data.getPreprocessedDicom() if _frame==None else self.app.Data.getPreprocessedDicom(_frame=_frame)
-            image = PIL.Image.open( image )
-            self.zframe.setImage( image )
+        if self.reader and self.reader.loaded:
+            self.zframe.setImage(self.reader.getFrame(_frame or self.app.frame))
 
     def load(self, event=None):
         '''
         brings a dicom file into memory if it exists
         '''
         if LIBS_INSTALLED:
-            # don't execute if dicom already loaded correctly
-            if self.isLoaded == False:
-
-                processed = self.app.Data.getFileLevel( 'processed' )
-                # debug(os.path.exists(self.app.Data.unrelativize(self.app.Data.getFileLevel( 'processed' )['1'])))
-                if processed == None:
-                    return self.process()
-                # elif :
-                #   self.process()
-                # else:
-                #   self.app.frames = len(processed)
-
-                # reset variables
+            if self.reader and not self.reader.loaded:
+                self.reader.load()
                 self.app.frame = 1
-                self.isLoaded = True
+                self.update()
+            self.loadBtn['state'] = DISABLED
 
-                # update widgets
-                self.frame.grid_remove()
-                self.loadBtn.grid_remove()
-                self.grid()
+    def chooseMethod(self, event=None):
+        if self.mode:
+            cls = LABEL_TO_READER[self.mode][self.method.get()]
+            if self.mode == 'dicom':
+                self.reader = cls(self.app.Data.unrelativize(self.app.Data.getFileLevel('.dicom')))
+            elif self.mode == 'ult':
+                ult = self.app.Data.unrelativize(self.app.Data.getFileLevel('.ult'))
+                meta = self.app.Data.unrelativize(self.app.Data.getFileLevel('US.txt'))
+                self.reader = cls(uls, meta)
+            self.zframe.resetImageDimensions()
+            if self.reader.loaded:
+                self.loadBtn['state'] = DISABLED
+                self.update()
+            else:
+                self.loadBtn['state'] = NORMAL
 
     # @profile
     def process(self):
         '''
         perform the dicom->PNG operation
         '''
-        info( 'Reading DICOM data ...', end='\r' )
-
-        if self.isLoaded == False:
-            try:
-                dicomfile = self.app.Data.getFileLevel( '.dicom' )
-                self.dicom = dicom.read_file( self.app.Data.unrelativize(dicomfile) )
-
-            except dicom.errors.InvalidDicomError:
-                error( 'Unable to read DICOM file: %s' % dicomfile )
-                return False
-
-        pixels = self.dicom.pixel_array # np.array
         self.frametime = self.dicom.get('FrameTime')
         self.numframes = self.dicom.get('NumberOfFrames')
         self.app.Data.setFileLevel('FrameTime', self.frametime)
         self.app.Data.setFileLevel('NumberOfFrames', self.numframes)
 
-        # check encoding, manipulate array if we need to
-        if len(pixels.shape) == 3:      # greyscale
-            RGB = False
-            frames, rows, columns = pixels.shape
-        elif len(pixels.shape) == 4:    # RGB-encoded
-            RGB = True
-            if pixels.shape[0] == 3:    # handle RGB-first
-                rgb, frames, rows, columns = pixels.shape
-            else:                       # and RGB-last
-                frames, rows, columns, rgb = pixels.shape
-            pixels = pixels.reshape([ frames, rows, columns, rgb ])
+    def isLoaded(self):
+        return self.reader and self.reader.loaded
 
-        processedData = {}
-
-        # write to a special directory
-        outputpath = os.path.join(
-            # self.app.Data.getTopLevel('path'),
-            os.path.abspath(self.app.Data.path),
-            self.app.Data.getFileLevel('name')+'_dicom_to_png' )
-        if os.path.exists( outputpath ) == False:
-            os.mkdir( outputpath )
-        rel_outputpath = os.path.relpath(outputpath,start=self.app.Data.path)
-        # debug(self.app.Data.getFileLevel('name'))
-        # grab one frame at a time to write (and provide a progress indicator)
-        printProgressBar(0, frames, prefix = 'Processing:', suffix = 'complete')
-        for f in range( frames ):
-
-            printProgressBar(f+1, frames, prefix = 'Processing:', suffix = ('complete (%d of %d)' % (f+1,frames)))
-
-            arr = pixels[ f,:,:,: ] if RGB else pixels[ f,:,: ]
-            img = PIL.Image.fromarray( arr )
-
-            outputfilename = '%s_frame_%04d.png' % ( os.path.basename(self.app.Data.getFileLevel('name')), f+1 )
-            outputfilepath = os.path.join( rel_outputpath, outputfilename )
-            # debug(outputfilepath)
-            img.save( os.path.join(self.app.Data.path,outputfilepath), format='PNG', compress_level=1 )
-
-            # keep track of all the processing we've finished
-            # debug(os.path.join(outputpath,outputfilename))
-            processedData[ str(f+1) ] = outputfilepath
-        # debug(processedData)
-        self.app.Data.setFileLevel( 'processed', processedData )
-        self.app.lift()
-        self.load()
-        self.app.update()
-        self.app.framesUpdate()
-
-    # an attempt at making things parallel, but we get the following error:
-    # _pickle.PicklingError: Could not pickle the task to send it to the workers.
-
-    #   #for f in range(frames):
-    #   Parallel(n_jobs=2)(delayed(self.writeTempImage)(f, frames, outputpath, RGB, pixels) for f in range(frames))
-    #
-    #
-    #   self.app.Data.setFileLevel( 'processed', self.processedData )
-    #   self.app.lift()
-    #   self.load()
-    #
-    # def writeTempImage(self, f, frames, outputpath, RGB, pixels):
-    #
-    #   #printProgressBar(f+1, frames, prefix = 'Processing:', suffix = ('complete (%d of %d)' % (f+1,frames)))
-    #
-    #   arr = pixels[ f,:,:,: ] if RGB else pixels[ f,:,: ]
-    #   img = Image.fromarray( arr )
-    #
-    #   outputfilename = '%s_frame_%04d.png' % ( self.app.Data.getFileLevel('name'), f )
-    #   outputfilepath = os.path.join( outputpath, outputfilename )
-    #   img.save( outputfilepath, format='PNG' )
-    #
-    #   ## keep track of all the processing we've finished
-    #   #self.processedData[ str(f) ] = outputfilepath
-    #   return (str(f), outputfilepath)
+    def getFrames(self, framenums):
+        return [self.reader.getFrame(int(x)) for x in framenums]
 
     def reset(self):
         '''
@@ -210,32 +117,23 @@ class DicomModule(Module):
         # hide frame navigation widgets
         # self.grid_remove()
 
-        self.isLoaded = False
-        self.dicom = None
         self.zframe.shown = False
-        pngs_missing = False
+        self.frame.destroy()
+        self.frame = Frame(self.frame_holder)
+        self.frame.pack(expand=True)
+        self.reader = None
 
-        # detect if processed pngs listed in metadata file actually exist on system
-        if self.app.Data.getFileLevel( 'processed' ) != None:
-            if not os.path.exists(self.app.Data.unrelativize(self.app.Data.getFileLevel( 'processed' )['1'])):
-                pngs_missing = True
-        # update buttons
-        if self.app.Data.getFileLevel( '.dicom' ) == None:
-            self.loadBtn[ 'state' ] = DISABLED
-            self.grid_remove()
-            self.frame.grid()
-            self.loadBtn.grid()
+        if self.app.Data.getFileLevel('.dicom'):
+            self.mode = 'dicom'
+        elif self.app.Data.getFileLevel('.ult'):
+            self.mode = 'ult'
         else:
-            self.loadBtn[ 'state' ] = NORMAL
-            # and check if data is already processed
-            if self.app.Data.getFileLevel( 'processed' ) != None and pngs_missing==False:
-                self.load()
-                self.zoomReset()
-            else:
-                self.grid_remove()
-                self.frame.grid()
-                self.loadBtn.grid()
-                self.zframe.canvas.delete(ALL)
+            self.mode = None
+
+        self.methodMenu = OptionMenu(self.frame, self.method, *[x.label for x in READERS[self.mode]], command=self.chooseMethod)
+        self.methodMenu.grid(row=0)
+        self.loadBtn = Button(self.frame, text='Load frames', command=self.load, takefocus=0)
+        self.loadBtn.grid(row=1)
 
     def grid(self):
         '''

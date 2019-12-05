@@ -55,7 +55,7 @@ class SearchModule(Module):
             filename = self.app.Data.getFileLevel('name', f)
             tg = self.app.Data.getFileLevel('.TextGrid', f)
             if tg:
-                grid = self.app.TextGrid.fromFile(self.app.Data.unrelativize(tg))
+                grid = self.app.TextGrid.fromFile(tg)
                 for tier in grid:
                     if TextGridModule.isIntervalTier(tier):
                         for el in tier:

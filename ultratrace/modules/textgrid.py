@@ -4,6 +4,7 @@ from ..util.logging import *
 from ..widgets import CanvasTooltip
 
 from tkinter import *
+import decimal
 
 LIBS_INSTALLED = False
 

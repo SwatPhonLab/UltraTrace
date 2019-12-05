@@ -244,7 +244,8 @@ class App(ThemedTk):
 				tierWidgets['canvas-label'].coords(ALL,(self.leftwidth,tierWidgets['canvas-label'].coords(1)[1]))
 		if event == None or event.widget == self:
 			self.alignBottomRight(self.winfo_width() - self.leftwidth)
-			self.Dicom.zframe.setImage(self.Dicom.zframe.image)
+			if self.Dicom.zframe.image:
+				self.Dicom.zframe.setImage(self.Dicom.zframe.image)
 		self.isResizing = False
 	def alignBottomRight(self,x):
 		''' '''
@@ -283,7 +284,7 @@ class App(ThemedTk):
 		'''
 		Handle clicking within the zoomframe canvas
 		'''
-		if self.Dicom.isLoaded:
+		if self.Dicom.isLoaded():
 			self.click = (event.x, event.y)
 			self.isDragging = False
 
@@ -330,7 +331,7 @@ class App(ThemedTk):
 		'''
 		Handle releasing a click within the zoomframe canvas
 		'''
-		if self.Dicom.isLoaded:
+		if self.Dicom.isLoaded():
 
 			# select multiple crosshairs
 			if self.selectBoxX!=False:
@@ -431,7 +432,7 @@ class App(ThemedTk):
 		'''
 		Handle mouse movement within the zoomframe canvas
 		'''
-		if self.Dicom.isLoaded:
+		if self.Dicom.isLoaded():
 
 			if self.isDragging: # dragging selection
 				thisClick = (event.x, event.y)

@@ -5,6 +5,7 @@ from ..util.logging import *
 import queue
 import threading
 import time
+import math
 
 from tkinter import *
 
@@ -18,7 +19,7 @@ except ImportError as e:
 
 VIDEO_LIBS_INSTALLED = False
 try:
-    from PIL import ImageTk
+    from PIL import Image, ImageTk, ImageDraw, ImageEnhance
     VIDEO_LIBS_INSTALLED = True
 except ImportError as e:
     warn(e)
@@ -116,12 +117,12 @@ class PlaybackModule(Module):
             #       self.dicomframeQ.put(self.pngs[i])
             #   self.playVideoNoAudio()
 
-            if self.app.Dicom.isLoaded:
+            if self.app.Dicom.isLoaded():
                 self.readyVideo()
             if AUDIO_LIBS_INSTALLED:
                 self.readyAudio(start, end)
                 self.playAudio()
-            elif self.app.Dicom.isLoaded:
+            elif self.app.Dicom.isLoaded():
                 self.dicomframeQ = queue.Queue()
                 for i in range(len(self.pngs)):
                     self.dicomframeQ.put(self.pngs[i])
@@ -173,17 +174,17 @@ class PlaybackModule(Module):
         tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
         framenums = [tag[5:] for tag in tags if tag[:5]=='frame']
         self.framestart = int(framenums[0])
-        png_locs = [self.app.Data.getPreprocessedDicom(frame) for frame in framenums]
+        imgs = self.app.Dicom.getFrames(framenums)
         canvas = self.app.Dicom.zframe.canvas
         bbox = canvas.bbox(canvas.find_all()[0])
         dim = (bbox[2] - bbox[0], bbox[3] - bbox[1])
-        imgs = [PIL.Image.open(png).resize(dim) for png in png_locs]
         self.pngs = []
         traces = self.app.Data.getTopLevel('traces')
         file = self.app.Data.getCurrentFilename()
         l = util.CROSSHAIR_SELECT_RADIUS
         for frame, img in zip(framenums, imgs):
-            draw = PIL.ImageDraw.Draw(img)
+            img = img.resize(dim)
+            draw = ImageDraw.Draw(img)
             for name in traces:
                 color = traces[name]['color']
                 if file in traces[name]['files'] and frame in traces[name]['files'][file]:
@@ -214,7 +215,7 @@ class PlaybackModule(Module):
         # debug(len(data), 'line 1960')
         self.audioframe+=frame_count
 
-        if self.app.Dicom.isLoaded:
+        if self.app.Dicom.isLoaded():
             #check & update video frame
             canvas = self.app.Dicom.zframe.canvas
             callbacklen = frame_count/self.seg.frame_rate
@@ -244,7 +245,7 @@ class PlaybackModule(Module):
     def playAudio(self):
         self.stream.start_stream()
         self.started = True
-        if self.app.Dicom.isLoaded:
+        if self.app.Dicom.isLoaded():
             self.playVideoWithAudio()
         else:
             pass #write a loop that keeps audio playing

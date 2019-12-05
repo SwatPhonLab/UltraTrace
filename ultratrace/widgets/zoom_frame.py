@@ -77,6 +77,11 @@ class ZoomFrame(Frame):
         self.panX = 0
         self.panY = 0
 
+    def resetImageDimensions(self):
+        self.width = 0
+        self.height = 0
+        self.aspect_ratio = 1
+
     def setImage(self, image): # expect an Image() instance
         self.image = image
         if self.width == 0:
