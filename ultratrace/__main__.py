@@ -9,7 +9,7 @@ import argparse
 import os
 import PIL
 
-from tkinter import *
+from tkinter import Button, Entry, Frame, Tk
 
 try:
     from ttkthemes import ThemedTk

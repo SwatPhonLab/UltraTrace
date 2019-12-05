@@ -6,7 +6,7 @@ from ..util.framereader import ULTScanLineReader, DicomReader, LABEL_TO_READER, 
 import os
 import PIL
 
-from tkinter import *
+from tkinter import Button, Frame
 
 LIBS_INSTALLED = False
 

@@ -3,7 +3,7 @@ from .. import util
 from ..util.logging import *
 from ..widgets import CanvasTooltip
 
-from tkinter import *
+from tkinter import Button, Canvas, Frame, Label, Spinbox
 import decimal
 import tempfile
 
