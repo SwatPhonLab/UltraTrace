@@ -3,7 +3,7 @@ from .. import util
 from ..util.logging import *
 from ..widgets import CanvasTooltip
 
-from tkinter import Button, Canvas, Frame, Label, Spinbox, N, S, E, W, StringVar, DoubleVar, CENTER
+from tkinter import Button, Canvas, Frame, Label, Spinbox, StringVar, DoubleVar, CENTER
 import decimal
 import tempfile
 
@@ -31,7 +31,7 @@ class TextGrid(Module):
         self.frame = Frame(self.app.BOTTOM)
         self.label_padx = 0
         self.canvas_frame = Frame(self.app.BOTTOM)#, padx=self.label_padx)
-        self.frame.grid( row=1, column=0, sticky=N+E)
+        self.frame.grid( row=1, column=0, sticky='ne')
         self.canvas_frame.grid(row=1, column=1 )
         self.TextGrid = None
         self.selectedTier = StringVar()
@@ -314,9 +314,9 @@ class TextGrid(Module):
 
     def makeTimeWidget(self):
         self.time_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height/3, highlightthickness=0)
-        s = self.time_canvas.create_text(3,0, anchor=N+W, text=self.start)
-        e = self.time_canvas.create_text(self.canvas_width,0, anchor=N+E, text=self.end)
-        c = self.time_canvas.create_text(self.canvas_width/2,0, anchor=N, text=self.current)
+        s = self.time_canvas.create_text(3,0, anchor='nw', text=self.start)
+        e = self.time_canvas.create_text(self.canvas_width,0, anchor='ne', text=self.end)
+        c = self.time_canvas.create_text(self.canvas_width/2,0, anchor='n', text=self.current)
         self.TkWidgets.append({'times':self.time_canvas})
 
     def makeFrameWidget(self):
@@ -326,7 +326,7 @@ class TextGrid(Module):
         #make regular frame stuff -- label and tier
         self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
         frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0, background='gray')
-        frames_label.create_text(self.label_width,0, anchor=N+E, justify=CENTER,
+        frames_label.create_text(self.label_width,0, anchor='ne', justify=CENTER,
                                  text='frames: ', width=self.label_width, activefill='blue')
 
         # make subframe to go on top of label canvas
@@ -340,10 +340,10 @@ class TextGrid(Module):
         txtbox = Spinbox(sbframe, textvariable=self.frame_shift, width=7, from_=-10000000, to=10000000)
         txtbox.bind('<Escape>', lambda ev: sbframe.focus())
         txtbox.bind('<Return>', lambda ev: self.shiftFrames())
-        go_btn.grid(row=0, column=0, sticky=E)
-        txtbox.grid(row=0, column=1, sticky=E)
+        go_btn.grid(row=0, column=0, sticky='e')
+        txtbox.grid(row=0, column=1, sticky='e')
         # put subframe on canvas
-        window = frames_label.create_window(self.label_width*.3,self.canvas_height/3, anchor=N+W, window=sbframe)
+        window = frames_label.create_window(self.label_width*.3,self.canvas_height/3, anchor='nw', window=sbframe)
 
         self.TkWidgets.append({'name':self.frameTierName,'frames':self.frames_canvas,
                                'frames-label':frames_label})
@@ -395,7 +395,7 @@ class TextGrid(Module):
         label = widgets['canvas-label']
 
         #builds tier label functionality
-        label_text = label.create_text(self.label_width, self.canvas_height/2, anchor=E, justify=CENTER,
+        label_text = label.create_text(self.label_width, self.canvas_height/2, anchor='e', justify=CENTER,
                                         text='temp', width=self.label_width/2, activefill='blue')
 
         canvas.bind("<Button-1>", self.genFrameList)
@@ -929,16 +929,16 @@ class TextGrid(Module):
         for t in range(len(self.TkWidgets)):
             tierWidgets = self.TkWidgets[t]
             if 'label' in tierWidgets:
-                tierWidgets['label'].grid(row=t, column=0, sticky=W)
+                tierWidgets['label'].grid(row=t, column=0, sticky='w')
             if 'frames' in tierWidgets:
-                tierWidgets['frames'].grid(row=t, column=2, sticky=W, pady=self.app.pady)
-                tierWidgets['frames-label'].grid(row=t, column=0, sticky=W, pady=self.app.pady)
+                tierWidgets['frames'].grid(row=t, column=2, sticky='w', pady=self.app.pady)
+                tierWidgets['frames-label'].grid(row=t, column=0, sticky='w', pady=self.app.pady)
             if 'canvas' in tierWidgets:
-                tierWidgets['canvas'].grid(row=t, column=2, sticky=W, pady=self.app.pady/2)
-                tierWidgets['canvas-label'].grid(row=t, column=0, sticky=W, pady=self.app.pady/2)
+                tierWidgets['canvas'].grid(row=t, column=2, sticky='w', pady=self.app.pady/2)
+                tierWidgets['canvas-label'].grid(row=t, column=0, sticky='w', pady=self.app.pady/2)
                 self.tier_pairs[tierWidgets['canvas-label']] = tierWidgets['canvas']
             if 'times' in tierWidgets:
-                tierWidgets['times'].grid(row=t, column=2, sticky=S)
+                tierWidgets['times'].grid(row=t, column=2, sticky='s')
 
     def grid_remove(self):
         raise NotImplementedError('cannot grid_remove the TextGridModule')

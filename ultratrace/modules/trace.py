@@ -6,7 +6,7 @@ from ..widgets import Crosshairs, Header
 import PIL
 import random
 
-from tkinter import Button, Entry, Frame, Listbox, Scrollbar, PhotoImage, StringVar, END, N, W, S, E, LEFT, RIGHT, Y
+from tkinter import Button, Entry, Frame, Listbox, Scrollbar, PhotoImage, StringVar, END, LEFT, RIGHT, Y
 
 class Trace(Module):
     '''
@@ -75,10 +75,10 @@ class Trace(Module):
             self.getWidget( Button(self.frame, text='Select all', command=self.selectAll, takefocus=0), row=11, column=2, columnspan=2 ),
             self.getWidget( Button(self.frame, image=self.img_copy, command=self.copy, takefocus=0), row=12, column=2 ), # FIXME: add tooltip for "Copy"
             self.getWidget( Button(self.frame, image=self.img_paste, command=self.paste, takefocus=0), row=12, column=3 ), # FIXME: add tooltip for "Paste"
-            self.getWidget( Entry( self.frame, width=8, textvariable=self.displayedColour), row=13, column=1, columnspan=2, sticky=W ),
+            self.getWidget( Entry( self.frame, width=8, textvariable=self.displayedColour), row=13, column=1, columnspan=2, sticky='w'),
             self.getWidget( Button(self.frame, text='Recolor', command=self.recolor, takefocus=0), row=13, column=3 ),
             self.getWidget( Button(self.frame, text='Clear', command=self.clear, takefocus=0), row=15, column=2, columnspan=2 ),
-            self.getWidget( Entry( self.frame, width=12, textvariable=self.traceSV), row=100, column=0, sticky=W ),
+            self.getWidget( Entry( self.frame, width=12, textvariable=self.traceSV), row=100, column=0, sticky='w' ),
             self.getWidget( Button(self.frame, text='New', command=self.newTrace, takefocus=0), row=100, column=2 ),
             self.getWidget( Button(self.frame, text='Rename', command=self.renameTrace, takefocus=0), row=100, column=3 ) ]
 

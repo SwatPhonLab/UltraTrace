@@ -121,7 +121,7 @@ class CanvasTooltip:
 
         label.grid(padx=(pad[0], pad[2]),
                    pady=(pad[1], pad[3]),
-                   sticky=NSEW)
+                   sticky='nsew')
         win.grid()
 
         x, y = tip_pos_calculator(canvas, label)

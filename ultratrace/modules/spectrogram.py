@@ -5,7 +5,7 @@ import decimal
 import math
 import PIL
 
-from tkinter import Button, Canvas, Frame, Spinbox, N, E, S, W, NE, SE, DoubleVar
+from tkinter import Button, Canvas, Frame, Spinbox, DoubleVar
 
 LIBS_INSTALLED = False
 
@@ -26,7 +26,7 @@ class Spectrogram(Module):
         self.frame = Frame(self.app.BOTTOM)
         self.frame.grid( row=0, column=1, pady=(self.app.pady*2,self.app.pady/2) )
         self.axis_frame = Frame(self.app.BOTTOM)
-        self.axis_frame.grid( row=0, column=0, sticky=E, pady=(self.app.pady*2,self.app.pady/2) )
+        self.axis_frame.grid( row=0, column=0, sticky='e', pady=(self.app.pady*2,self.app.pady/2) )
         self.canvas_width = self.app.TextGrid.canvas_width
         self.canvas_height = 106
         self.canvas = Canvas(self.frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
@@ -55,11 +55,11 @@ class Spectrogram(Module):
         default_btn = Button(self.spinwin, text='Standards', command=self.restoreDefaults, takefocus=0)
         apply_btn = Button(self.spinwin, text='Apply', command=self.drawSpectrogram, takefocus=0)
 
-        # self.axis_frame.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor=NE)
+        # self.axis_frame.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor='ne')
         #grid spinboxes & buttons on subframe
-        axis_ceil_box.grid(row=0, columnspan=2, sticky=NE)
-        wl_box.grid(row=1, columnspan=2, sticky=NE)
-        dyn_range_box.grid(row=2, columnspan=2, sticky=NE)
+        axis_ceil_box.grid(row=0, columnspan=2, sticky='ne')
+        wl_box.grid(row=1, columnspan=2, sticky='ne')
+        dyn_range_box.grid(row=2, columnspan=2, sticky='ne')
         default_btn.grid(row=3)
         apply_btn.grid(row=3, column=1)
 
@@ -149,12 +149,12 @@ class Spectrogram(Module):
             photo_img = ImageTk.PhotoImage(img)
             self.canvas.config(height=self.canvas_height)
 
-            # self.canvas.create_image(0,0, anchor=NW, image=photo_img)
+            # self.canvas.create_image(0,0, anchor='nw', image=photo_img)
             # self.canvas.create_image(self.canvas_width/2,self.canvas_height/2, image=photo_img)
             if self.app.TextGrid.selectedItem:
                 tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
             self.canvas.delete('all')
-            img = self.canvas.create_image(self.canvas_width, self.canvas_height, anchor=SE, image=photo_img)
+            img = self.canvas.create_image(self.canvas_width, self.canvas_height, anchor='se', image=photo_img)
             self.img = photo_img
             #pass on selected-ness
             if self.app.TextGrid.selectedItem:
@@ -240,9 +240,9 @@ class Spectrogram(Module):
         '''
         Put tkinter items on app
         '''
-        self.canvas.grid(row=0, column=0, sticky=N+S+E+W)
-        self.spinwin.grid(row=0,column=0,sticky=NE)
-        # self.axis_canvas.grid(row=0,column=0,sticky=SE)
+        self.canvas.grid(row=0, column=0, sticky='news')
+        self.spinwin.grid(row=0,column=0,sticky='ne')
+        # self.axis_canvas.grid(row=0,column=0,sticky='se')
 
     def grid_remove(self):
         self.canvas.grid_remove()

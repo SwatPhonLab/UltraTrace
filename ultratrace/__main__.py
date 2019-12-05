@@ -10,7 +10,7 @@ import argparse
 import os
 import PIL
 
-from tkinter import Button, Entry, Frame, Tk, StringVar, N, S, E, W, OptionMenu, NORMAL, DISABLED, Spinbox
+from tkinter import Button, Entry, Frame, Tk, StringVar, OptionMenu, NORMAL, DISABLED, Spinbox
 
 try:
     from ttkthemes import ThemedTk
@@ -156,14 +156,14 @@ class App(ThemedTk):
 		# self.BOTTOM.columnconfigure(0,weight=1)
 		self.BOTTOM.columnconfigure(1,weight=1)
 		# self.BOTTOM.rowconfigure(0,weight=1)
-		# self.TOP.grid(    row=0, column=0, sticky=NW)
-		# self.LEFT.grid(   row=0, sticky=N )
+		# self.TOP.grid(    row=0, column=0, sticky='nw')
+		# self.LEFT.grid(   row=0, sticky='n' )
 		# self.RIGHT.grid(  row=0, column=1)
-		# self.BOTTOM.grid( row=1, column=0, sticky=E)
-		self.TOP.grid(    row=0, column=0, sticky=N+E+S+W)
-		self.LEFT.grid(   row=0, sticky=N+E+S+W )
-		self.RIGHT.grid(  row=0, column=1, sticky=N+E+S+W)
-		self.BOTTOM.grid( row=1, column=0, sticky=N+E+S+W)
+		# self.BOTTOM.grid( row=1, column=0, sticky='e')
+		self.TOP.grid(    row=0, column=0, sticky='nesw')
+		self.LEFT.grid(   row=0, sticky='nesw' )
+		self.RIGHT.grid(  row=0, column=1, sticky='nesw')
+		self.BOTTOM.grid( row=1, column=0, sticky='nesw')
 		self.pady=3
 		self.columnconfigure(0,weight=1)
 		self.rowconfigure(0,weight=1)

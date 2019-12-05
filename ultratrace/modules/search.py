@@ -39,11 +39,11 @@ class Search(Module):
         self.scroll.config(command=self.resultList.yview)
         for col in cols:
             self.resultList.heading(col, text=col)
-        self.resultList.grid(row=2, column=0, columnspan=3, sticky=N+S+E+W)
+        self.resultList.grid(row=2, column=0, columnspan=3, sticky='news')
         self.resultList.bind('<Double-1>', self.onClick)
         Grid.rowconfigure(self.window, 2, weight=1)
         Grid.columnconfigure(self.window, 0, weight=1)
-        self.scroll.grid(row=2, column=3, sticky=N+S)
+        self.scroll.grid(row=2, column=3, sticky='ns')
     def openSearch(self):
         if self.window == None:
             self.createWindow()
