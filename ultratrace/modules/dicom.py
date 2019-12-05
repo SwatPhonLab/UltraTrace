@@ -6,7 +6,7 @@ from ..util.framereader import ULTScanLineReader, DicomReader, LABEL_TO_READER, 
 import os
 import PIL
 
-from tkinter import Button, Frame, StringVar, OptionMenu, NORMAL, DISABLED
+from tkinter import Button, Frame, StringVar, OptionMenu
 
 LIBS_INSTALLED = False
 
@@ -77,7 +77,7 @@ class Dicom(Module):
                 self.reader.load()
                 self.app.frame = 1
                 self.update()
-            self.loadBtn['state'] = DISABLED
+            self.loadBtn['state'] = 'disabled'
 
     def chooseMethod(self, event=None):
         if self.mode:
@@ -90,10 +90,10 @@ class Dicom(Module):
                 self.reader = cls(ult, meta)
             self.zframe.resetImageDimensions()
             if self.reader.loaded:
-                self.loadBtn['state'] = DISABLED
+                self.loadBtn['state'] = 'disabled'
                 self.update()
             else:
-                self.loadBtn['state'] = NORMAL
+                self.loadBtn['state'] = 'normal'
 
     # @profile
     def process(self):

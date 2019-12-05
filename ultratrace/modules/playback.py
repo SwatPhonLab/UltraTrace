@@ -7,7 +7,7 @@ import threading
 import time
 import math
 
-from tkinter import Button, Frame, NORMAL, DISABLED
+from tkinter import Button, Frame
 
 AUDIO_LIBS_INSTALLED = False
 try:
@@ -43,7 +43,7 @@ class Playback(Module):
 
             # widget management
             self.frame = Frame(self.app.BOTTOM)
-            self.playBtn = Button(self.frame, text="Play/Pause", command=self.playpauseAV, state=DISABLED, takefocus=0) # NOTE: not currently appearing
+            self.playBtn = Button(self.frame, text="Play/Pause", command=self.playpauseAV, state='disabled', takefocus=0) # NOTE: not currently appearing
             self.app.bind('<space>', self.playpauseAV )
             self.app.bind('<Escape>', self.stopAV )
         if VIDEO_LIBS_INSTALLED:
@@ -67,7 +67,7 @@ class Playback(Module):
             audioFallbacks = [ '.wav', '.flac', '.ogg', '.mp3' ]
             for codec in audioFallbacks:
                 if self.loadAudio( codec ) == True:
-                    self.playBtn.config( state=NORMAL )
+                    self.playBtn.config( state='normal' )
                     return
 
     def loadAudio(self, codec):

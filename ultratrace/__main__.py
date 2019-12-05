@@ -10,7 +10,7 @@ import argparse
 import os
 import PIL
 
-from tkinter import Button, Entry, Frame, Tk, StringVar, OptionMenu, NORMAL, DISABLED, Spinbox
+from tkinter import Button, Entry, Frame, Tk, StringVar, OptionMenu, Spinbox
 
 try:
     from ttkthemes import ThemedTk
@@ -495,8 +495,8 @@ class App(ThemedTk):
 		self.Spectrogram.reset()
 
 		# check if we can pan left/right
-		self.filesPrevBtn['state'] = DISABLED if self.Data.getFileLevel('_prev')==None else NORMAL
-		self.filesNextBtn['state'] = DISABLED if self.Data.getFileLevel('_next')==None else NORMAL
+		self.filesPrevBtn['state'] = 'disabled' if self.Data.getFileLevel('_prev')==None else 'normal'
+		self.filesNextBtn['state'] = 'disabled' if self.Data.getFileLevel('_next')==None else 'normal'
 		#load first frame
 		self.framesUpdate()
 
@@ -544,8 +544,8 @@ class App(ThemedTk):
 		self.Spectrogram.update()
 
 		# check if we can pan left/right
-		self.framesPrevBtn['state'] = DISABLED if self.frame==self.TextGrid.startFrame else NORMAL
-		self.framesNextBtn['state'] = DISABLED if self.frame==self.TextGrid.endFrame else NORMAL
+		self.framesPrevBtn['state'] = 'disabled' if self.frame==self.TextGrid.startFrame else 'normal'
+		self.framesNextBtn['state'] = 'disabled' if self.frame==self.TextGrid.endFrame else 'normal'
 
 	def framesPrev(self, event=None):
 		'''

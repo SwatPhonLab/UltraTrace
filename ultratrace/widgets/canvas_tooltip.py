@@ -113,7 +113,7 @@ class CanvasTooltip:
                        borderwidth=0)
         label = Label(win,
                           text=self.text,
-                          justify=LEFT,
+                          justify='left',
                           background=bg,
                           relief=SOLID,
                           borderwidth=0,

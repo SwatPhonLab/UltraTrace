@@ -3,7 +3,7 @@ from .. import util
 from ..util.logging import *
 from ..widgets import CanvasTooltip
 
-from tkinter import Button, Canvas, Frame, Label, Spinbox, StringVar, DoubleVar, CENTER
+from tkinter import Button, Canvas, Frame, Label, Spinbox, StringVar, DoubleVar
 import decimal
 import tempfile
 
@@ -326,7 +326,7 @@ class TextGrid(Module):
         #make regular frame stuff -- label and tier
         self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
         frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0, background='gray')
-        frames_label.create_text(self.label_width,0, anchor='ne', justify=CENTER,
+        frames_label.create_text(self.label_width,0, anchor='ne', justify='center',
                                  text='frames: ', width=self.label_width, activefill='blue')
 
         # make subframe to go on top of label canvas
@@ -386,16 +386,16 @@ class TextGrid(Module):
         # self.last_frame = self.TextGrid.getFirst(self.frameTierName)[-1].mark
         tier_obj = self.TextGrid.getFirst(tier)
         widgets = { 'name':tier,
-                         #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify=LEFT),
+                         #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify='left'),
                          'canvas-label':Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0),
-                         # 'text' :Label(self.frame, text='', wraplength=550, justify=LEFT),
+                         # 'text' :Label(self.frame, text='', wraplength=550, justify='left'),
                          'canvas':Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)}
 
         canvas = widgets['canvas']
         label = widgets['canvas-label']
 
         #builds tier label functionality
-        label_text = label.create_text(self.label_width, self.canvas_height/2, anchor='e', justify=CENTER,
+        label_text = label.create_text(self.label_width, self.canvas_height/2, anchor='e', justify='center',
                                         text='temp', width=self.label_width/2, activefill='blue')
 
         canvas.bind("<Button-1>", self.genFrameList)
@@ -623,7 +623,7 @@ class TextGrid(Module):
                     rel_time = time-self.start
                     loc=(rel_time-mod)/duration*self.canvas_width
 
-                    text = canvas.create_text(loc, self.canvas_height/2, justify=CENTER,
+                    text = canvas.create_text(loc, self.canvas_height/2, justify='center',
                                         text=tier[i].mark, width=pixel_length, activefill='blue')
                     minTimetag = "minTime"+str(tier[i].minTime)
                     maxTimetag = "maxTime"+str(tier[i].maxTime)

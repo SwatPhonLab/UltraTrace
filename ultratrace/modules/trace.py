@@ -6,7 +6,7 @@ from ..widgets import Crosshairs, Header
 import PIL
 import random
 
-from tkinter import Button, Entry, Frame, Listbox, Scrollbar, PhotoImage, StringVar, END, LEFT, RIGHT, Y
+from tkinter import Button, Entry, Frame, Listbox, Scrollbar, PhotoImage, StringVar
 
 class Trace(Module):
     '''
@@ -58,11 +58,11 @@ class Trace(Module):
         self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12, exportselection=False, takefocus=0)
         self.scrollbar.config(command=self.listbox.yview)
         for trace in self.available:
-            self.listbox.insert(END, trace)
-        for i, item in enumerate(self.listbox.get(0, END)):
+            self.listbox.insert('end', trace)
+        for i, item in enumerate(self.listbox.get(0, 'end')):
             # select our "default trace"
             if item==self.app.Data.getTopLevel( 'defaultTraceName' ):
-                self.listbox.selection_clear(0, END)
+                self.listbox.selection_clear(0, 'end')
                 self.listbox.select_set( i )
 
         # this module is responsible for so many widgets that we need a different
@@ -247,9 +247,9 @@ class Trace(Module):
                 # if we got something
                 if nearby != None:
                     # switch to that trace and exit the loop
-                    for i, item in enumerate(self.listbox.get(0, END)):
+                    for i, item in enumerate(self.listbox.get(0, 'end')):
                         if item==trace:
-                            self.listbox.selection_clear(0, END)
+                            self.listbox.selection_clear(0, 'end')
                             self.listbox.select_set( i )
                     return nearby
 
@@ -354,8 +354,8 @@ class Trace(Module):
             self.traceSV.set('')
 
             # update our listbox
-            self.listbox.insert(END, name)
-            self.listbox.selection_clear(0, END)
+            self.listbox.insert('end', name)
+            self.listbox.selection_clear(0, 'end')
             self.listbox.select_set( len(self.available)-1 )
     def renameTrace(self, oldName=None, newName=None):
         ''' change a trace name from oldName -> newName '''
@@ -379,7 +379,7 @@ class Trace(Module):
             index = self.listbox.curselection()
             self.listbox.delete(index)
             self.listbox.insert(index, newName)
-            self.listbox.selection_clear(0, END)
+            self.listbox.selection_clear(0, 'end')
             self.listbox.select_set(index)
 
             if not( fromUndo ):
@@ -404,8 +404,8 @@ class Trace(Module):
             item['widget'].grid(
                 row=item['row'], column=item['column'], rowspan=item['rowspan'],
                 columnspan=item['columnspan'], sticky=item['sticky'] )
-        self.listbox.pack(side=LEFT, fill=Y)
-        self.scrollbar.pack(side=RIGHT, fill=Y)
+        self.listbox.pack(side='left', fill='y')
+        self.scrollbar.pack(side='right', fill='y')
     def grid_remove(self):
         ''' remove all of our widgets from the grid '''
         for item in self.TkWidgets:

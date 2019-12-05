@@ -2,7 +2,7 @@ from .base import Module
 from .. import util
 from ..util.logging import *
 
-from tkinter import Button, Frame, DISABLED, NORMAL
+from tkinter import Button, Frame
 
 class Control(Module):
     '''
@@ -130,8 +130,8 @@ class Control(Module):
         Don't allow clicking buttons that wrap empty stacks.  However, users will
         still be able to access that functionality thru key bindings.
         '''
-        self.undoBtn['state'] = NORMAL if len(self.uStack) else DISABLED
-        self.redoBtn['state'] = NORMAL if len(self.rStack) else DISABLED
+        self.undoBtn['state'] = 'normal' if len(self.uStack) else 'disabled'
+        self.redoBtn['state'] = 'normal' if len(self.rStack) else 'disabled'
         self.grid()
     def grid(self):
         '''
