@@ -5,7 +5,7 @@ import decimal
 import math
 import PIL
 
-from tkinter import Button, Canvas, Frame, Spinbox, N, E, S, W, NE, SE, DoubleVar, ALL
+from tkinter import Button, Canvas, Frame, Spinbox, N, E, S, W, NE, SE, DoubleVar
 
 LIBS_INSTALLED = False
 
@@ -153,7 +153,7 @@ class Spectrogram(Module):
             # self.canvas.create_image(self.canvas_width/2,self.canvas_height/2, image=photo_img)
             if self.app.TextGrid.selectedItem:
                 tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
-            self.canvas.delete(ALL)
+            self.canvas.delete('all')
             img = self.canvas.create_image(self.canvas_width, self.canvas_height, anchor=SE, image=photo_img)
             self.img = photo_img
             #pass on selected-ness

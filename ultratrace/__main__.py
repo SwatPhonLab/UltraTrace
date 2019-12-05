@@ -239,10 +239,10 @@ class App(ThemedTk):
 			tierWidgets = self.TextGrid.TkWidgets[t]
 			if 'frames' in tierWidgets:
 				tierWidgets['frames-label'].config(width=self.leftwidth)
-				tierWidgets['frames-label'].coords(ALL,(self.leftwidth,tierWidgets['frames-label'].coords(1)[1]))
+				tierWidgets['frames-label'].coords('all',(self.leftwidth,tierWidgets['frames-label'].coords(1)[1]))
 			if 'canvas' in tierWidgets:
 				tierWidgets['canvas-label'].config(width=self.leftwidth)
-				tierWidgets['canvas-label'].coords(ALL,(self.leftwidth,tierWidgets['canvas-label'].coords(1)[1]))
+				tierWidgets['canvas-label'].coords('all',(self.leftwidth,tierWidgets['canvas-label'].coords(1)[1]))
 		if event == None or event.widget == self:
 			self.alignBottomRight(self.winfo_width() - self.leftwidth)
 			if self.Dicom.zframe.image:
@@ -395,7 +395,7 @@ class App(ThemedTk):
 				self.TextGrid.setSelectedIntvlFrames(self.TextGrid.selectedItem)
 				# self.TextGrid.paintCanvases()
 				# self.Spectrogram.drawInterval(l_loc=x1,r_loc=x2)
-				# debug(canvas.gettags(ALL))
+				# debug(canvas.gettags('all'))
 				# specgram = self.Spectrogram.canvas.find_all()[0]
 				# self.TextGrid.fillCanvases()
 				self.TextGrid.genFrameList(widg=canvas,x_loc=x2, SI=True)
