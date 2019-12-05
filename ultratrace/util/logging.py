@@ -1,7 +1,7 @@
 import sys
 
 def log(*msgs):
-    print(*msgs, file=sys.stderr)
+    print(*map(str, msgs), file=sys.stderr)
 
 def debug(*msgs):
     log('DEBUG:', *msgs)
