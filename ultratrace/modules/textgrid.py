@@ -3,7 +3,7 @@ from .. import util
 from ..util.logging import *
 from ..widgets import CanvasTooltip
 
-from tkinter import Button, Canvas, Frame, Label, Spinbox, NE, StringVar, DoubleVar
+from tkinter import Button, Canvas, Frame, Label, Spinbox, N, S, E, W, StringVar, DoubleVar, CENTER
 import decimal
 import tempfile
 
@@ -31,7 +31,7 @@ class TextGrid(Module):
         self.frame = Frame(self.app.BOTTOM)
         self.label_padx = 0
         self.canvas_frame = Frame(self.app.BOTTOM)#, padx=self.label_padx)
-        self.frame.grid( row=1, column=0, sticky=NE)
+        self.frame.grid( row=1, column=0, sticky=N+E)
         self.canvas_frame.grid(row=1, column=1 )
         self.TextGrid = None
         self.selectedTier = StringVar()
@@ -154,8 +154,7 @@ class TextGrid(Module):
                 self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
                 self.endFrame = self.lastFrame
             except Exception as e:
-                error("exception: ", e)
-                pass
+                error(str(e))
 
             self.grid()
 
@@ -314,8 +313,8 @@ class TextGrid(Module):
 
     def makeTimeWidget(self):
         self.time_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height/3, highlightthickness=0)
-        s = self.time_canvas.create_text(3,0, anchor=NW, text=self.start)
-        e = self.time_canvas.create_text(self.canvas_width,0, anchor=NE, text=self.end)
+        s = self.time_canvas.create_text(3,0, anchor=N+W, text=self.start)
+        e = self.time_canvas.create_text(self.canvas_width,0, anchor=N+E, text=self.end)
         c = self.time_canvas.create_text(self.canvas_width/2,0, anchor=N, text=self.current)
         self.TkWidgets.append({'times':self.time_canvas})
 
@@ -326,7 +325,7 @@ class TextGrid(Module):
         #make regular frame stuff -- label and tier
         self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
         frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0, background='gray')
-        frames_label.create_text(self.label_width,0, anchor=NE, justify=CENTER,
+        frames_label.create_text(self.label_width,0, anchor=N+E, justify=CENTER,
                                  text='frames: ', width=self.label_width, activefill='blue')
 
         # make subframe to go on top of label canvas
@@ -343,7 +342,7 @@ class TextGrid(Module):
         go_btn.grid(row=0, column=0, sticky=E)
         txtbox.grid(row=0, column=1, sticky=E)
         # put subframe on canvas
-        window = frames_label.create_window(self.label_width*.3,self.canvas_height/3, anchor=NW, window=sbframe)
+        window = frames_label.create_window(self.label_width*.3,self.canvas_height/3, anchor=N+W, window=sbframe)
 
         self.TkWidgets.append({'name':self.frameTierName,'frames':self.frames_canvas,
                                'frames-label':frames_label})
@@ -604,7 +603,7 @@ class TextGrid(Module):
             if 'canvas' in el:
                 canvas = el['canvas']
                 #remove previous intervals
-                canvas.delete(ALL)
+                canvas.delete('all')
                 #get starting interval
                 i = tier.indexContaining(self.start)
                 time = tier[i].maxTime
@@ -655,7 +654,7 @@ class TextGrid(Module):
             elif 'frames' in el:
                 frames = el['frames']
                 i = 0
-                frames.delete(ALL)
+                frames.delete('all')
                 first_frame_found = False
                 while i < len(tier) and tier[i].time <= self.end :
                     # debug(tier[i].time, i,'frame time and frame number (line 1076)')
@@ -771,8 +770,8 @@ class TextGrid(Module):
             #clicked tier label
             if wdg in self.tier_pairs.keys():
                 wdg.itemconfig(1, fill='black')
-                self.tier_pairs[wdg].itemconfig(ALL, fill='black')
-                self.frames_canvas.itemconfig(ALL, fill='black')
+                self.tier_pairs[wdg].itemconfig('all', fill='black')
+                self.frames_canvas.itemconfig('all', fill='black')
 
     def genFrameList(self, event=None, widg=None, x_loc=None, SI=False):
         '''
