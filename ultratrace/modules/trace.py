@@ -8,7 +8,7 @@ import random
 
 from tkinter import *
 
-class TraceModule(Module):
+class Trace(Module):
     '''
     Module to manage all of the different traces (with unique names/colors) and the
     Crosshairs objects associated to each one.  In particular, handles creation/modfication

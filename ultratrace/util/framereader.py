@@ -1,5 +1,5 @@
 from .logging import *
-from . import *
+from . import printProgressBar
 
 from abc import ABC, abstractmethod
 

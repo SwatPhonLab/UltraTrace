@@ -7,7 +7,7 @@ import os
 from tkinter import filedialog
 from magic import Magic # python-magic
 
-class MetadataModule(Module):
+class Metadata(Module):
     def __init__(self, app, path):
         '''
         opens a metadata file (or creates one if it doesn't exist), recursively searches a directory

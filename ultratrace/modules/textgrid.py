@@ -17,7 +17,7 @@ except ImportError as e:
 
 ALIGNMENT_TIER_NAMES = [ 'frames', 'all frames', 'dicom frames', 'ultrasound frames' ]
 
-class TextGridModule(Module):
+class TextGrid(Module):
     '''
     Manages all the widgets related to TextGrid files, including the tier name
     and the text content of that tier at a given frame

@@ -24,7 +24,7 @@ try:
 except ImportError as e:
     warn(e)
 
-class PlaybackModule(Module):
+class Playback(Module):
     '''
     Module to handle playback of audio and video files.
     '''

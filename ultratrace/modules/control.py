@@ -4,7 +4,7 @@ from ..util.logging import *
 
 from tkinter import *
 
-class ControlModule(Module):
+class Control(Module):
     '''
     This class provides a clean interface for managing Undo/Redo functionality.
     Implementation relies on storing two lists of actions as stacks, one for Undo

@@ -17,7 +17,7 @@ try:
 except ImportError as e:
     warn(e)
 
-class SpectrogramModule(Module):
+class Spectrogram(Module):
     def __init__(self,app):
         info( ' - initializing module: Spectrogram' )
 

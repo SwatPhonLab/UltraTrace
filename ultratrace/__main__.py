@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from .modules import *
+import modules
 from . import util
 from .util.logging import *
-from .widgets import *
+from .widgets import Header
 
 import argparse
 import os
@@ -65,26 +65,26 @@ class App(ThemedTk):
 		args = parser.parse_args()
 
 		# initialize data module
-		self.Data = MetadataModule( self, args.path )
+		self.Data = modules.Metadata( self, args.path )
 
 		# initialize the main app widgets
 		self.setWidgetDefaults()
 		self.buildWidgetSkeleton()
 
 		# initialize other modules
-		self.Control = ControlModule(self)
-		self.Trace = TraceModule(self)
-		self.Dicom = DicomModule(self)
-		self.Audio = PlaybackModule(self)
-		self.TextGrid = TextGridModule(self)
-		self.Spectrogram = SpectrogramModule(self)
-		self.Search = SearchModule(self)
+		self.Control = modules.Control(self)
+		self.Trace = modules.Trace(self)
+		self.Dicom = modules.Dicom(self)
+		self.Audio = modules.Playback(self)
+		self.TextGrid = modules.TextGrid(self)
+		self.Spectrogram = modules.Spectrogram(self)
+		self.Search = modules.Search(self)
 
 		info( ' - loading widgets' )
 
 		self.filesUpdate()
 		# self.framesUpdate()
-		# self.TextGrid.startup() #NOTE why does TextGridModule have to reset a second time? Is there a more economical way to do this?
+		# self.TextGrid.startup() #NOTE why does modules.TextGrid have to reset a second time? Is there a more economical way to do this?
 
 
 		# to deal with resize handler being called multiple times

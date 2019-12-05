@@ -1,7 +1,7 @@
 from .base import Module
 from .. import util
 from ..util.logging import *
-from ..util.framereader import *
+from ..util.framereader import ULTScanLineReader, DicomReader, LABEL_TO_READER, READERS
 
 import os
 import PIL
@@ -18,7 +18,7 @@ try:
 except ImportError as e:
     warn(e)
 
-class DicomModule(Module):
+class Dicom(Module):
     def __init__(self, app):
         info( ' - initializing module: Dicom')
 

@@ -4,7 +4,7 @@ from ..util.logging import *
 
 from tkinter import *
 
-class SearchModule(Module):
+class Search(Module):
     def __init__(self, app):
         self.app = app
         self.window = None
