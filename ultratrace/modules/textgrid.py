@@ -102,7 +102,7 @@ class TextGrid(Module):
             if filename:
                 try:
                     # try to load up our TextGrid using the textgrid lib
-                    self.TextGrid = self.fromFile( self.app.Data.unrelativize(filename) )
+                    self.TextGrid = self.fromFile( filename )
                 except Exception as e:
                     error(e)
             else:
