@@ -45,6 +45,7 @@ class DicomModule(Module):
                 self.app.bind('<Control-0>', self.zoomReset )
             else: self.app.bind('<Command-0>', self.zoomReset )
             self.reset()
+            self.grid()
 
     def zoomReset(self, fromButton=False):
         '''
@@ -86,7 +87,7 @@ class DicomModule(Module):
             elif self.mode == 'ult':
                 ult = self.app.Data.unrelativize(self.app.Data.getFileLevel('.ult'))
                 meta = self.app.Data.unrelativize(self.app.Data.getFileLevel('US.txt'))
-                self.reader = cls(uls, meta)
+                self.reader = cls(ult, meta)
             self.zframe.resetImageDimensions()
             if self.reader.loaded:
                 self.loadBtn['state'] = DISABLED
@@ -109,6 +110,20 @@ class DicomModule(Module):
 
     def getFrames(self, framenums):
         return [self.reader.getFrame(int(x)) for x in framenums]
+
+    def getFrameTimes(self):
+        if self.reader:
+            return self.reader.getFrameTimes()
+        elif self.mode == 'dicom':
+            rd = DicomReader(self.app.Data.unrelativize(self.app.Data.getFileLevel('.dicom')))
+            return rd.getFrameTimes()
+        elif self.mode == 'ult':
+            rd = ULTScanLineReader(
+              self.app.Data.unrelativize(self.app.Data.getFileLevel('.ult')),
+              self.app.Data.unrelativize(self.app.Data.getFileLevel('US.txt')))
+            return rd.getFrameTimes()
+        else:
+            return [0]
 
     def reset(self):
         '''

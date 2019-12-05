@@ -64,7 +64,8 @@ class MetadataModule(Module):
                 'audio/wav'     :   ['.wav'],
                 'audio/flac'        :   ['.flac'],
                 'application/dicom' :   ['.dicom'],
-                'text/plain'        :   ['.TextGrid']
+                'text/plain'        :   ['.TextGrid', 'US.txt'],
+                'application/octet-stream' : ['.ult']
             }
             files = {}
 
@@ -82,10 +83,13 @@ class MetadataModule(Module):
                     filepath = os.path.relpath(filepath,start=self.path)
 
                     mime_type = Magic(mime=True).from_file(real_filepath)
+                    if mime_type == 'text/plain' and extension == '.txt' and filename.endswith('US'):
+                        filename = filename[:-2]
+                        extension = 'US.txt'
                     if (mime_type == 'text/plain' or mime_type == 'application/json') and extension == '.measurement':
                         debug('Found old measurement file {}'.format(filename))
                         self.importOldMeasurement(real_filepath, filename)
-                    elif mime_type in mime_types:
+                    elif mime_type in MIMEs:
                         # add `good` files
                         if extension in MIMEs[ mime_type ]:
                             if filename not in files:

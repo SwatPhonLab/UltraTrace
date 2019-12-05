@@ -5,6 +5,7 @@ from ..widgets import CanvasTooltip
 
 from tkinter import *
 import decimal
+import tempfile
 
 LIBS_INSTALLED = False
 
@@ -101,7 +102,7 @@ class TextGridModule(Module):
             if filename:
                 try:
                     # try to load up our TextGrid using the textgrid lib
-                    self.TextGrid = TextGrid.fromFile( self.app.Data.unrelativize(filename) )
+                    self.TextGrid = self.fromFile( self.app.Data.unrelativize(filename) )
                 except:
                     pass
             else:
@@ -132,7 +133,10 @@ class TextGridModule(Module):
                 # self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
                 self.TkWidgets = []
                 # iterate the tiers
-                self.frameTierName = self.getFrameTierName()
+                try:
+                    self.frameTierName = self.getFrameTierName()
+                except:
+                    self.genFramesTier()
                 self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
                 for tier in self.TextGrid.getNames():
                     if tier != self.frameTierName and tier != self.frameTierName + '.original':
@@ -218,10 +222,42 @@ class TextGridModule(Module):
 
     def fromFile(self, filename):
         if LIBS_INSTALLED:
-            return TextGrid.fromFile(self.app.Data.unrelativize(filename))
+            try:
+                return TextGrid.fromFile(self.app.Data.unrelativize(filename))
+            except UnicodeDecodeError:
+                pth = self.app.Data.unrelativize(filename)
+                f = open(pth, 'rb')
+                bytes = f.read()
+                f.close()
+                tmp = tempfile.NamedTemporaryFile()
+                found = False
+                for encoding in ['Windows-1251', 'Windows-1252', 'ISO-8859-1']:
+                    try:
+                        s = bytes.decode(encoding)
+                        tmp.write(s.encode('utf-8'))
+                        tmp.seek(0)
+                        found = True
+                        break
+                    except Exception as e:
+                        pass
+                if not found:
+                    raise
+                else:
+                    ret = TextGrid.fromFile(tmp.name)
+                    tmp.close()
+                    return ret
         else:
             error("can't load from file: textgrid lib not installed")
             return None
+
+    def genFramesTier(self):
+        self.frameTierName = 'frames'
+        times = self.app.Dicom.getFrameTimes()
+        tier = PointTier('frames')
+        for f, t in enumerate(times):
+            tier.addPoint(Point(t, str(f)))
+        self.TextGrid.append(tier)
+        self.TextGrid.write(self.app.Data.unrelativize(self.app.Data.getFileLevel( '.TextGrid' )))
 
     @staticmethod
     def isIntervalTier(tier):

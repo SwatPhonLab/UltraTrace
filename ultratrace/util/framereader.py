@@ -6,6 +6,7 @@ import pydicom as dicom
 from PIL import Image, ImageTk, ImageEnhance
 import tempfile
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 import zlib
 import math
 import os
@@ -16,12 +17,19 @@ class FrameReader:
 		self.data = tempfile.TemporaryFile()
 		self.loaded = False
 
-class DicomImgReader(FrameReader):
+class DicomReader(FrameReader):
+	def getFrameTimes(self):
+		dcm = dicom.read_file(self.filename, stop_before_pixels=True)
+		blob = dcm[0x200d,0x3cf4][0][0x200d,0x3cf1][0]
+		headers = blob[0x200d,0x3cfb].value
+		return [int.from_bytes(headers[i:i+4], byteorder='little') for i in range(0, len(headers), 32)]
+
+class DicomImgReader(DicomReader):
 
 	label = 'Read pixel data'
 
 	def __init__(self, filename):
-		FrameReader.__init__(self, filename)
+		DicomReader.__init__(self, filename)
 
 	def load(self):
 		debug('DicomImgReader: reading dicom')
@@ -51,12 +59,12 @@ class DicomImgReader(FrameReader):
 		data = np.ndarray(shape=self.shape[1:], buffer=buf, dtype='uint8')
 		return Image.fromarray(data)
 
-class DicomScanLineReader(FrameReader):
+class DicomScanLineReader(DicomReader):
 
 	label = 'Read unannotated'
 
 	def __init__(self, filename):
-		FrameReader.__init__(self, filename)
+		DicomReader.__init__(self, filename)
 		dcm = dicom.read_file(self.filename, stop_before_pixels=True)
 		blob = dcm[0x200d,0x3cf4][0][0x200d,0x3cf1][0]
 		headers = blob[0x200d,0x3cfb].value
@@ -80,12 +88,12 @@ class DicomScanLineReader(FrameReader):
 	def getFrame(self, framenum):
 		return Image.fromarray(self.frames[framenum-1], 'L')
 
-class DicomPNGReader(FrameReader):
+class DicomPNGReader(DicomReader):
 
 	label = 'Extract to PNGs'
 
 	def __init__(self, filename):
-		FrameReader.__init__(self, filename)
+		DicomReader.__init__(self, filename)
 		name = os.path.splitext(os.path.basename(filename))[0]
 		self.png_dir = os.path.join(
 			os.path.dirname(os.path.abspath(filename)),
@@ -129,7 +137,48 @@ class ULTScanLineReader(FrameReader):
 	label = 'Read scan line data'
 
 	def __init__(self, data, metadata):
+		FrameReader.__init__(self, data)
+		f = open(data, 'rb')
+		self.data.write(f.read())
+		f.close()
+		f = open(metadata)
+		for l in f.readlines():
+			k, v = l.strip().split('=')
+			if ',' in v:
+				self.__dict__[k] = float(v.replace(',', '.'))
+			else:
+				self.__dict__[k] = int(v)
+		f.close()
+		self.loaded = True
+		self.radspace = np.linspace(self.ZeroOffset, self.ZeroOffset+self.PixPerVector, num=self.PixPerVector)
+		total = self.Angle * self.NumVectors
+		self.thetaspace = np.linspace((math.pi + total) / 2, (math.pi - total) / 2, num=self.NumVectors)
+		self.FrameSize = self.NumVectors * self.PixPerVector
+		self.data.seek(0, os.SEEK_END)
+		self.FrameCount = self.data.tell() // self.FrameSize
+		self.figure = plt.figure()
+
+	def load(self):
 		pass
+
+	def getFrame(self, framenum):
+		self.data.seek(self.FrameSize * (framenum - 1))
+		byt = self.data.read(self.FrameSize)
+		data = np.ndarray(shape=(self.NumVectors, self.PixPerVector), buffer=byt, dtype='uint8').swapaxes(0,1)
+		ax = self.figure.add_subplot(111, polar='True')
+		ax.axis('off')
+		ax.set_thetamin(0)
+		ax.set_thetamax(180)
+		ax.pcolormesh(self.thetaspace, self.radspace, data, cmap='gray')
+		canvas = FigureCanvasAgg(self.figure)
+		canvas.draw()
+		ret = Image.frombytes('RGBA', canvas.get_width_height(), canvas.tostring_argb())
+		plt.clf()
+		return ret
+
+	def getFrameTimes(self):
+		inc = 1.0 / self.FramesPerSec
+		return [self.TimeInSecsOfFirstFrame + i * inc for i in range(self.FrameCount)]
 
 READERS = {
 	'dicom': [DicomImgReader, DicomScanLineReader, DicomPNGReader],
