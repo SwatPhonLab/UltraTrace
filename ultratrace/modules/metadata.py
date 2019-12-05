@@ -179,7 +179,8 @@ class Metadata(Module):
         processed = self.getFileLevel( 'processed' )
         try:
             return self.unrelativize(processed[str(frame)])
-        except: # catches missing frames and missing preprocessed data
+        except Exception as e: # catches missing frames and missing preprocessed data
+            error(e)
             return None
 
     def getTopLevel( self, key ):

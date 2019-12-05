@@ -103,8 +103,8 @@ class TextGrid(Module):
                 try:
                     # try to load up our TextGrid using the textgrid lib
                     self.TextGrid = self.fromFile( self.app.Data.unrelativize(filename) )
-                except:
-                    pass
+                except Exception as e:
+                    error(e)
             else:
                 #debug(self.app.Audio.duration)
                 minTime = 0.
@@ -135,7 +135,8 @@ class TextGrid(Module):
                 # iterate the tiers
                 try:
                     self.frameTierName = self.getFrameTierName()
-                except:
+                except Exception as e:
+                    error(e)
                     self.genFramesTier()
                 self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
                 for tier in self.TextGrid.getNames():
@@ -154,7 +155,7 @@ class TextGrid(Module):
                 self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
                 self.endFrame = self.lastFrame
             except Exception as e:
-                error(str(e))
+                error(e)
 
             self.grid()
 
@@ -215,8 +216,8 @@ class TextGrid(Module):
                     self.startFrame = self.firstFrame
                     self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
                     self.endFrame = self.lastFrame
-                except:
-                    pass
+                except Exception as e:
+                    error(e)
             # self.grid()
 
     def fromFile(self, filename):
@@ -238,7 +239,7 @@ class TextGrid(Module):
                         found = True
                         break
                     except Exception as e:
-                        pass
+                        error(e)
                 if not found:
                     raise
                 else:

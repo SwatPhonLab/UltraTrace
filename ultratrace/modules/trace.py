@@ -196,8 +196,8 @@ class Trace(Module):
 
         try:
             return self.listbox.get(self.listbox.curselection())
-        except:# _tkinter.TclError:
-            error( 'Can\'t select from empty listbox!' )
+        except Exception as e: # tkinter.TclError?
+            error('Can\'t select from empty listbox!', e)
     def setDefaultTraceName(self):
         '''
         wrapper for changing the default trace

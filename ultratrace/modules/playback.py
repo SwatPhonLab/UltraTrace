@@ -82,8 +82,8 @@ class Playback(Module):
                 self.current = audiofile
                 self.duration = len(self.sfile)/1000.0
                 return True
-            except:
-                error('Unable to load audio file: `%s`' % audiofile)
+            except Exception as e:
+                error('Unable to load audio file: `%s`' % audiofile, e)
                 return False
 
     def playpauseAV(self, event):
@@ -275,7 +275,8 @@ class Playback(Module):
             # canvas.lift(pic)
             # canvas.img = pic
             canvas.update()
-        except: pass
+        except Exception as e:
+            error(e)
         # debug(pic, 'displayed')
         # debug(self.dicomframe_num+self.framestart, 'displayed')
         if not self.stoprequest.is_set() or not self.dicomframeQ.empty(): #should this if be at the top?
