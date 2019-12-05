@@ -1,6 +1,8 @@
 from .logging import *
 from . import *
 
+from abc import ABC, abstractmethod
+
 import numpy as np
 import pydicom as dicom
 from PIL import Image, ImageTk, ImageEnhance
@@ -11,11 +13,23 @@ import zlib
 import math
 import os
 
-class FrameReader:
+class FrameReader(ABC):
 	def __init__(self, filename):
 		self.filename = filename
 		self.data = tempfile.TemporaryFile()
 		self.loaded = False
+
+	@abstractmethod
+	def load(self):
+		pass
+
+	@abstractmethod
+	def getFrame(self, framenum):
+		pass
+
+	@abstractmethod
+	def getFrameTimes(self):
+		pass
 
 class DicomReader(FrameReader):
 	def getFrameTimes(self):
@@ -159,7 +173,7 @@ class ULTScanLineReader(FrameReader):
 		self.figure = plt.figure()
 
 	def load(self):
-		pass
+		raise NotImplementedError()
 
 	def getFrame(self, framenum):
 		self.data.seek(self.FrameSize * (framenum - 1))
