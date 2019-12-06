@@ -2,6 +2,8 @@ from .textgrid import TextGrid
 from .base import Module
 from ..util.logging import *
 
+import re
+
 from tkinter import Button, Entry, Label, Scrollbar, Toplevel, StringVar
 from tkinter.ttk import Treeview
 
