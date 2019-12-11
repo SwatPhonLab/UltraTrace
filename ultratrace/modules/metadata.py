@@ -21,6 +21,9 @@ class Metadata(Module):
         if path == None:
             app.update()
             path = filedialog.askdirectory(initialdir=os.getcwd(), title="Choose a directory")
+            if not path:
+                error("No directory chosen - exiting")
+                exit(1)
 
         debug( '   - parsing directory: `%s`' % path )
 
