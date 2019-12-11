@@ -6,7 +6,7 @@
 # Windows.
 
 if [ $# -eq 1 ] ; then
-  P=$(realpath "$1")
+  P=$(readlink -f . "$1")
 fi
 
 

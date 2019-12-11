@@ -83,17 +83,25 @@ class Dicom(Module):
         if self.mode:
             cls = LABEL_TO_READER[self.mode][self.method.get()]
             if self.mode == 'dicom':
-                dcm = self.app.Data.unrelativize(self.app.Data.getFileLevel('.dicom'))
-                if cls == DicomPNGReader and self.app.Data.getFileLevel('processed'):
-                  self.reader = cls(dcm, self.app.Data.path)
+                dcm = self.app.checkFileLevel('.dicom')
+                if dcm:
+                  if cls == DicomPNGReader and self.app.Data.getFileLevel('processed'):
+                    self.reader = cls(dcm, self.app.Data.path)
+                  else:
+                    self.reader = cls(dcm)
                 else:
-                  self.reader = cls(dcm)
+                  self.reader = None
             elif self.mode == 'ult':
-                ult = self.app.Data.unrelativize(self.app.Data.getFileLevel('.ult'))
-                meta = self.app.Data.unrelativize(self.app.Data.getFileLevel('US.txt'))
-                self.reader = cls(ult, meta)
+                ult = self.app.Data.checkFileLevel('.ult')
+                meta = self.app.Data.checkFileLevel('US.txt')
+                if ult and meta:
+                    self.reader = cls(ult, meta)
+                else:
+                    self.reader = None
             self.zframe.resetImageDimensions()
-            if self.reader.loaded:
+            if self.reader:
+                self.loadBtn['state'] = 'disabled'
+            elif self.reader.loaded:
                 self.loadBtn['state'] = 'disabled'
                 self.update()
             else:

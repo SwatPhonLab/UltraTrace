@@ -235,6 +235,19 @@ class Metadata(Module):
         '''make from a relative path into non-relative path'''
         return os.path.join(self.path, fil)
 
+    def checkFileLevel(self, key, _fileid=None, shoulderror=True):
+        '''getFileLevel, unrelativize, and make sure it exists'''
+        val = self.getFileLevel(key, _fileid)
+        if not val:
+            return None
+        pth = self.unrelativize(val)
+        if os.path.exists(pth):
+            return pth
+        else:
+            if shoulderror:
+                error('%s does not exist' % pth)
+            return None
+
     def setFileLevel( self, key, value, _fileid=None ):
         '''
         Set file-level metadata
