@@ -12,6 +12,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 import zlib
 import math
 import os
+import decimal
 
 class FrameReader(ABC):
 	def __init__(self, filename):
@@ -36,7 +37,14 @@ class DicomReader(FrameReader):
 		dcm = dicom.read_file(self.filename, stop_before_pixels=True)
 		blob = dcm[0x200d,0x3cf4][0][0x200d,0x3cf1][0]
 		headers = blob[0x200d,0x3cfb].value
-		return [int.from_bytes(headers[i:i+4], byteorder='little') for i in range(0, len(headers), 32)]
+		offset = decimal.Decimal(int.from_bytes(headers[:4], byteorder='little')) / 1000000
+		return [decimal.Decimal(int.from_bytes(headers[i:i+4], byteorder='little')) / 1000000 - offset for i in range(0, len(headers), 32)]
+
+	def load(self):
+		pass
+
+	def getFrame(self, framenum):
+		pass
 
 class DicomImgReader(DicomReader):
 

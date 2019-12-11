@@ -56,7 +56,7 @@ class Search(Module):
         self.intervals = []
         for f in range(filecount):
             filename = self.app.Data.getFileLevel('name', f)
-            tg = self.app.Data.getFileLevel('.TextGrid', f)
+            tg = self.app.Data.checkFileLevel('.TextGrid', f)
             if tg:
                 grid = self.app.TextGrid.fromFile(tg)
                 for tier in grid:

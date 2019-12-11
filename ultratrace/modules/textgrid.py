@@ -95,41 +95,15 @@ class TextGrid(Module):
         '''
         if LIBS_INSTALLED:
             # default Label in case there are errors below
-            self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
-            # the Data module will pass this filename=None if it can't find an appropriate .TextGrid file
-            filename = self.app.Data.getFileLevel( '.TextGrid' )
-            # debug(filename)
-            if filename:
-                try:
-                    # try to load up our TextGrid using the textgrid lib
-                    self.TextGrid = self.fromFile( filename )
-                except Exception as e:
-                    error(e)
-            else:
-                #debug(self.app.Audio.duration)
-                minTime = 0.
-                try:
-                    maxTime = self.app.Audio.duration
-                except AttributeError:
-                    self.app.Audio.reset()
-                    maxTime = self.app.Audio.duration
-                self.TextGrid = TextGridFile(maxTime=maxTime)
-                self.TkWidgets = []
-                sentenceTier = IntervalTier("text")
-                sentenceTier.add(minTime, maxTime, "text")
-                self.TextGrid.tiers.append(sentenceTier)
-                self.genFramesTier()
+            # self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
+            self.loadOrGenerate()
 
             try:
                 # reset default Label to actually be useful
                 # self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
                 self.TkWidgets = []
                 # iterate the tiers
-                try:
-                    self.frameTierName = self.getFrameTierName()
-                except Exception as e:
-                    error(e)
-                    self.genFramesTier()
+                self.frameTierName = self.getFrameTierName()
                 self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
                 for tier in self.TextGrid.getNames():
                     if tier != self.frameTierName and tier != self.frameTierName + '.original':
@@ -169,56 +143,44 @@ class TextGrid(Module):
         #   for child in wframe.winfo_children():
         #       child.destroy()
         if LIBS_INSTALLED:
-            # default Label in case there are errors below
-            # self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
-            # the Data module will pass this filename=None if it can't find an appropriate .TextGrid file
-            filename = self.app.Data.getFileLevel( '.TextGrid' )
-            # debug(filename)
-            if filename:
-                try:
-                    # try to load up our TextGrid using the textgrid lib
-                    self.TextGrid = self.fromFile(filename)
-                    # reset default Label to actually be useful
-                    # self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
-                    # self.TkWidgets = []
-                    # iterate the tiers
-                    self.frameTierName = self.getFrameTierName()
-                    self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
-                    # for tier in self.TextGrid.getNames():
-                    #   if tier != self.frameTierName and tier != self.frameTierName + '.original':
-                    #       # make some widgets for each tier
-                    #       tierWidgets = self.makeTierWidgets( tier )
-                    #       self.TkWidgets.append( tierWidgets )
-                    self.start = self.TextGrid.minTime
-                    self.end = self.TextGrid.maxTime
-                    self.current = self.TextGrid.getFirst(self.frameTierName)[self.app.frame-1].time
-                    #make other widgets
-                    # self.makeFrameWidget()
-                    #reset offset
-                    offset = self.app.Data.getFileLevel( 'offset' )
-                    if offset != None:
-                        self.frame_shift.set(offset)
-                    else:
-                        self.frame_shift.set(0)
-                    # self.makeTimeWidget()
-                    #put items on canvases
-                    self.fillCanvases()
-                    #calculate first and last frames
-                    self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark) + 1
-                    self.startFrame = self.firstFrame
-                    self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
-                    self.endFrame = self.lastFrame
-                except Exception as e:
-                    error(e)
+            self.loadOrGenerate()
+            try:
+                self.frameTierName = self.getFrameTierName()
+                self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
+                # for tier in self.TextGrid.getNames():
+                #   if tier != self.frameTierName and tier != self.frameTierName + '.original':
+                #       # make some widgets for each tier
+                #       tierWidgets = self.makeTierWidgets( tier )
+                #       self.TkWidgets.append( tierWidgets )
+                self.start = self.TextGrid.minTime
+                self.end = self.TextGrid.maxTime
+                self.current = self.TextGrid.getFirst(self.frameTierName)[self.app.frame-1].time
+                #make other widgets
+                # self.makeFrameWidget()
+                #reset offset
+                offset = self.app.Data.getFileLevel( 'offset' )
+                if offset != None:
+                    self.frame_shift.set(offset)
+                else:
+                    self.frame_shift.set(0)
+                # self.makeTimeWidget()
+                #put items on canvases
+                self.fillCanvases()
+                #calculate first and last frames
+                self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark) + 1
+                self.startFrame = self.firstFrame
+                self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
+                self.endFrame = self.lastFrame
+            except Exception as e:
+                error(e)
             # self.grid()
 
     def fromFile(self, filename):
         if LIBS_INSTALLED:
             try:
-                return TextGridFile.fromFile(self.app.Data.unrelativize(filename))
+                return TextGridFile.fromFile(filename)
             except UnicodeDecodeError:
-                pth = self.app.Data.unrelativize(filename)
-                f = open(pth, 'rb')
+                f = open(filename, 'rb')
                 bytes = f.read()
                 f.close()
                 tmp = tempfile.NamedTemporaryFile()
@@ -241,6 +203,31 @@ class TextGrid(Module):
         else:
             error("can't load from file: textgrid lib not installed")
             return None
+
+    def loadOrGenerate(self):
+        fname = self.app.Data.checkFileLevel('.TextGrid', shoulderror=False)
+        if fname:
+            self.TextGrid = self.fromFile(fname)
+        else:
+            minTime = 0.
+            if not hasattr(self.app.Audio, 'duration'):
+                self.app.Audio.reset()
+            maxTime = self.app.Audio.duration
+            self.TextGrid = TextGridFile(maxTime=maxTime)
+            sentenceTier = IntervalTier("text")
+            sentenceTier.add(minTime, maxTime, "text")
+            self.TextGrid.tiers.append(sentenceTier)
+            fname = self.app.Data.unrelativize(self.app.Data.getCurrentFileName() + '.TextGrid')
+            self.app.Data.setFileLevel('.TextGrid', fname)
+        names = self.TextGrid.getNames()
+        for i, n in enumerate(names):
+            if n in ALIGNMENT_TIER_NAMES:
+                if len(self.TextGrid[i]) == 0:
+                    self.TextGrid.pop(i)
+                    break
+                else:
+                    return
+        self.genFramesTier()
 
     def genFramesTier(self):
         debug('generating frames tier')
