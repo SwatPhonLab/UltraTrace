@@ -5,6 +5,15 @@
 # This _should_ support both MacOS and Linux, but not
 # Windows.
 
-cd "$(dirname "$(readlink $0)")"
+if [ $# -eq 1 ] ; then
+  P=$(realpath "$1")
+fi
+
+
+cd "$(dirname "$(readlink "$0")")" || exit
 [[ "$(basename "$(pwd)")" == bin ]] && cd ..
-python3 -m ultratrace $@
+if [ $# -eq 1 ] ; then
+  python3 -m ultratrace "$P"
+else
+  python3 -m ultratrace "$@"
+fi
