@@ -6,9 +6,8 @@
 # Windows.
 
 if [ $# -eq 1 ] ; then
-  P=$(readlink -f . "$1")
+  P=$(readlink -f "$1")
 fi
-
 
 cd "$(dirname "$(readlink "$0")")" || exit
 [[ "$(basename "$(pwd)")" == bin ]] && cd ..
