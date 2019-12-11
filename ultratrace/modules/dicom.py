@@ -1,7 +1,7 @@
 from .base import Module
 from .. import util
 from ..util.logging import *
-from ..util.framereader import ULTScanLineReader, DicomReader, LABEL_TO_READER, READERS
+from ..util.framereader import ULTScanLineReader, DicomReader, DicomPNGReader, LABEL_TO_READER, READERS
 
 import os
 import PIL
@@ -83,7 +83,11 @@ class Dicom(Module):
         if self.mode:
             cls = LABEL_TO_READER[self.mode][self.method.get()]
             if self.mode == 'dicom':
-                self.reader = cls(self.app.Data.unrelativize(self.app.Data.getFileLevel('.dicom')))
+                dcm = self.app.Data.unrelativize(self.app.Data.getFileLevel('.dicom'))
+                if cls == DicomPNGReader and self.app.Data.getFileLevel('processed'):
+                  self.reader = cls(dcm, self.app.Data.path)
+                else:
+                  self.reader = cls(dcm)
             elif self.mode == 'ult':
                 ult = self.app.Data.unrelativize(self.app.Data.getFileLevel('.ult'))
                 meta = self.app.Data.unrelativize(self.app.Data.getFileLevel('US.txt'))

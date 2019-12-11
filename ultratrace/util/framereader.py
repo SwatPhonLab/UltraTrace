@@ -106,13 +106,15 @@ class DicomPNGReader(DicomReader):
 
 	label = 'Extract to PNGs'
 
-	def __init__(self, filename):
+	def __init__(self, filename, png_dir=None):
 		DicomReader.__init__(self, filename)
 		name = os.path.splitext(os.path.basename(filename))[0]
-		self.png_dir = os.path.join(
-			os.path.dirname(os.path.abspath(filename)),
-			name + '_dicom_to_png'
-		)
+		if png_dir:
+			dr = os.path.abspath(png_dir)
+		else:
+			dr = os.path.dirname(os.path.abspath(png_dir or filename))
+		self.png_dir = os.path.join(dr, name + '_dicom_to_png')
+		info(self.png_dir)
 		self.png_name = os.path.join(self.png_dir, name + '_frame_%04d.png')
 		self.loaded = os.path.exists(self.png_dir)
 
