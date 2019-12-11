@@ -146,7 +146,11 @@ class DicomPNGReader(DicomReader):
 		self.loaded = True
 
 	def getFrame(self, framenum):
-		return Image.open(self.png_name % framenum)
+		try:
+			return Image.open(self.png_name % framenum)
+		except FileNotFoundError:
+			error('file %s does not exist' % (self.png_name % framenum))
+			return None
 
 class ULTScanLineReader(FrameReader):
 

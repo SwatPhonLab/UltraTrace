@@ -100,8 +100,9 @@ class ZoomFrame(Frame):
         self.showImage()
 
     def showImage(self, event=None):
+        # even if we're not showing a new frame, we want to remove the old one
+        self.canvas.delete('delendum')
         if self.image != None:
-            self.canvas.delete('delendum')
             self.container = self.canvas.create_rectangle(0,0,self.width,self.height,width=0, tags='delendum')
             self.canvas.scale('all', 0, 0, self.imgscale, self.imgscale)
             self.canvas.move('all', self.panX, self.panY)

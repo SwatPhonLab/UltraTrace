@@ -99,16 +99,6 @@ class Dicom(Module):
             else:
                 self.loadBtn['state'] = 'normal'
 
-    # @profile
-    def process(self):
-        '''
-        perform the dicom->PNG operation
-        '''
-        self.frametime = self.dicom.get('FrameTime')
-        self.numframes = self.dicom.get('NumberOfFrames')
-        self.app.Data.setFileLevel('FrameTime', self.frametime)
-        self.app.Data.setFileLevel('NumberOfFrames', self.numframes)
-
     def isLoaded(self):
         return self.reader and self.reader.loaded
 
@@ -151,7 +141,7 @@ class Dicom(Module):
 
         self.methodMenu = OptionMenu(self.frame, self.method, *[x.label for x in READERS[self.mode]] or ['[no ultrasound]'], command=self.chooseMethod)
         self.methodMenu.grid(row=0)
-        self.loadBtn = Button(self.frame, text='Load frames', command=self.load, takefocus=0)
+        self.loadBtn = Button(self.frame, text='Load frames', command=self.load, takefocus=0, state='disabled')
         self.loadBtn.grid(row=1)
 
     def grid(self):
