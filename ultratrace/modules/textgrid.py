@@ -2,6 +2,7 @@ from .base import Module
 from .. import util
 from ..util.logging import *
 from ..widgets import CanvasTooltip
+import copy
 
 from tkinter import Button, Canvas, Frame, Label, Spinbox, StringVar, DoubleVar
 import decimal
