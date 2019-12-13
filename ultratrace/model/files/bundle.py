@@ -59,7 +59,7 @@ class FileBundleList:
                     bundles[name] = FileBundle(name)
 
                 if not bundles[name].interpret(filepath):
-                    utils.warn(f'unrecognized filetype: {path}')
+                    utils.warn(f'unrecognized filetype: {filepath}')
 
         # FIXME: do this when we add to our data structure
         for filename, bundle in bundles.items():
