@@ -1,18 +1,25 @@
-import utils
+from tkinter.filedialog import askdirectory as choose_dir
 
-from io_ import IO
-from gui import GUI
-from model import Model
+from . import utils
+from .gui import GUI
+from .model.project import Project
 
 class App:
     def __init__(self, args):
 
-        self.io = IO(self, args)
-        self.model = Model(self, args)
-        self.gui = GUI(self, args)
+        if args.path is None:
+            path = choose_dir()
+            if not path:
+                raise ValueError('You must choose a directory to open')
+        else:
+            path = args.path
+
+        self.project = Project(path)
+        #self.gui = GUI(self, args)
 
     def main(self):
+        pass
         #self.gui.mainloop()
-        self.gui.quit()
+        #self.gui.quit()
 
 

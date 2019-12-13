@@ -1,12 +1,12 @@
 import argparse
 
-from app import App
+from .app import App
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--path',
+    parser.add_argument('path',
             default=None,
             help='path (unique to a participant) where subdirectories contain raw data')
     parser.add_argument('--no-audio',

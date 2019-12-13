@@ -1,4 +1,4 @@
-import utils
+from .. import utils
 
 from .themes import ThemedTk, get_theme
 from .widgets import ALIGN_HORIZONTAL, ALIGN_VERTICAL
