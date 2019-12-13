@@ -15,7 +15,7 @@ class App:
             path = args.path
 
         self.project = Project(path)
-        #self.gui = GUI(self, args)
+        self.gui = GUI(self, theme=args.theme)
 
     def main(self):
         pass

@@ -13,18 +13,18 @@ from .widgets.undo import Undo
 from .widgets.video import Video
 
 class GUI(ThemedTk):
-    def __init__(self, app, args):
+    def __init__(self, app, theme=None):
 
         self.app = app
 
-        self.audio = Audio(app, args)
-        self.control = Control(app, args)
-        self.dicom = Dicom(app, args)
-        self.spectrogram = Spectrogram(app, args)
-        self.textgrid = TextGrid(app, args)
-        self.trace = Trace(app, args)
-        self.undo = Undo(app, args)
-        self.video = Video(app, args)
+        self.audio = Audio(app)
+        self.control = Control(app)
+        self.dicom = Dicom(app)
+        self.spectrogram = Spectrogram(app)
+        self.textgrid = TextGrid(app)
+        self.trace = Trace(app)
+        self.undo = Undo(app)
+        self.video = Video(app)
 
         self.root = Container(app, ALIGN_VERTICAL,
             Container(app, ALIGN_HORIZONTAL,
@@ -42,7 +42,7 @@ class GUI(ThemedTk):
         )
 
         if hasattr(super(), 'set_theme'):
-            theme = get_theme(args.theme)
+            theme = get_theme(theme)
             if theme is not None:
                 utils.info('Using TtkTheme: ' + theme)
                 super().__init__(theme=theme)
