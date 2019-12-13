@@ -23,7 +23,13 @@ class FileBundle:
         return f'Bundle("{self.name}",{self.alignment_file},{self.image_file},{self.sound_file})'
 
 class FileBundleList:
-    def __init__(self, path):
+    exclude_dirs = set([ '.git', 'node_modules', '__pycache__', ]) # FIXME: add more ignoreable dirs
+    def __init__(self, path, extra_exclude_dirs=[]):
+
+        # FIXME: implement `extra_exclude_dirs` as a command-line arg
+        for extra_exclude_dir in extra_exclude_dirs:
+            exclude_dirs.add(extra_exclude_dir)
+
         self.path = path
         self.has_alignment_impl = False
         self.has_image_impl = False
@@ -33,7 +39,13 @@ class FileBundleList:
         #self.bundles = ??? # FIXME: decide on a data structure
 
         bundles = {}
-        for path, _, filenames in os.walk(path):
+
+        # NB: `topdown=True` increases runtime cost from O(n) -> O(n^2), but it allows us to
+        #     modify `dirs` in-place so that we can skip certain directories.  For more info,
+        #     see https://stackoverflow.com/questions/19859840/excluding-directories-in-os-walk
+        for path, dirs, filenames in os.walk(path, topdown=True):
+            dirs[:] = [ d for d in dirs if d not in self.exclude_dirs ]
+
             for filename in filenames:
 
                 name, _ = os.path.splitext(filename)
