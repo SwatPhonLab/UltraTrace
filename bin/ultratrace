@@ -2,8 +2,8 @@
 #
 # Executable wrapper around the ultratrace module so
 # that it can be executed from anywhere on the system.
-# This _should_ support both MacOS and Linux, but not
-# Windows.
+# This _should_ support both MacOS and Linux, but Windows
+# has not been tested.
 
 # Exit early if any of our commands fail.
 set -euo pipefail
@@ -12,13 +12,18 @@ __realpath() {
     # It looks like getting readlink(1) and/or realpath(1) to work in
     # a reliable cross-platform way is probably difficult ... so let's
     # just let Python do it for us :^)
-    python3 -c "import os; print(os.path.realpath('$1'))"
+    python3 -c "import os; print(os.path.realpath('$0'))"
 }
 
-# `cd` to the repository root.
-cd "$(basename "$(__realpath "$0")")/.."
+# We want the script to be able to invoke our module without actually `cd`ing
+# to it, since that would screw up any relative paths we pass as arguments. To
+# get around this, we can set the python module search path explicitly via the
+# $PYTHONPATH environment variable (see below).  This line just makes sure that
+# the invocation via `/path/to/bin/ultratrace` works the same as `ultratrace`
+# (i.e., after running `bin/install`.
+ULTRATRACE_DIR="$(dirname "$(__realpath "$0")")/.."
 
 # Pass all arguments through to `ultratrace`.  We should be letting the
 # argparse section of `__main__.py` be handling errors and generating nice
 # user-facing text.
-python3 -m ultratrace "$@"
+PYTHONPATH="$ULTRATRACE_DIR:${PYTHONPATH:-}" python3 -m ultratrace "$@"
