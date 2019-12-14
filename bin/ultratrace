@@ -12,7 +12,7 @@ __realpath() {
     # It looks like getting readlink(1) and/or realpath(1) to work in
     # a reliable cross-platform way is probably difficult ... so let's
     # just let Python do it for us :^)
-    python3 -c "import os; print(os.path.realpath('$0'))"
+    python3 -c "import os; print(os.path.realpath('$1'))"
 }
 
 # We want the script to be able to invoke our module without actually `cd`ing
