@@ -3,6 +3,7 @@ from typing import Optional
 from uuid import uuid4
 from .color import Color, get_random_color, RED
 
+
 class Trace:
     def __init__(self, name: str, color: Optional[Color] = None):
         self.id = uuid4()
@@ -21,6 +22,7 @@ class Trace:
         old_name = self.name
         self.name = new_name
         return old_name
+
 
 class TraceList:
     pass

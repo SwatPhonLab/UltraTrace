@@ -7,8 +7,10 @@ from typing import Dict, List, Optional, Type
 
 from ... import utils
 
+
 class FileLoadError(Exception):
     pass
+
 
 class TypedFile(ABC):
 
@@ -21,7 +23,7 @@ class TypedFile(ABC):
     def preferred_impls() -> List:
         pass
 
-    def __new__(cls) -> TypedFile:
+    def __new__(cls) -> Type['TypedFile']:
         cls.impls = OrderedDict()
         for impl_type in cls.preferred_impls:
             cls.impls[impl_type] = None
@@ -58,6 +60,7 @@ class TypedFile(ABC):
 
     def __repr__(self):
         return f'{type(self).__name__}({self.impl})'
+
 
 class TypedFileImpl(ABC):
 

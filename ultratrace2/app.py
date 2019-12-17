@@ -4,6 +4,7 @@ from . import utils
 from .gui import GUI
 from .model.project import Project
 
+
 class App:
     def __init__(self, args): # FIXME: be more granular here
 
@@ -19,7 +20,3 @@ class App:
 
     def main(self):
         pass
-        #self.gui.mainloop()
-        #self.gui.quit()
-
-

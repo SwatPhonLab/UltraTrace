@@ -1,10 +1,11 @@
 import os
 
 from collections import defaultdict
-from typing import List, Set
+from typing import Dict, List, Set
 
 from .impls import Sound, Alignment, ImageSet
 from ... import utils
+
 
 class FileBundle:
     def __init__(self, name: str):
@@ -16,7 +17,7 @@ class FileBundle:
     def interpret(self, path: str): # FIXME: add signature
         return self.alignment_file.interpret(path) \
                 or self.image_file.interpret(path) \
-                or self.sound_file.interpret(path)
+                or self.sound_file.interpret(path) # noqa: E126
 
     def has_impl(self) -> bool:
         return self.alignment_file.has_impl or self.image_file.has_impl or self.sound_file.has_impl
@@ -24,15 +25,21 @@ class FileBundle:
     def __repr__(self):
         return f'Bundle("{self.name}",{self.alignment_file},{self.image_file},{self.sound_file})'
 
+
 class FileBundleList:
 
-    exclude_dirs: Set[str] = set([ '.git', 'node_modules', '__pycache__', ]) # FIXME: add more ignoreable dirs
+    exclude_dirs: Set[str] = set([
+        '.git',
+        'node_modules',
+        '__pycache__',
+        # FIXME: add more ignoreable dirs
+    ])
 
     def __init__(self, path: str, extra_exclude_dirs: List[str] = []):
 
         # FIXME: implement `extra_exclude_dirs` as a command-line arg
         for extra_exclude_dir in extra_exclude_dirs:
-            exclude_dirs.add(extra_exclude_dir)
+            self.exclude_dirs.add(extra_exclude_dir)
 
         self.path = path
         self.has_alignment_impl = False
@@ -47,7 +54,7 @@ class FileBundleList:
         #     modify `dirs` in-place so that we can skip certain directories.  For more info,
         #     see https://stackoverflow.com/questions/19859840/excluding-directories-in-os-walk
         for path, dirs, filenames in os.walk(path, topdown=True):
-            dirs[:] = [ d for d in dirs if d not in self.exclude_dirs ]
+            dirs[:] = [d for d in dirs if d not in self.exclude_dirs]
 
             for filename in filenames:
 

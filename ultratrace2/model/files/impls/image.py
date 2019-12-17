@@ -8,6 +8,7 @@ from tqdm import tqdm
 from .... import utils
 from ..ADT import FileLoadError, TypedFile, TypedFileImpl
 
+
 class ImageSet(TypedFile):
 
     class DICOM(TypedFileImpl):
@@ -40,7 +41,7 @@ class ImageSet(TypedFile):
                 if pixels.shape[0] == 3:
                     # RGB-first
                     rgb, frames, rows, columns = pixels.shape
-                    pixels.reshape( (frames, rows, columns, rgb) )
+                    pixels.reshape((frames, rows, columns, rgb))
                 elif pixels.shape[3] == 3:
                     # RGB-last
                     frames, rows, columns, rgb = pixels.shape
@@ -53,7 +54,7 @@ class ImageSet(TypedFile):
             os.mkdir(self.png_path)
             for i in tqdm(range(frames), desc='converting to PNG'):
                 filename = os.path.join(self.png_path, f'{i:06}.png')
-                arr = pixels[ i,:,: ] if is_greyscale else pixels[ i,:,:,: ]
+                arr = pixels[i, :, :] if is_greyscale else pixels[i, :, :, :]
                 img = PIL.Image.fromarray(arr)
                 img.save(filename, format='PNG', compress_level=1)
 

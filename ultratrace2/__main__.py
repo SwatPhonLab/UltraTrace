@@ -6,6 +6,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
+    # noqa: E128
     parser.add_argument('path',
             default=None,
             help='path (unique to a participant) where subdirectories contain raw data')

@@ -3,6 +3,7 @@ import os
 from .trace import TraceList
 from .files.bundle import FileBundleList
 
+
 class Project:
     def __init__(self, path: str):
         if not os.path.exists(path):
