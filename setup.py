@@ -21,5 +21,13 @@ setup(
     ),
     description="A tool for manually annotating ultrasound tongue imaging (UTI) data",
     install_requires=get_requirements("requirements.txt"),
-    extras_require={"dev": ["flake8", "black", "mypy", "pytest"]},
+    extras_require={
+        "dev": [
+            "flake8",
+            "black",
+            "mypy",
+            "pytest",
+            "numpy-stubs @ git+https://github.com/numpy/numpy-stubs.git@master",
+        ]
+    },
 )
