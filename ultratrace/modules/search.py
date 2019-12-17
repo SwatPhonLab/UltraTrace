@@ -60,7 +60,7 @@ class Search(Module):
             if tg:
                 grid = self.app.TextGrid.fromFile(tg)
                 if grid is None:
-                    return
+                    continue
                 for tier in grid:
                     if TextGrid.isIntervalTier(tier):
                         for el in tier:
