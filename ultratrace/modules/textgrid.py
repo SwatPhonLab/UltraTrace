@@ -12,6 +12,7 @@ LIBS_INSTALLED = False
 
 try:
     from textgrid import TextGrid as TextGridFile, IntervalTier, PointTier, Point # textgrid
+    from textgrid.exceptions import TextGridError
     LIBS_INSTALLED = True
 except ImportError as e:
     warn(e)
@@ -180,7 +181,8 @@ class TextGrid(Module):
         if LIBS_INSTALLED:
             try:
                 return TextGridFile.fromFile(filename)
-            except UnicodeDecodeError:
+            except (TextGridError, UnicodeDecodeError) as e:
+                error(e)
                 f = open(filename, 'rb')
                 bytes = f.read()
                 f.close()
@@ -198,9 +200,13 @@ class TextGrid(Module):
                 if not found:
                     raise
                 else:
-                    ret = TextGridFile.fromFile(tmp.name)
-                    tmp.close()
-                    return ret
+                    try:
+                        ret = TextGridFile.fromFile(tmp.name)
+                        tmp.close()
+                        return ret
+                    except TextGridError as e:
+                        error(e)
+                        return None
         else:
             error("can't load from file: textgrid lib not installed")
             return None
@@ -656,7 +662,7 @@ class TextGrid(Module):
                         else:
                             fill = 'gray50'
                         frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags="frame"+tier[i].mark, fill=fill)
-                        if first_frame_found == False:
+                        if first_frame_found == False and i + 1 < len(tier):
                             self.firstFrame = int(tier[i].mark) + 1
                             first_frame_found = True
                             self.frame_len = tier[i+1].time - tier[i].time
