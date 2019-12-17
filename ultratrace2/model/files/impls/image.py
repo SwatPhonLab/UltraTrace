@@ -9,14 +9,13 @@ from ..ADT import FileLoadError, TypedFile, TypedFileImpl
 
 
 class ImageSet(TypedFile):
-
     class DICOM(TypedFileImpl):
-        mimetypes = ['application/dicom']
-        extensions = ['.dicom', '.dcm']
+        mimetypes = ["application/dicom"]
+        extensions = [".dicom", ".dcm"]
 
         def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs) # FIXME: make this more granular
-            self.png_path = f'{self.path}-frames'
+            super().__init__(*args, **kwargs)  # FIXME: make this more granular
+            self.png_path = f"{self.path}-frames"
 
         def load(self) -> None:
             if os.path.exists(self.png_path):
@@ -45,21 +44,25 @@ class ImageSet(TypedFile):
                     # RGB-last
                     frames, rows, columns, rgb = pixels.shape
                 else:
-                    raise FileLoadError('Invalid DICOM ({self.path}), unknown shape {pixels.shape}')
+                    raise FileLoadError(
+                        "Invalid DICOM ({self.path}), unknown shape {pixels.shape}"
+                    )
 
             else:
-                raise FileLoadError('Invalid DICOM ({self.path}), unknown shape {pixels.shape}')
+                raise FileLoadError(
+                    "Invalid DICOM ({self.path}), unknown shape {pixels.shape}"
+                )
 
             os.mkdir(self.png_path)
-            for i in tqdm(range(frames), desc='converting to PNG'):
-                filename = os.path.join(self.png_path, f'{i:06}.png')
+            for i in tqdm(range(frames), desc="converting to PNG"):
+                filename = os.path.join(self.png_path, f"{i:06}.png")
                 arr = pixels[i, :, :] if is_greyscale else pixels[i, :, :, :]
                 img = PIL.Image.fromarray(arr)
-                img.save(filename, format='PNG', compress_level=1)
+                img.save(filename, format="PNG", compress_level=1)
 
         def convert_to_png(self, *args, **kwargs):
             # FIXME: implement this function, signatures, etc.
-            print('converting')
+            print("converting")
 
     preferred_impls = [DICOM]
 

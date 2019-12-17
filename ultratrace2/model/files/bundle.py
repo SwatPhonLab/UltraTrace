@@ -16,13 +16,19 @@ class FileBundle:
         self.image_file = ImageSet()
         self.sound_file = Sound()
 
-    def interpret(self, path: str): # FIXME: add signature
-        return self.alignment_file.interpret(path) \
-                or self.image_file.interpret(path) \
-                or self.sound_file.interpret(path) # noqa: E126
+    def interpret(self, path: str):  # FIXME: add signature
+        return (
+            self.alignment_file.interpret(path)
+            or self.image_file.interpret(path)
+            or self.sound_file.interpret(path)
+        )  # noqa: E126
 
     def has_impl(self) -> bool:
-        return self.alignment_file.has_impl or self.image_file.has_impl or self.sound_file.has_impl
+        return (
+            self.alignment_file.has_impl
+            or self.image_file.has_impl
+            or self.sound_file.has_impl
+        )
 
     def __repr__(self):
         return f'Bundle("{self.name}",{self.alignment_file},{self.image_file},{self.sound_file})'
@@ -30,12 +36,14 @@ class FileBundle:
 
 class FileBundleList:
 
-    exclude_dirs: Set[str] = set([
-        '.git',
-        'node_modules',
-        '__pycache__',
-        # FIXME: add more ignoreable dirs
-    ])
+    exclude_dirs: Set[str] = set(
+        [
+            ".git",
+            "node_modules",
+            "__pycache__",
+            # FIXME: add more ignoreable dirs
+        ]
+    )
 
     def __init__(self, path: str, extra_exclude_dirs: List[str] = []):
 
@@ -64,14 +72,16 @@ class FileBundleList:
                 filepath_or_symlink = os.path.join(path, filename)
                 filepath = os.path.realpath(filepath_or_symlink)
                 if not os.path.exists(filepath):
-                    logger.warning(f'unable to open "{filepath_or_symlink}" (broken symlink?)')
+                    logger.warning(
+                        f'unable to open "{filepath_or_symlink}" (broken symlink?)'
+                    )
                     continue
 
                 if name not in bundles:
                     bundles[name] = FileBundle(name)
 
                 if not bundles[name].interpret(filepath):
-                    logger.warning(f'unrecognized filetype: {filepath}')
+                    logger.warning(f"unrecognized filetype: {filepath}")
 
         # FIXME: do this when we add to our data structure
         for filename, bundle in bundles.items():

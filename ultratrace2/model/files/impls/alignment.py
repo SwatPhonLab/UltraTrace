@@ -4,10 +4,9 @@ from ..ADT import TypedFile, TypedFileImpl
 
 
 class Alignment(TypedFile):
-
     class TextGrid(TypedFileImpl):
-        mimetypes = ['text/plain']
-        extensions = ['.textgrid']
+        mimetypes = ["text/plain"]
+        extensions = [".textgrid"]
 
         def load(self):
             raise NotImplementedError()

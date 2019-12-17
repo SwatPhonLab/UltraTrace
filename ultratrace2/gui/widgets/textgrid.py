@@ -13,8 +13,9 @@ class TextGrid(OptionalWidget):
         # FIXME: allow passing command line arg to turn off textgrid viewer
 
         try:
-            from textgrid import TextGrid # type: ignore # noqa: F401
+            from textgrid import TextGrid  # type: ignore # noqa: F401
+
             self.is_imported = True
         except ImportError:
-            logger.warning('TextGrid Widget failed to load')
+            logger.warning("TextGrid Widget failed to load")
             return

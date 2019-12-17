@@ -34,25 +34,16 @@ class GUI(ThemedTk):
             ALIGN_VERTICAL,
             Container(
                 ALIGN_HORIZONTAL,
-                Container(
-                    ALIGN_VERTICAL,
-                    self.control,
-                    self.trace,
-                    self.undo,
-                ),
+                Container(ALIGN_VERTICAL, self.control, self.trace, self.undo,),
                 self.dicom,
             ),
-            Container(
-                ALIGN_VERTICAL,
-                self.spectrogram,
-                self.textgrid,
-            ),
+            Container(ALIGN_VERTICAL, self.spectrogram, self.textgrid,),
         )
 
-        if hasattr(super(), 'set_theme'):
+        if hasattr(super(), "set_theme"):
             theme = get_theme(theme)
             if theme is not None:
-                logger.info('Using TtkTheme: ' + theme)
+                logger.info("Using TtkTheme: " + theme)
                 super().__init__(theme=theme)
             else:
                 super().__init__()

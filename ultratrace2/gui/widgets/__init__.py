@@ -1,12 +1,12 @@
-ALIGN_HORIZONTAL = 'horiz'
-ALIGN_VERTICAL = 'vert'
+ALIGN_HORIZONTAL = "horiz"
+ALIGN_VERTICAL = "vert"
 
 
 class Widget:
     def __init__(self, align=ALIGN_VERTICAL, children=[]):
 
         if align not in (ALIGN_HORIZONTAL, ALIGN_VERTICAL):
-            raise ValueError('Unknown alignment: ' + align)
+            raise ValueError("Unknown alignment: " + align)
         self.align = align
         self.children = children
 

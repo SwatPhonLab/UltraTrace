@@ -7,8 +7,8 @@ from .files.bundle import FileBundleList
 class Project:
     def __init__(self, path: str):
         if not os.path.exists(path):
-            raise ValueError(f'cannot initialize project at {path}')
-        self.root_path = os.path.realpath(os.path.abspath(path)) # absolute path
+            raise ValueError(f"cannot initialize project at {path}")
+        self.root_path = os.path.realpath(os.path.abspath(path))  # absolute path
         self.traces = TraceList()
         self.files = FileBundleList(self.root_path)
 
