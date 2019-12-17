@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+
+import argparse
+import sys
+
+sys.path.insert(0, '../ultratrace')
+
+from ultratrace.model2.files.impls import ImageSet
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('paths', nargs='+')
+    args = parser.parse_args()
+
+    for path in args.paths:
+        im = ImageSet()
+        im.interpret(path)
+        im.data()
