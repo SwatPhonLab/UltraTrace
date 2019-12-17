@@ -3,6 +3,9 @@ import logging
 from . import OptionalWidget
 
 
+logger = logging.getLogger(__name__)
+
+
 class Video(OptionalWidget):
     def __init__(self):
         super().__init__()
@@ -14,5 +17,5 @@ class Video(OptionalWidget):
             import queue # noqa: F401
             self.is_imported = True
         except ImportError:
-            logging.warning('Video Widget failed to load')
+            logger.warning('Video Widget failed to load')
             return

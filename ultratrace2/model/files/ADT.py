@@ -1,3 +1,4 @@
+import logging
 import os
 
 from abc import ABC, abstractmethod
@@ -5,7 +6,8 @@ from collections import OrderedDict
 from magic import Magic
 from typing import Dict, List, Optional, Type
 
-from ... import utils
+
+logger = logging.getLogger(__name__)
 
 
 class FileLoadError(Exception):
@@ -43,7 +45,7 @@ class TypedFile(ABC):
             if Impl.recognizes(mimetype, extension):
                 recognized = True
                 if self.impl is not None:
-                    utils.error(f'cannot parse {path}: previous {Impl.__name__} was: {self.impl.path}, skipping...')
+                    logger.error(f'cannot parse {path}: previous {Impl.__name__} was: {self.impl.path}, skipping...')
                     continue
                 self.impl = Impl(path)
                 return True
@@ -55,7 +57,7 @@ class TypedFile(ABC):
         try:
             self.impl.data()
         except FileLoadError as e:
-            utils.error(f'unable to load {self.impl}: {e}')
+            logger.error(f'unable to load {self.impl}: {e}')
             self.impl = None # FIXME: is this sane behavior?
 
     def __repr__(self):

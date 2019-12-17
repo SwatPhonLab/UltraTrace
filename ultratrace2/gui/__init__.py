@@ -15,6 +15,9 @@ from .widgets.undo import Undo
 from .widgets.video import Video
 
 
+logger = logging.getLogger(__name__)
+
+
 class GUI(ThemedTk):
     def __init__(self, theme: Optional[str] = None):
 
@@ -49,7 +52,7 @@ class GUI(ThemedTk):
         if hasattr(super(), 'set_theme'):
             theme = get_theme(theme)
             if theme is not None:
-                logging.info('Using TtkTheme: ' + theme)
+                logger.info('Using TtkTheme: ' + theme)
                 super().__init__(theme=theme)
             else:
                 super().__init__()

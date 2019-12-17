@@ -3,6 +3,9 @@ import logging
 from . import OptionalWidget
 
 
+logger = logging.getLogger(__name__)
+
+
 class Dicom(OptionalWidget):
     def __init__(self):
         super().__init__()
@@ -15,5 +18,5 @@ class Dicom(OptionalWidget):
             from PIL import Image, ImageTk, ImageEnhance # type: ignore # noqa: F401
             self.is_imported = True
         except ImportError:
-            logging.warning('Dicom Widget failed to load')
+            logger.warning('Dicom Widget failed to load')
             return

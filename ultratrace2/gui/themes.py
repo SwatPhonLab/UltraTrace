@@ -4,10 +4,12 @@ import platform
 
 from typing import Optional
 
+logger = logging.getLogger(__name__)
+
 try:
     from ttkthemes import ThemedTk # type: ignore
 except ImportError:
-    logging.warning('Unable to load themes')
+    logger.warning('Unable to load themes')
     from tkinter import Tk as ThemedTk # noqa: F401
 
 
@@ -30,6 +32,6 @@ def get_theme(name: Optional[str]) -> Optional[str]:
                 return 'clam'
 
         except Exception as e:
-            logging.warning('Error loading themes: ' + str(e))
+            logger.warning('Error loading themes: ' + str(e))
 
     return None

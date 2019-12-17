@@ -3,6 +3,9 @@ import logging
 from . import OptionalWidget
 
 
+logger = logging.getLogger(__name__)
+
+
 class Spectrogram(OptionalWidget):
     def __init__(self):
         super().__init__()
@@ -12,5 +15,5 @@ class Spectrogram(OptionalWidget):
         try:
             self.is_imported = True
         except ImportError:
-            logging.warning('Spectrogram Widget failed to load')
+            logger.warning('Spectrogram Widget failed to load')
             return

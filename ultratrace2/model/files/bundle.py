@@ -1,9 +1,12 @@
+import logging
 import os
 
 from typing import Dict, List, Set
 
 from .impls import Sound, Alignment, ImageSet
-from ... import utils
+
+
+logger = logging.getLogger(__name__)
 
 
 class FileBundle:
@@ -61,14 +64,14 @@ class FileBundleList:
                 filepath_or_symlink = os.path.join(path, filename)
                 filepath = os.path.realpath(filepath_or_symlink)
                 if not os.path.exists(filepath):
-                    utils.warn(f'unable to open "{filepath_or_symlink}" (broken symlink?)')
+                    logger.warning(f'unable to open "{filepath_or_symlink}" (broken symlink?)')
                     continue
 
                 if name not in bundles:
                     bundles[name] = FileBundle(name)
 
                 if not bundles[name].interpret(filepath):
-                    utils.warn(f'unrecognized filetype: {filepath}')
+                    logger.warning(f'unrecognized filetype: {filepath}')
 
         # FIXME: do this when we add to our data structure
         for filename, bundle in bundles.items():

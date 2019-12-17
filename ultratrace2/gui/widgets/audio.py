@@ -3,6 +3,9 @@ import logging
 from . import OptionalWidget
 
 
+logger = logging.getLogger(__name__)
+
+
 class Audio(OptionalWidget):
     def __init__(self):
         super().__init__()
@@ -14,5 +17,5 @@ class Audio(OptionalWidget):
             from pydub import AudioSegment # type: ignore # noqa: F401
             self.is_imported = True
         except ImportError:
-            logging.warning('Audio Widget failed to load')
+            logger.warning('Audio Widget failed to load')
             return

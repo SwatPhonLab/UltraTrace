@@ -3,6 +3,9 @@ import logging
 from . import OptionalWidget
 
 
+logger = logging.getLogger(__name__)
+
+
 class TextGrid(OptionalWidget):
     def __init__(self):
         super().__init__()
@@ -13,5 +16,5 @@ class TextGrid(OptionalWidget):
             from textgrid import TextGrid # type: ignore # noqa: F401
             self.is_imported = True
         except ImportError:
-            logging.warning('TextGrid Widget failed to load')
+            logger.warning('TextGrid Widget failed to load')
             return
