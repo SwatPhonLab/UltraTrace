@@ -1,18 +1,18 @@
-from ... import utils
+import logging
 
 from . import OptionalWidget
+
 
 class Video(OptionalWidget):
     def __init__(self):
         super().__init__()
 
-        #if not args.video: # FIXME: allow passing command line arg to turn off video viewer
-            #return
+        # FIXME: allow passing command line arg to turn off video viewer
 
         try:
-            import threading
-            import queue
+            import threading # noqa: F401
+            import queue # noqa: F401
             self.is_imported = True
         except ImportError:
-            utils.warn('Video Widget failed to load')
+            logging.warning('Video Widget failed to load')
             return

@@ -5,7 +5,6 @@ import pydicom
 
 from tqdm import tqdm
 
-from .... import utils
 from ..ADT import FileLoadError, TypedFile, TypedFileImpl
 
 

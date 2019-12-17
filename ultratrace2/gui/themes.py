@@ -4,13 +4,11 @@ import platform
 
 from typing import Optional
 
-from .. import utils
-
 try:
     from ttkthemes import ThemedTk # type: ignore
 except ImportError:
     logging.warning('Unable to load themes')
-    from tkinter import Tk as ThemedTk
+    from tkinter import Tk as ThemedTk # noqa: F401
 
 
 def get_theme(name: Optional[str]) -> Optional[str]:

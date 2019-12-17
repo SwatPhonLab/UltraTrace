@@ -5,9 +5,11 @@ from PIL import Image, ImageTk # type: ignore
 
 from .xhair import XHair
 
+
 class Trace:
     def get_color(self):
         return 'black'
+
 
 class ZoomFrame(tk.Frame):
     '''
@@ -33,11 +35,12 @@ class ZoomFrame(tk.Frame):
     def __init__(self, master, **kwargs):
 
         super().__init__(master, **kwargs)
-        self.canvas = tk.Canvas(self,
-                bg='grey',
-                width=self.DEFAULT_WIDTH,
-                height=self.DEFAULT_HEIGHT,
-                highlightthickness=0)
+        self.canvas = tk.Canvas(
+            self,
+            bg='grey',
+            width=self.DEFAULT_WIDTH,
+            height=self.DEFAULT_HEIGHT,
+            highlightthickness=0)
         self.canvas.bind('<Button-1>', self.on_click)
         self.canvas.bind('<B1-Motion>', self.on_mousemove)
         self.canvas.bind('<ButtonRelease-1>', self.on_release)
@@ -53,7 +56,7 @@ class ZoomFrame(tk.Frame):
         self.canvas_height = 600
         self.height = 0
         self.shown = False
-        self.aspect_ratio = 4/3
+        self.aspect_ratio = 4 / 3
         self.orig_x = self.canvas.xview()[0] - 1
         self.orig_y = self.canvas.yview()[0] - 150
         self.image_scale = 1.0
@@ -114,10 +117,10 @@ class ZoomFrame(tk.Frame):
         print(event)
 
     def zoom_in(self):
-        print(event)
+        pass
 
     def zoom_out(self):
-        print(event)
+        pass
 
     def grid(self, **kwargs):
         super(ZoomFrame, self).grid(**kwargs)

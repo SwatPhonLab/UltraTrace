@@ -1,6 +1,5 @@
-from ... import utils
-
 from . import Widget
+
 
 class Container(Widget):
     def __init__(self, align, *children):

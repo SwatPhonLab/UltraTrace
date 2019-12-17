@@ -2,6 +2,7 @@ from tkinter import filedialog as TkFileDialog
 
 from . import Widget
 
+
 class FileDialog(Widget):
     def __init__(self):
         super().__init__()

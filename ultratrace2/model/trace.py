@@ -1,7 +1,7 @@
 from typing import Optional
 
 from uuid import uuid4
-from .color import Color, get_random_color, RED
+from .color import Color, get_random_color
 
 
 class Trace:

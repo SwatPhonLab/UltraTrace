@@ -1,17 +1,17 @@
-from ... import utils
+import logging
 
 from . import OptionalWidget
+
 
 class TextGrid(OptionalWidget):
     def __init__(self):
         super().__init__()
 
-        #if not args.textgrid: # FIXME: allow passing command line arg to turn off textgrid viewer
-            #return
+        # FIXME: allow passing command line arg to turn off textgrid viewer
 
         try:
-            from textgrid import TextGrid # type: ignore
+            from textgrid import TextGrid # type: ignore # noqa: F401
             self.is_imported = True
         except ImportError:
-            utils.warn('TextGrid Widget failed to load')
+            logging.warning('TextGrid Widget failed to load')
             return

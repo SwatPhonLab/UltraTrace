@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+
 class XHair:
     SELECTED_COLOR = 'blue'
     SELECTED_WIDTH = 1.5
@@ -17,17 +18,17 @@ class XHair:
         self.is_hidden = False
 
         self.h_line = self.canvas.create_line(
-                x - 10, y,
-                x + 10, y,
-                tag=self.id,
-                width=self.get_width(),
-                fill=self.get_color())
+            x - 10, y,
+            x + 10, y,
+            tag=self.id,
+            width=self.get_width(),
+            fill=self.get_color())
         self.v_line = self.canvas.create_line(
-                x, y - 10,
-                x, y + 10,
-                tag=self.id,
-                width=self.get_width(),
-                fill=self.get_color())
+            x, y - 10,
+            x, y + 10,
+            tag=self.id,
+            width=self.get_width(),
+            fill=self.get_color())
 
     def sq_dist_from(self, other):
         # Euclidean distance squared, since sqrt() is relatively slow :^)
@@ -79,8 +80,9 @@ class XHair:
         self.y = y
 
     def redraw(self):
-        self.canvas.itemconfig(self.id,
-                width=self.get_width(),
-                fill=self.get_color(),
-                state=self.get_state())
-
+        self.canvas.itemconfig(
+            self.id,
+            width=self.get_width(),
+            fill=self.get_color(),
+            state=self.get_state(),
+        )

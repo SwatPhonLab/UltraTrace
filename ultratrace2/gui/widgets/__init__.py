@@ -1,6 +1,7 @@
 ALIGN_HORIZONTAL = 'horiz'
 ALIGN_VERTICAL = 'vert'
 
+
 class Widget:
     def __init__(self, align=ALIGN_VERTICAL, children=[]):
 
@@ -18,6 +19,7 @@ class Widget:
 
     def __len__(self):
         return len(self.children)
+
 
 class OptionalWidget(Widget):
     def __init__(self, *args, **kwargs):

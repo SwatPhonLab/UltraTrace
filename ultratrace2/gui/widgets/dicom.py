@@ -1,19 +1,19 @@
-from ... import utils
+import logging
 
 from . import OptionalWidget
+
 
 class Dicom(OptionalWidget):
     def __init__(self):
         super().__init__()
 
-        #if not args.dicom: # FIXME: allow passing command line arg to turn off DICOM viewer
-            #return
+        # FIXME: allow passing command line arg to turn off DICOM viewer
 
         try:
-            import numpy as np
-            import pydicom as dicom # type: ignore
-            from PIL import Image, ImageTk, ImageEnhance # type: ignore
+            import numpy as np # noqa: F401
+            import pydicom as dicom # type: ignore # noqa: F401
+            from PIL import Image, ImageTk, ImageEnhance # type: ignore # noqa: F401
             self.is_imported = True
         except ImportError:
-            utils.warn('Dicom Widget failed to load')
+            logging.warning('Dicom Widget failed to load')
             return
