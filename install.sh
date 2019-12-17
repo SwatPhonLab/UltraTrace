@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if which brew; then
+if which brew &> /dev/null; then
     brew install portaudio
 else
     echo "Homebrew is not on your PATH. Is it installed?"
