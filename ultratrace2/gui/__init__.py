@@ -1,6 +1,6 @@
 from typing import Type
+import logging
 
-from .. import utils
 
 from .themes import ThemedTk, get_theme
 from .widgets import ALIGN_HORIZONTAL, ALIGN_VERTICAL
@@ -46,7 +46,7 @@ class GUI(ThemedTk):
         if hasattr(super(), 'set_theme'):
             theme = get_theme(theme)
             if theme is not None:
-                utils.info('Using TtkTheme: ' + theme)
+                logging.info('Using TtkTheme: ' + theme)
                 super().__init__(theme=theme)
             else:
                 super().__init__()

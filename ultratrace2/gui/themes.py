@@ -1,3 +1,4 @@
+import logging
 import os
 import platform
 
@@ -8,7 +9,7 @@ from .. import utils
 try:
     from ttkthemes import ThemedTk
 except ImportError:
-    utils.warn('Unable to load themes')
+    logging.warning('Unable to load themes')
     from tkinter import Tk as ThemedTk
 
 
@@ -31,6 +32,6 @@ def get_theme(name: str) -> Optional[str]:
                 return 'clam'
 
         except Exception as e:
-            utils.warn('Error loading themes: ' + str(e))
+            logging.warning('Error loading themes: ' + str(e))
 
     return None

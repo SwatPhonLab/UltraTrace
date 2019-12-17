@@ -3,7 +3,6 @@ from tkinter import ttk
 
 from PIL import Image, ImageTk
 
-from ... import util
 from .xhair import XHair
 
 class Trace:
