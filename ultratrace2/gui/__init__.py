@@ -1,3 +1,5 @@
+from typing import Type
+
 from .. import utils
 
 from .themes import ThemedTk, get_theme
@@ -13,7 +15,7 @@ from .widgets.undo import Undo
 from .widgets.video import Video
 
 class GUI(ThemedTk):
-    def __init__(self, app, theme=None):
+    def __init__(self, app: Type['App'], theme: str = None):
 
         self.app = app
 

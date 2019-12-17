@@ -5,7 +5,7 @@ from .gui import GUI
 from .model.project import Project
 
 class App:
-    def __init__(self, args):
+    def __init__(self, args): # FIXME: be more granular here
 
         if args.path is None:
             path = choose_dir()
