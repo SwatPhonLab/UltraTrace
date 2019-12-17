@@ -21,6 +21,11 @@ setup(
     ),
     description="A tool for manually annotating ultrasound tongue imaging (UTI) data",
     install_requires=get_requirements("requirements.txt"),
+    entry_points={
+        "console_scripts": [
+            "ultratrace2 = ultratrace2.__main__:main"
+        ]
+    },
     extras_require={
         "dev": [
             "flake8",
