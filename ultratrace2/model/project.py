@@ -4,7 +4,7 @@ from .trace import TraceList
 from .files.bundle import FileBundleList
 
 class Project:
-    def __init__(self, path):
+    def __init__(self, path: str):
         if not os.path.exists(path):
             raise ValueError(f'cannot initialize project at {path}')
         self.root_path = os.path.realpath(os.path.abspath(path)) # absolute path
@@ -27,11 +27,11 @@ class Project:
     def current_frame(self):
         raise NotImplementedError()
 
-    def has_alignment_impl(self):
+    def has_alignment_impl(self) -> bool:
         return self.files.has_alignment_impl
 
-    def has_image_impl(self):
+    def has_image_impl(self) -> bool:
         return self.files.has_image_impl
 
-    def has_sound_impl(self):
+    def has_sound_impl(self) -> bool:
         return self.files.has_sound_impl

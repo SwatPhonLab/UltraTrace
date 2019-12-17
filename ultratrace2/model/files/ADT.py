@@ -3,6 +3,8 @@ import os
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from magic import Magic
+from typing import Dict, List, Optional, Type
+
 from ... import utils
 
 class FileLoadError(Exception):
@@ -10,13 +12,16 @@ class FileLoadError(Exception):
 
 class TypedFile(ABC):
 
+    impls: Dict[Type['TypedFileImpl'], Optional['TypedFileImpl']]
+    impl: Optional['TypedFileImpl']
+
     @property
     @staticmethod
     @abstractmethod
-    def preferred_impls() -> list:
+    def preferred_impls() -> List:
         pass
 
-    def __new__(cls):
+    def __new__(cls) -> TypedFile:
         cls.impls = OrderedDict()
         for impl_type in cls.preferred_impls:
             cls.impls[impl_type] = None
@@ -28,7 +33,7 @@ class TypedFile(ABC):
     def has_impl(self) -> bool:
         return self.impl is not None
 
-    def interpret(self, path):
+    def interpret(self, path: str) -> bool:
         mimetype = Magic(mime=True).from_file(path)
         _, extension = os.path.splitext(path.lower())
         recognized = False
@@ -42,14 +47,14 @@ class TypedFile(ABC):
                 return True
         return recognized
 
-    def data(self):
+    def data(self): # FIXME: add signature
         if self.impl is None:
             raise ValueError('cannot load: no implementation found')
         try:
             self.impl.data()
         except FileLoadError as e:
             utils.error(f'unable to load {self.impl}: {e}')
-            self.impl = None
+            self.impl = None # FIXME: is this sane behavior?
 
     def __repr__(self):
         return f'{type(self).__name__}({self.impl})'
@@ -59,20 +64,20 @@ class TypedFileImpl(ABC):
     @property
     @staticmethod
     @abstractmethod
-    def mimetypes():
+    def mimetypes() -> List[str]:
         pass
 
     @property
     @staticmethod
     @abstractmethod
-    def extensions():
+    def extensions() -> List[str]:
         pass
 
-    def __init__(self, path):
+    def __init__(self, path: str):
         self.path = path
         self._data = None
 
-    def data(self):
+    def data(self): # FIXME: add signature
         # lazy load
         if self._data is None:
             self.load()
@@ -83,7 +88,7 @@ class TypedFileImpl(ABC):
         pass
 
     @classmethod
-    def recognizes(cls, mimetype, extension):
+    def recognizes(cls, mimetype: str, extension: str):
         return mimetype in cls.mimetypes or extension in cls.extensions
 
     def __repr__(self):

@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import PIL
 import pydicom
@@ -14,10 +15,10 @@ class ImageSet(TypedFile):
         extensions = ['.dicom', '.dcm']
 
         def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs) # FIXME: make this more granular
             self.png_path = f'{self.path}-frames'
 
-        def load(self):
+        def load(self) -> None:
             if os.path.exists(self.png_path):
                 return
 
@@ -26,7 +27,7 @@ class ImageSet(TypedFile):
             except pydicom.errors.InvalidDicomError as e:
                 raise FileLoadError(str(e))
 
-            pixels = dicom.pixel_array
+            pixels: np.ndarray = dicom.pixel_array
 
             # check encoding, manipulate array if we need to
             if len(pixels.shape) == 3:
@@ -57,6 +58,7 @@ class ImageSet(TypedFile):
                 img.save(filename, format='PNG', compress_level=1)
 
         def convert_to_png(self, *args, **kwargs):
+            # FIXME: implement this function, signatures, etc.
             print('converting')
 
     preferred_impls = [DICOM]

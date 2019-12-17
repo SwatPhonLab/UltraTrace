@@ -1,3 +1,5 @@
+from typing import List
+
 from ..ADT import TypedFile, TypedFileImpl
 
 class Alignment(TypedFile):
@@ -8,7 +10,7 @@ class Alignment(TypedFile):
         def load(self):
             raise NotImplementedError()
         @classmethod
-        def recognizes(cls, mimetype, extension):
+        def recognizes(cls, mimetype: str, extension: str) -> bool:
             return mimetype in cls.mimetypes and extension in cls.extensions
 
     class Measurement(TypedFileImpl):
@@ -18,10 +20,10 @@ class Alignment(TypedFile):
         def load(self):
             raise NotImplementedError()
         @classmethod
-        def recognizes(cls, mimetype, extension):
+        def recognizes(cls, mimetype: str, extension: str) -> bool:
             return mimetype in cls.mimetypes and extension in cls.extensions
 
-    preferred_impls = [TextGrid, Measurement]
+    preferred_impls: List[TypedFileImpl] = [TextGrid, Measurement]
 
     def __init__(self):
         super().__init__()
