@@ -1,6 +1,6 @@
-from typing import Type
 import logging
 
+from typing import Optional, Type
 
 from .themes import ThemedTk, get_theme
 from .widgets import ALIGN_HORIZONTAL, ALIGN_VERTICAL
@@ -15,7 +15,7 @@ from .widgets.undo import Undo
 from .widgets.video import Video
 
 class GUI(ThemedTk):
-    def __init__(self, app: Type['App'], theme: str = None):
+    def __init__(self, app: Type['App'], theme: Optional[str] = None):
 
         self.app = app
 
