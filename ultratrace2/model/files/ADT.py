@@ -16,8 +16,8 @@ class FileLoadError(Exception):
 
 class TypedFile(ABC):
 
-    impls: Dict[Type['TypedFileImpl'], Optional['TypedFileImpl']]
-    impl: Optional['TypedFileImpl']
+    impls: Dict[Type["TypedFileImpl"], Optional["TypedFileImpl"]]
+    impl: Optional["TypedFileImpl"]
 
     @property
     @staticmethod
@@ -25,7 +25,7 @@ class TypedFile(ABC):
     def preferred_impls() -> List:
         pass
 
-    def __new__(cls) -> Type['TypedFile']:
+    def __new__(cls) -> Type["TypedFile"]:
         cls.impls = OrderedDict()
         for impl_type in cls.preferred_impls:
             cls.impls[impl_type] = None
@@ -45,27 +45,28 @@ class TypedFile(ABC):
             if Impl.recognizes(mimetype, extension):
                 recognized = True
                 if self.impl is not None:
-                    logger.error(f'cannot parse {path}: previous {Impl.__name__} was: {self.impl.path}, skipping...')
+                    logger.error(
+                        f"cannot parse {path}: previous {Impl.__name__} was: {self.impl.path}, skipping..."
+                    )
                     continue
                 self.impl = Impl(path)
                 return True
         return recognized
 
-    def data(self): # FIXME: add signature
+    def data(self):  # FIXME: add signature
         if self.impl is None:
-            raise ValueError('cannot load: no implementation found')
+            raise ValueError("cannot load: no implementation found")
         try:
             self.impl.data()
         except FileLoadError as e:
-            logger.error(f'unable to load {self.impl}: {e}')
-            self.impl = None # FIXME: is this sane behavior?
+            logger.error(f"unable to load {self.impl}: {e}")
+            self.impl = None  # FIXME: is this sane behavior?
 
     def __repr__(self):
-        return f'{type(self).__name__}({self.impl})'
+        return f"{type(self).__name__}({self.impl})"
 
 
 class TypedFileImpl(ABC):
-
     @property
     @staticmethod
     @abstractmethod
@@ -82,14 +83,14 @@ class TypedFileImpl(ABC):
         self.path = path
         self._data = None
 
-    def data(self): # FIXME: add signature
+    def data(self):  # FIXME: add signature
         # lazy load
         if self._data is None:
             self.load()
         return self._data
 
     @abstractmethod
-    def load(self): # should throw FileLoadError if something went wrong
+    def load(self):  # should throw FileLoadError if something went wrong
         pass
 
     @classmethod

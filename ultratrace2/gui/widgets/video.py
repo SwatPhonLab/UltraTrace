@@ -13,9 +13,10 @@ class Video(OptionalWidget):
         # FIXME: allow passing command line arg to turn off video viewer
 
         try:
-            import threading # noqa: F401
-            import queue # noqa: F401
+            import threading  # noqa: F401
+            import queue  # noqa: F401
+
             self.is_imported = True
         except ImportError:
-            logger.warning('Video Widget failed to load')
+            logger.warning("Video Widget failed to load")
             return

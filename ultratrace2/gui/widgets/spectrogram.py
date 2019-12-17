@@ -15,5 +15,5 @@ class Spectrogram(OptionalWidget):
         try:
             self.is_imported = True
         except ImportError:
-            logger.warning('Spectrogram Widget failed to load')
+            logger.warning("Spectrogram Widget failed to load")
             return

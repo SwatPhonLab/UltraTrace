@@ -2,7 +2,7 @@ import tkinter as tk
 
 
 class Div(tk.Frame):
-    def __init__(self, parent, children=[], sticky=''):
+    def __init__(self, parent, children=[], sticky=""):
         super().__init__(parent)
 
     def grid(self, *args, **kwargs):

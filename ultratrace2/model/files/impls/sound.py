@@ -2,10 +2,9 @@ from ..ADT import TypedFile, TypedFileImpl
 
 
 class Sound(TypedFile):
-
     class WAV(TypedFileImpl):
-        mimetypes = ['audio/x-wav', 'audio/wav']
-        extensions = ['wav']
+        mimetypes = ["audio/x-wav", "audio/wav"]
+        extensions = ["wav"]
 
         def load(self):
             raise NotImplementedError()

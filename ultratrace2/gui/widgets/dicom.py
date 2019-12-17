@@ -13,10 +13,11 @@ class Dicom(OptionalWidget):
         # FIXME: allow passing command line arg to turn off DICOM viewer
 
         try:
-            import numpy as np # noqa: F401
-            import pydicom as dicom # type: ignore # noqa: F401
-            from PIL import Image, ImageTk, ImageEnhance # type: ignore # noqa: F401
+            import numpy as np  # noqa: F401
+            import pydicom as dicom  # type: ignore # noqa: F401
+            from PIL import Image, ImageTk, ImageEnhance  # type: ignore # noqa: F401
+
             self.is_imported = True
         except ImportError:
-            logger.warning('Dicom Widget failed to load')
+            logger.warning("Dicom Widget failed to load")
             return
