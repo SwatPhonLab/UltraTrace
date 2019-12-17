@@ -1,15 +1,16 @@
 import numpy as np
 import os
-import PIL
-import pydicom
+import PIL  # type: ignore
+import pydicom  # type: ignore
 
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 
 from ..ADT import FileLoadError, TypedFile, TypedFileImpl
 
 
 class ImageSet(TypedFile):
     class DICOM(TypedFileImpl):
+
         mimetypes = ["application/dicom"]
         extensions = [".dicom", ".dcm"]
 

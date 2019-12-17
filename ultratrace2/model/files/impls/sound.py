@@ -1,8 +1,11 @@
+from typing import ClassVar, Sequence
+
 from ..ADT import TypedFile, TypedFileImpl
 
 
 class Sound(TypedFile):
     class WAV(TypedFileImpl):
+
         mimetypes = ["audio/x-wav", "audio/wav"]
         extensions = ["wav"]
 
@@ -10,22 +13,22 @@ class Sound(TypedFile):
             raise NotImplementedError()
 
     class FLAC(TypedFileImpl):
-        mimetypes = []
-        extensions = []
+        mimetypes: ClassVar[Sequence[str]] = []
+        extensions: ClassVar[Sequence[str]] = []
 
         def load(self):
             raise NotImplementedError()
 
     class Ogg(TypedFileImpl):
-        mimetypes = []
-        extensions = []
+        mimetypes: ClassVar[Sequence[str]] = []
+        extensions: ClassVar[Sequence[str]] = []
 
         def load(self):
             raise NotImplementedError()
 
     class MP3(TypedFileImpl):
-        mimetypes = []
-        extensions = []
+        mimetypes: ClassVar[Sequence[str]] = []
+        extensions: ClassVar[Sequence[str]] = []
 
         def load(self):
             raise NotImplementedError()

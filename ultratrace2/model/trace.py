@@ -11,7 +11,7 @@ class Trace:
         self.name = name
         self.color = color
 
-    def change_color(self, new_color: Optional[Color] = None) -> Color:
+    def change_color(self, new_color: Optional[Color] = None) -> Optional[Color]:
         if new_color is None:
             new_color = get_random_color()
         old_color = self.color

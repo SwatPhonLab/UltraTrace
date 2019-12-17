@@ -3,8 +3,8 @@ import os
 
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from magic import Magic
-from typing import Dict, List, Optional, Type
+from magic import Magic  # type: ignore
+from typing import ClassVar, Dict, Optional, Sequence, Type
 
 
 logger = logging.getLogger(__name__)
@@ -16,16 +16,12 @@ class FileLoadError(Exception):
 
 class TypedFile(ABC):
 
+    preferred_impls = ClassVar[Sequence["TypedFileImpl"]]
+
     impls: Dict[Type["TypedFileImpl"], Optional["TypedFileImpl"]]
     impl: Optional["TypedFileImpl"]
 
-    @property
-    @staticmethod
-    @abstractmethod
-    def preferred_impls() -> List:
-        pass
-
-    def __new__(cls) -> Type["TypedFile"]:
+    def __new__(cls):
         cls.impls = OrderedDict()
         for impl_type in cls.preferred_impls:
             cls.impls[impl_type] = None
@@ -46,7 +42,7 @@ class TypedFile(ABC):
                 recognized = True
                 if self.impl is not None:
                     logger.error(
-                        f"cannot parse {path}: previous {Impl.__name__} was: {self.impl.path}, skipping..."
+                        f"cannot parse {path}: previous {type(Impl).__name__} was: {self.impl.path}, skipping..."
                     )
                     continue
                 self.impl = Impl(path)
@@ -67,17 +63,9 @@ class TypedFile(ABC):
 
 
 class TypedFileImpl(ABC):
-    @property
-    @staticmethod
-    @abstractmethod
-    def mimetypes() -> List[str]:
-        pass
 
-    @property
-    @staticmethod
-    @abstractmethod
-    def extensions() -> List[str]:
-        pass
+    mimetypes: ClassVar[Sequence[str]]
+    extensions: ClassVar[Sequence[str]]
 
     def __init__(self, path: str):
         self.path = path
@@ -94,7 +82,7 @@ class TypedFileImpl(ABC):
         pass
 
     @classmethod
-    def recognizes(cls, mimetype: str, extension: str):
+    def recognizes(cls, mimetype: str, extension: str) -> bool:
         return mimetype in cls.mimetypes or extension in cls.extensions
 
     def __repr__(self):

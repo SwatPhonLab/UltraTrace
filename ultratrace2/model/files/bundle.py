@@ -25,9 +25,9 @@ class FileBundle:
 
     def has_impl(self) -> bool:
         return (
-            self.alignment_file.has_impl
-            or self.image_file.has_impl
-            or self.sound_file.has_impl
+            self.alignment_file.has_impl()
+            or self.image_file.has_impl()
+            or self.sound_file.has_impl()
         )
 
     def __repr__(self):
