@@ -59,6 +59,8 @@ class Search(Module):
             tg = self.app.Data.checkFileLevel('.TextGrid', f)
             if tg:
                 grid = self.app.TextGrid.fromFile(tg)
+                if grid is None:
+                    return
                 for tier in grid:
                     if TextGrid.isIntervalTier(tier):
                         for el in tier:

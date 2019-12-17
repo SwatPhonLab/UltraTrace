@@ -223,7 +223,7 @@ class App(ThemedTk):
 		self.getWinSize()
 		self.alignBottomRight(self.oldwidth-self.leftwidth)
 		if self.Dicom.zframe.image:
-			self.Dicom.zframe.setImage(self.Dicom.zframe.image)
+			self.Dicom.zframe.set_image(self.Dicom.zframe.image)
 
 	def alignBottomLeftWrapper(self, event=None):
 		if self.isResizing: return
@@ -246,7 +246,7 @@ class App(ThemedTk):
 		if event == None or event.widget == self:
 			self.alignBottomRight(self.winfo_width() - self.leftwidth)
 			if self.Dicom.zframe.image:
-				self.Dicom.zframe.setImage(self.Dicom.zframe.image)
+				self.Dicom.zframe.set_image(self.Dicom.zframe.image)
 		self.isResizing = False
 	def alignBottomRight(self,x):
 		''' '''
@@ -416,7 +416,7 @@ class App(ThemedTk):
 			#resize dicom image
 			png_loc = self.Data.getPreprocessedDicom(self.frame)
 			image = PIL.Image.open( png_loc )
-			self.Dicom.zframe.setImage(image)
+			self.Dicom.zframe.set_image(image)
 			# x = self.Dicom.zframe.width
 			x = self.winfo_width() - self.LEFT.winfo_width()
 			# y = self.Dicom.zframe.height
@@ -455,8 +455,8 @@ class App(ThemedTk):
 				lastClick = self.click
 				thisClick = (event.x, event.y)
 				# enforce minimum distance b/w new crosshairs
-				dx = abs(thisClick[0] - lastClick[0]) / self.Dicom.zframe.imgscale
-				dy = abs(thisClick[1] - lastClick[1]) / self.Dicom.zframe.imgscale
+				dx = abs(thisClick[0] - lastClick[0]) / self.Dicom.zframe.get_zoom_scale()
+				dy = abs(thisClick[1] - lastClick[1]) / self.Dicom.zframe.get_zoom_scale()
 				if dx > util.CROSSHAIR_DRAG_BUFFER or dy > util.CROSSHAIR_DRAG_BUFFER:
 					self.click = thisClick
 					ch = self.Trace.add( *self.click )
