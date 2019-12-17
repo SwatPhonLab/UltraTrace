@@ -1,4 +1,5 @@
 from tkinter.filedialog import askdirectory as choose_dir
+from typing import Optional
 
 from . import utils
 from .gui import GUI
@@ -16,7 +17,15 @@ class App:
             path = args.path
 
         self.project = Project(path)
-        self.gui = GUI(self, theme=args.theme)
+        self.gui = GUI(theme=args.theme)
 
     def main(self):
         pass
+
+# singleton
+app: Optional[App] = None
+
+def initialize_app(args) -> App: # FIXME: be more granular here
+    global app
+    app = App(args)
+    return app

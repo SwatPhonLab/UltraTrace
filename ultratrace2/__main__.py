@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from .app import App
+from .app import initialize_app
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -42,5 +42,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    app = App(args)
+    app = initialize_app(args)
     app.main()

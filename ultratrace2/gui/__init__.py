@@ -2,6 +2,7 @@ import logging
 
 from typing import Optional, Type
 
+from ..app import app
 from .themes import ThemedTk, get_theme
 from .widgets import ALIGN_HORIZONTAL, ALIGN_VERTICAL
 from .widgets.audio import Audio
@@ -15,29 +16,27 @@ from .widgets.undo import Undo
 from .widgets.video import Video
 
 class GUI(ThemedTk):
-    def __init__(self, app: Type['App'], theme: Optional[str] = None):
+    def __init__(self, theme: Optional[str] = None):
 
-        self.app = app
+        self.audio = Audio()
+        self.control = Control()
+        self.dicom = Dicom()
+        self.spectrogram = Spectrogram()
+        self.textgrid = TextGrid()
+        self.trace = Trace()
+        self.undo = Undo()
+        self.video = Video()
 
-        self.audio = Audio(app)
-        self.control = Control(app)
-        self.dicom = Dicom(app)
-        self.spectrogram = Spectrogram(app)
-        self.textgrid = TextGrid(app)
-        self.trace = Trace(app)
-        self.undo = Undo(app)
-        self.video = Video(app)
-
-        self.root = Container(app, ALIGN_VERTICAL,
-            Container(app, ALIGN_HORIZONTAL,
-                Container(app, ALIGN_VERTICAL,
+        self.root = Container(ALIGN_VERTICAL,
+            Container(ALIGN_HORIZONTAL,
+                Container(ALIGN_VERTICAL,
                     self.control,
                     self.trace,
                     self.undo,
                 ),
                 self.dicom,
             ),
-            Container(app, ALIGN_VERTICAL,
+            Container(ALIGN_VERTICAL,
                 self.spectrogram,
                 self.textgrid,
             ),

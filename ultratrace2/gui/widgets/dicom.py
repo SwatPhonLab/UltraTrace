@@ -3,8 +3,8 @@ from ... import utils
 from . import OptionalWidget
 
 class Dicom(OptionalWidget):
-    def __init__(self, app):
-        super().__init__(app)
+    def __init__(self):
+        super().__init__()
 
         #if not args.dicom: # FIXME: allow passing command line arg to turn off DICOM viewer
             #return
