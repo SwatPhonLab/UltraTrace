@@ -65,10 +65,10 @@ class ZoomFrame(tk.Frame):
         scale = self.get_zoom_scale()
 
         self.container = self.canvas.create_rectangle(
-                0,#-width/2,
-                0,#-height/2,
-                width,#width/2,
-                height,#height/2,
+                0,
+                0,
+                width,
+                height,
                 width=0,
                 tags='delendum')
         self.canvas.scale('all', 0, 0, scale, scale)
