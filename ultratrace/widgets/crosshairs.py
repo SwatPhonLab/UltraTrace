@@ -62,13 +62,13 @@ class Crosshairs:
         canvas coords -> absolute coords
         absolute coords are % along each axis (e.g. center of image = [.5,.5])
         '''
-        # x = (self.trueX - self.zframe.panX) / self.zframe.imgscale
-        # y = (self.trueY - self.zframe.panY) / self.zframe.imgscale
+        # x = (self.trueX - self.zframe.panX) / self.zframe.get_zoom_scale()
+        # y = (self.trueY - self.zframe.panY) / self.zframe.get_zoom_scale()
         # return x,y
-        truex = (x-self.zframe.panX)/(self.zframe.width*self.zframe.imgscale)
-        truey = (y-self.zframe.panY)/(self.zframe.height*self.zframe.imgscale)
-        # truex = (x-self.zframe.panX)/self.zframe.imgscale
-        # truey = (y-self.zframe.panY)/self.zframe.imgscale
+        truex = (x-self.zframe.panX)/(self.zframe.width*self.zframe.get_zoom_scale())
+        truey = (y-self.zframe.panY)/(self.zframe.height*self.zframe.get_zoom_scale())
+        # truex = (x-self.zframe.panX)/self.zframe.get_zoom_scale()
+        # truey = (y-self.zframe.panY)/self.zframe.get_zoom_scale()
         debug(truex, truey)
         return truex, truey
 
@@ -77,10 +77,10 @@ class Crosshairs:
         absolute coords -> canvas coords
         absolute coords are % along each axis (e.g. center of image = [.5,.5])
         '''
-        # x = (_x * self.zframe.imgscale) + self.zframe.panX
-        # y = (_y * self.zframe.imgscale) + self.zframe.panY
-        x = truex * self.zframe.width * self.zframe.imgscale + self.zframe.panX
-        y = truey * self.zframe.height * self.zframe.imgscale + self.zframe.panY
+        # x = (_x * self.zframe.get_zoom_scale()) + self.zframe.panX
+        # y = (_y * self.zframe.get_zoom_scale()) + self.zframe.panY
+        x = truex * self.zframe.width * self.zframe.get_zoom_scale() + self.zframe.panX
+        y = truey * self.zframe.height * self.zframe.get_zoom_scale() + self.zframe.panY
         return x, y
 
     def transformCoords(self, x, y):
@@ -91,7 +91,7 @@ class Crosshairs:
 
     def transformLength(self, l):
         ''' transforms a length by our current zoom-amount '''
-        return l * self.zframe.imgscale
+        return l * self.zframe.get_zoom_scale()
 
     def getDistance(self, click):
         ''' calculates the distance from centerpoint to a click event '''

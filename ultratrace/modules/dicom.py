@@ -35,7 +35,7 @@ class Dicom(Module):
             self.reader = None
 
             # zoom frame (contains our tracing canvas)
-            self.zframe = ZoomFrame(self.app.RIGHT, 1.3, app)
+            self.zframe = ZoomFrame(self.app.RIGHT, app)
 
             # reset zoom button
             self.zoomResetBtn = Button(self.app.LEFT, text='Reset image', command=self.zoomReset, takefocus=0)#, pady=7 )
@@ -54,9 +54,6 @@ class Dicom(Module):
         if self.isLoaded():
             # creates a new canvas object and we redraw everything to it
             self.zframe.resetCanvas()
-            # self.zframe.canvas.bind('<Button-1>', self.app.onClickZoom )
-            # self.zframe.canvas.bind('<ButtonRelease-1>', self.app.onRelease )
-            # self.zframe.canvas.bind('<Motion>', self.app.onMotion )
 
             # we want to go here only after a button press
             if fromButton: self.app.framesUpdate()
@@ -66,7 +63,7 @@ class Dicom(Module):
         change the image on the zoom frame
         '''
         if self.reader and self.reader.loaded:
-            self.zframe.setImage(self.reader.getFrame(_frame or self.app.frame))
+            self.zframe.set_image(self.reader.getFrame(_frame or self.app.frame))
 
     def load(self, event=None):
         '''
@@ -163,6 +160,7 @@ class Dicom(Module):
         self.app.framesNextBtn.grid(  row=0, column=3 )
         self.zoomResetBtn.grid( row=7 )
         self.app.Control.grid()
+        self.zframe.grid()
 
     def grid_remove(self):
         '''
@@ -175,3 +173,5 @@ class Dicom(Module):
         self.app.framesNextBtn.grid_remove()
         self.zoomResetBtn.grid_remove()
         self.app.Control.grid_remove()
+        self.zframe.grid_remove()
+

@@ -1,158 +1,122 @@
-from tkinter import Canvas, Frame
-from PIL import ImageTk # pillow
+import tkinter as tk
+from PIL import ImageTk
 
 from .rect_tracker import RectTracker
 
-class ZoomFrame(Frame):
-    '''
-    Wrapper for a Tk Frame() object that includes zooming and panning functionality.
-    This code is inspired by the answer from https://stackoverflow.com/users/7550928/foo-bar
-    at https://stackoverflow.com/questions/41656176/tkinter-canvas-zoom-move-pan ...
-    Could probably be cleaned up and slimmed down
-    '''
-    def __init__(self, master, delta, app):
-        Frame.__init__(self, master)
+class ZoomFrame(tk.Frame):
+    WIDGET_WIDTH = 800
+    WIDGET_HEIGHT = 600
+    MIN_ZOOM = -5
+    MAX_ZOOM = 5
+    SCALE_FACTOR = 1.3
+    def __init__(self, master, app):
+
+        super().__init__(master)
+
         self.app = app
-        self.delta = delta
-        self.maxZoom = 5
-        #self.resetCanvas(master)
 
-        self.canvas_width = 800
-        self.width = 0
-        self.canvas_height = 600
-        self.height = 0
+        self.canvas = tk.Canvas(
+                master,
+                bg='grey',
+                width=self.WIDGET_WIDTH,
+                height=self.WIDGET_HEIGHT,
+                highlightthickness=0)
+        self.canvas.update() # tkinter needs this or else it won't render the image
+
+        self.canvas.bind('<Control-Button-1>', self.pan_start)
+        self.canvas.bind('<Control-B1-Motion>', self.pan)
+        self.canvas.bind('<MouseWheel>', self.zoom) # Windows / MacOS
+        self.canvas.bind('<Button-4>', self.zoom_in) # Linux scroll up
+        self.canvas.bind('<Button-5>', self.zoom_out) # Linux scroll down
+        self.canvas.bind('<Button-1>', self.app.onClickZoom)
+        self.canvas.bind('<Motion>', self.app.onMotion)
+
+        self.app.bind('<Command-equal>', self.zoom_in)
+        self.app.bind('<Command-minus>', self.zoom_out)
+
+        RectTracker(self.canvas).autodraw(outline='blue')
+
         self.shown = False
-        self.aspect_ratio = 4.0/3.0
 
-        self.canvas = Canvas( master,  bg='grey', width=self.canvas_width, height=self.canvas_height, highlightthickness=0 )
-        self.canvas.grid(row=0, column=0, sticky='news')
-        self.canvas.update() # do i need
-        rect = RectTracker(self.canvas)
-        rect.autodraw(outline='blue')
+        self.reset_canvas()
 
-        # self.master.rowconfigure(0, weight=1) # do i need
-        # self.master.columnconfigure(0, weight=1) # do i need
+    def reset_canvas(self):
 
-        # self.canvas.bind('<Configure>', self.showImage ) # on canvas resize events
-        self.canvas.bind('<Control-Button-1>', self.moveFrom )
-        self.canvas.bind('<Control-B1-Motion>', self.moveTo )
-        self.canvas.bind('<MouseWheel>', self.wheel ) # Windows & Linux
-        self.canvas.bind('<Button-4>', self.wheel )   # Linux scroll up
-        self.canvas.bind('<Button-5>', self.wheel )   # Linux scroll down
-
-        self.resetCanvas()
-
-        self.canvas.bind('<Button-1>', self.app.onClickZoom )
-        self.canvas.bind('<Motion>', self.app.onMotion )
-
-        self.app.bind('<Command-equal>', self.wheel )
-        self.app.bind('<Command-minus>', self.wheel )
-
-    def resetCanvas(self):
-        self.canvas_width = 800
-        self.canvas_height = 600
-
-        # self.canvas = Canvas( master,  bg='grey', width=self.canvas_width, height=self.canvas_height, highlightthickness=0 )
-        # self.canvas.grid(row=0, column=0, sticky='news')
-        # self.canvas.update() # do i need
-
-        # self.master.rowconfigure(0, weight=1) # do i need
-        # self.master.columnconfigure(0, weight=1) # do i need
-        #
-        # self.canvas.bind('<Configure>', self.showImage ) # on canvas resize events
-        # self.canvas.bind('<Control-Button-1>', self.moveFrom )
-        # self.canvas.bind('<Control-B1-Motion>', self.moveTo )
-        # self.canvas.bind('<MouseWheel>', self.wheel ) # Windows & Linux FIXME
-        # self.canvas.bind('<Button-4>', self.wheel )   # Linux scroll up
-        # self.canvas.bind('<Button-5>', self.wheel )   # Linux scroll down
-
-        self.origX = self.canvas.xview()[0] - 1
-        self.origY = self.canvas.yview()[0] - 150
-
-        self.zoom = 0
-        self.imgscale = 1.0
         self.image = None
-        self.panStartX = 0
-        self.panStartY = 0
-        self.panX = 0
-        self.panY = 0
+        self.zoom = 0
+        self.pan_start_x = 0
+        self.pan_start_y = 0
+        self.pan_x = 0
+        self.pan_y = 0
 
-    def resetImageDimensions(self):
-        self.width = 0
-        self.height = 0
-        self.aspect_ratio = 1
-
-    def setImage(self, image): # expect an Image() instance
+    def set_image(self, image):
         self.image = image
-        if self.width == 0:
-            self.width, self.height = self.image.size
-            self.aspect_ratio = self.width/self.height
-        win_width = self.app.RIGHT.winfo_width()
-        asp_height = round(win_width / self.aspect_ratio)
-        win_height = self.app.RIGHT.winfo_height()
-        asp_width = round(win_height * self.aspect_ratio)
-        if asp_height > win_height:
-            self.height = win_height
-            self.width = asp_width
-        else:
-            self.height = asp_height
-            self.width = win_width
-        self.showImage()
+        self.show_image()
 
-    def showImage(self, event=None):
-        # even if we're not showing a new frame, we want to remove the old one
+    def get_zoom_scale(self):
+        return self.ZOOM_FACTOR ** self.zoom
+
+    def show_image(self, event=None):
         self.canvas.delete('delendum')
-        if self.image != None:
-            self.container = self.canvas.create_rectangle(0,0,self.width,self.height,width=0, tags='delendum')
-            self.canvas.scale('all', 0, 0, self.imgscale, self.imgscale)
-            self.canvas.move('all', self.panX, self.panY)
-            bbox = self.canvas.bbox(self.container)
-            image = self.image.resize((bbox[2] - bbox[0], bbox[3] - bbox[1]))
-            imagetk = ImageTk.PhotoImage(image)
-            image = self.canvas.create_image(bbox[0], bbox[1], anchor='nw', image=imagetk, tags='delendum')
-            self.canvas.lower(image)
-            self.canvas.imagetk = imagetk
-            self.shown = True
-            self.app.Trace.update()
+        if self.image is None:
+            return
 
-    def wheel(self, event):
-        if self.image != None:
-            if event.keysym == 'equal' or event.keysym == 'minus': #what is this for?
-                x = self.canvas_width/2
-                y = self.canvas_height/2
-            else:                                                   #do these vars get used?
-                x = self.canvas.canvasx(event.x)
-                y = self.canvas.canvasy(event.y)
+        width, height = self.image.size
+        scale = self.get_zoom_scale()
 
-            # Respond to Linux (event.num) or Windows (event.delta) wheel event
-            if event.num == 5 or event.delta < 0 or event.keysym == 'minus':  # zoom out
-                if self.zoom < self.maxZoom:
-                    self.zoom += 1
-                    self.imgscale /= self.delta
+        self.container = self.canvas.create_rectangle(
+                0,
+                0,
+                width,
+                height,
+                width=0,
+                tags='delendum')
+        self.canvas.scale('all', 0, 0, scale, scale)
+        self.canvas.move('all', self.pan_x, self.pan_y)
 
-            elif event.num == 4 or event.delta > 0 or event.keysym == 'equal':  # zoom in
-                if self.zoom > self.maxZoom * -1:
-                    self.zoom -= 1
-                    self.imgscale *= self.delta
+        x0, y0, x1, y1 = self.canvas.bbox(self.container)
+        scaled_image = self.image.resize((x1 - x0, y1 - y0))
 
-            bbox = self.canvas.coords(self.container)
-            self.panX = bbox[0]
-            self.panY = bbox[1]
-            self.showImage()
+        # save a reference so that python doesn't garbage collect it
+        self.image_tk = ImageTk.PhotoImage(scaled_image)
+        self.canvas.create_image(
+                x0,
+                y0,
+                anchor='nw',
+                image=self.image_tk,
+                tags='delendum')
+        self.canvas.lower('delendum')
 
-    def scrollY(self, *args, **kwargs):
-        self.canvas.yview(*args, **kwargs)
-        self.showImage()
+    def zoom(self, event):
+        if event.delta > 0:
+            self.zoom_in()
+        else:
+            self.zoom_out()
 
-    def moveFrom(self, event):
-        self.panStartX = event.x
-        self.panStartY = event.y
+    def zoom_in(self):
+        if self.image is not None and self.zoom < self.MAX_ZOOM:
+            self.zoom += 1
+            self.show_image()
 
-    def moveTo(self, event):
-        dx = event.x - self.panStartX
-        dy = event.y - self.panStartY
-        self.panStartX = event.x
-        self.panStartY = event.y
-        self.panX += dx
-        self.panY += dy
-        self.showImage()
+    def zoom_out(self):
+        if self.image is not None and self.zoom > self.MIN_ZOOM:
+            self.zoom -= 1
+            self.show_image()
+
+    def pan_start(self, event):
+        self.pan_start_x = event.x
+        self.pan_start_y = event.y
+
+    def pan(self, event):
+        self.pan_x += event.x - self.pan_start_x
+        self.pan_y += event.y - self.pan_start_y
+        self.pan_start_x = event.x
+        self.pan_start_y = event.y
+        self.show_image()
+
+    def grid(self):
+        self.canvas.grid(row=0, column=0, sticky='news')
+
+    def grid_remove(self):
+        self.canvas.grid_remove()
+
