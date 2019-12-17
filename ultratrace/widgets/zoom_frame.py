@@ -94,12 +94,12 @@ class ZoomFrame(tk.Frame):
             self.zoom_out()
 
     def zoom_in(self):
-        if self.image is not None and self.zoom > self.MIN_ZOOM:
+        if self.image is not None and self.zoom < self.MAX_ZOOM:
             self.zoom += 1
             self.show_image()
 
     def zoom_out(self):
-        if self.image is not None and self.zoom < self.MAX_ZOOM:
+        if self.image is not None and self.zoom > self.MIN_ZOOM:
             self.zoom -= 1
             self.show_image()
 
