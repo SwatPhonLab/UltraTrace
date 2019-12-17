@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog="ultratrace")
 
     # noqa: E128
     parser.add_argument(
