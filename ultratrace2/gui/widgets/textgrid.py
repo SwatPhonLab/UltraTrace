@@ -10,7 +10,7 @@ class TextGrid(OptionalWidget):
             #return
 
         try:
-            from textgrid import TextGrid
+            from textgrid import TextGrid # type: ignore
             self.is_imported = True
         except ImportError:
             utils.warn('TextGrid Widget failed to load')

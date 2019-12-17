@@ -7,7 +7,7 @@ from typing import Optional
 from .. import utils
 
 try:
-    from ttkthemes import ThemedTk
+    from ttkthemes import ThemedTk # type: ignore
 except ImportError:
     logging.warning('Unable to load themes')
     from tkinter import Tk as ThemedTk
@@ -20,7 +20,7 @@ def get_theme(name: str) -> Optional[str]:
     if platform.system() == 'Linux':
         try:
 
-            import xrp
+            import xrp # type: ignore
 
             Xresources_path = os.path.join(os.environ['HOME'], '.Xresources')
             if os.path.exists(Xresources_path):

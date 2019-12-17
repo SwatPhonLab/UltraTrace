@@ -11,8 +11,8 @@ class Dicom(OptionalWidget):
 
         try:
             import numpy as np
-            import pydicom as dicom
-            from PIL import Image, ImageTk, ImageEnhance
+            import pydicom as dicom # type: ignore
+            from PIL import Image, ImageTk, ImageEnhance # type: ignore
             self.is_imported = True
         except ImportError:
             utils.warn('Dicom Widget failed to load')

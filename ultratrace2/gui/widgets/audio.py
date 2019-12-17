@@ -10,8 +10,8 @@ class Audio(OptionalWidget):
             #return
 
         try:
-            import pyaudio
-            from pydub import AudioSegment
+            import pyaudio # type: ignore
+            from pydub import AudioSegment # type: ignore
             self.is_imported = True
         except ImportError:
             utils.warn('Audio Widget failed to load')

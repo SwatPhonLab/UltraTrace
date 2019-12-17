@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk # type: ignore
 
 from .xhair import XHair
 
