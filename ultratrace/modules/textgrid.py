@@ -224,7 +224,7 @@ class TextGrid(Module):
             sentenceTier = IntervalTier("text")
             sentenceTier.add(minTime, maxTime, "text")
             self.TextGrid.tiers.append(sentenceTier)
-            fname = self.app.Data.unrelativize(self.app.Data.getCurrentFileName() + '.TextGrid')
+            fname = self.app.Data.unrelativize(self.app.Data.getCurrentFilename() + '.TextGrid')
             self.app.Data.setFileLevel('.TextGrid', fname)
         names = self.TextGrid.getNames()
         for i, n in enumerate(names):
