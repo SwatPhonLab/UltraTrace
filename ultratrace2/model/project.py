@@ -40,7 +40,7 @@ class Project:
 
         save_dir = Project.get_save_dir(root_path)
         if not os.path.exists(save_dir):
-            os.mkdir(save_dir)
+            os.mkdir(save_dir, mode=0o755)
 
         save_file = Project.get_save_file(root_path)
         try:

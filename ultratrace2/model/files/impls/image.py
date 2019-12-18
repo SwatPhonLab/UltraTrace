@@ -54,7 +54,7 @@ class ImageSet(TypedFile):
                     "Invalid DICOM ({self.path}), unknown shape {pixels.shape}"
                 )
 
-            os.mkdir(self.png_path)
+            os.mkdir(self.png_path, mode=0o755)
             for i in tqdm(range(frames), desc="converting to PNG"):
                 filename = os.path.join(self.png_path, f"{i:06}.png")
                 arr = pixels[i, :, :] if is_greyscale else pixels[i, :, :, :]
