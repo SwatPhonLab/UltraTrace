@@ -17,7 +17,7 @@ class XHair:
         self.is_selected = False
         self.is_hidden = False
 
-    def sq_dist_from(self, other: Union[XHair, Tuple[float, float]]) -> float:
+    def sq_dist_from(self, other: Union["XHair", Tuple[float, float]]) -> float:
         # Euclidean distance squared, since sqrt() is relatively slow :^)
         if isinstance(other, XHair):
             dx = self.x - other.x
