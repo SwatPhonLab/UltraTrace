@@ -55,9 +55,7 @@ class FileBundleList:
         self.has_image_impl: bool = False
         self.has_sound_impl: bool = False
 
-        # FIXME: do this when we add to our data structure
         for filename, bundle in bundles.items():
-            # build up self.bundles here
             if not self.has_alignment_impl and bundle.alignment_file.has_impl():
                 self.has_alignment_impl = True
             if not self.has_image_impl and bundle.image_file.has_impl():

@@ -11,8 +11,7 @@ logger = logging.getLogger(__name__)
 class Project:
     def __init__(self, traces: TraceList, files: FileBundleList):
         """
-        Internal function: to construct a Project, either call via ::initialize_from_path()
-        or ::load().
+        Internal function: to construct a Project, either call ::get_by_path()
         """
         self.traces = traces
         self.files = files
