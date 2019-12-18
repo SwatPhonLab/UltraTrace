@@ -1,40 +1,67 @@
+import logging
 import os
 import pickle
 
 from .trace import TraceList
 from .files.bundle import FileBundleList
 
+logger = logging.getLogger(__name__)
+
 
 class Project:
-    def __init__(self, path: str):
+    def __init__(self, traces: TraceList, files: FileBundleList):
         """
         Internal function: to construct a Project, either call via ::initialize_from_path()
         or ::load().
         """
-        if not os.path.exists(path):
-            raise ValueError(f"cannot initialize project at {path}")
-        self.root_path = os.path.realpath(os.path.abspath(path))  # absolute path
-        self.traces = TraceList()
-        self.files = FileBundleList()
+        self.traces = traces
+        self.files = files
 
     def save(self):
         raise NotImplementedError()
 
     @classmethod
-    def load(cls, project_path) -> "Project":
-        with open(project_path, "rb") as fp:
-            project = pickle.load(fp)
-            assert isinstance(project, Project)
-            return project
+    def load(cls, save_file) -> "Project":
+        try:
+            with open(save_file, "rb") as fp:
+                project = pickle.load(fp)
+                assert isinstance(project, Project)
+                return project
+        except Exception as e:
+            logger.error(e)
+            raise RuntimeError(str(e))
 
     @classmethod
-    def initialize_from_path(cls, data_path) -> "Project":
-        project = Project(data_path)
-        project.scan_files()
-        return project
+    def get_by_path(cls, root_path) -> "Project":
 
-    def scan_files(self) -> None:
-        self.files.scan_dir(self.root_path)
+        root_path = os.path.realpath(os.path.abspath(root_path))  # absolute path
+        if not os.path.exists(root_path):
+            raise ValueError(f"cannot initialize project at {root_path}")
+
+        save_dir = Project.get_save_dir(root_path)
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+
+        save_file = Project.get_save_file(root_path)
+        try:
+            return Project.load(save_file)
+        except RuntimeError:
+            logger.info(
+                f"Unable to find existing project at {root_path}, creating new one..."
+            )
+
+        traces = TraceList()
+        file_bundles = FileBundleList.build_from_dir(root_path)
+        return Project(traces, file_bundles)
+
+    @staticmethod
+    def get_save_dir(path: str) -> str:
+        return os.path.join(path, ".ultratrace")
+
+    @staticmethod
+    def get_save_file(path: str) -> str:
+        save_dir = Project.get_save_dir(path)
+        return os.path.join(save_dir, "project.pkl")
 
     def filepath(self):
         raise NotImplementedError()

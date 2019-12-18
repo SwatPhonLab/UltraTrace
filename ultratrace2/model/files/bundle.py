@@ -1,7 +1,7 @@
 import logging
 import os
 
-from typing import Dict, List, Sequence, Set
+from typing import Dict, Sequence, Set
 
 from .impls import Sound, Alignment, ImageSet
 
@@ -41,24 +41,37 @@ class FileBundleList:
             ".git",
             "node_modules",
             "__pycache__",
+            ".ultratrace",
             # FIXME: add more ignoreable dirs
         ]
     )
 
-    def __init__(self, extra_exclude_dirs: Sequence[str] = []):
-
-        # FIXME: implement `extra_exclude_dirs` as a command-line arg
-        for extra_exclude_dir in extra_exclude_dirs:
-            self.exclude_dirs.add(extra_exclude_dir)
-
-        self.has_alignment_impl = False
-        self.has_image_impl = False
-        self.has_sound_impl = False
+    def __init__(self, bundles: Dict[str, FileBundle]):
 
         self.current_bundle = None
-        self.bundles: List[FileBundle] = []  # FIXME: build up this data structure
+        self.bundles: Dict[str, FileBundle] = bundles
 
-    def scan_dir(self, root_path):
+        self.has_alignment_impl: bool = False
+        self.has_image_impl: bool = False
+        self.has_sound_impl: bool = False
+
+        # FIXME: do this when we add to our data structure
+        for filename, bundle in bundles.items():
+            # build up self.bundles here
+            if not self.has_alignment_impl and bundle.alignment_file.has_impl():
+                self.has_alignment_impl = True
+            if not self.has_image_impl and bundle.image_file.has_impl():
+                self.has_image_impl = True
+            if not self.has_sound_impl and bundle.sound_file.has_impl():
+                self.has_sound_impl = True
+
+    @classmethod
+    def build_from_dir(
+        cls, root_path: str, extra_exclude_dirs: Sequence[str] = []
+    ) -> "FileBundleList":
+
+        # FIXME: implement `extra_exclude_dirs` as a command-line arg
+        exclude_dirs = cls.exclude_dirs.copy().union(extra_exclude_dirs)
 
         bundles: Dict[str, FileBundle] = {}
 
@@ -66,7 +79,7 @@ class FileBundleList:
         #     modify `dirs` in-place so that we can skip certain directories.  For more info,
         #     see https://stackoverflow.com/questions/19859840/excluding-directories-in-os-walk
         for path, dirs, filenames in os.walk(root_path, topdown=True):
-            dirs[:] = [d for d in dirs if d not in self.exclude_dirs]
+            dirs[:] = [d for d in dirs if d not in exclude_dirs]
 
             for filename in filenames:
 
@@ -85,12 +98,4 @@ class FileBundleList:
                 if not bundles[name].interpret(filepath):
                     logger.warning(f"unrecognized filetype: {filepath}")
 
-        # FIXME: do this when we add to our data structure
-        for filename, bundle in bundles.items():
-            # build up self.bundles here
-            if not self.has_alignment_impl and bundle.alignment_file.has_impl():
-                self.has_alignment_impl = True
-            if not self.has_image_impl and bundle.image_file.has_impl():
-                self.has_image_impl = True
-            if not self.has_sound_impl and bundle.sound_file.has_impl():
-                self.has_sound_impl = True
+        return FileBundleList(bundles)
