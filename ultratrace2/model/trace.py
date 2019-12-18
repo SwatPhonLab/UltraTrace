@@ -1,4 +1,4 @@
-from typing import ClassVar, Dict, Set, TYPE_CHECKING
+from typing import ClassVar, Dict, List, Set, TYPE_CHECKING
 from uuid import uuid4, UUID
 
 from .color import Color, get_random_color, RED
