@@ -24,3 +24,9 @@ def typecheck(session):
 def lint(session):
     session.install(".[dev]")
     session.run("flake8", "ultratrace2")
+
+
+@nox.session
+def tests(session):
+    session.install(".[dev]")
+    session.run("pytest", "ultratrace2")
