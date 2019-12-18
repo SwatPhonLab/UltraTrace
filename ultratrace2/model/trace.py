@@ -44,11 +44,12 @@ class Trace:
     def hide(self) -> None:
         self.is_visible = False
 
-    def add_xhair(self, bundle: FileBundle, frame: int, xhair: XHair) -> None:
+    def add_xhair(self, bundle: FileBundle, frame: int, x: float, y: float) -> None:
         if bundle not in self.xhairs:
             self.xhairs[bundle] = {}
         if frame not in self.xhairs[bundle]:
             self.xhairs[bundle][frame] = set()
+        xhair = XHair(self, x, y)
         self.xhairs[bundle][frame].add(xhair)
 
 
