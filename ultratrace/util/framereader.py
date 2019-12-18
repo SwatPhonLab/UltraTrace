@@ -184,7 +184,6 @@ class ULTScanLineReader(FrameReader):
 		self.FrameSize = self.NumVectors * self.PixPerVector
 		self.data.seek(0, os.SEEK_END)
 		self.FrameCount = self.data.tell() // self.FrameSize
-		self.figure = plt.figure()
 
 	def load(self):
 		raise NotImplementedError()
@@ -193,15 +192,16 @@ class ULTScanLineReader(FrameReader):
 		self.data.seek(self.FrameSize * (framenum - 1))
 		byt = self.data.read(self.FrameSize)
 		data = np.ndarray(shape=(self.NumVectors, self.PixPerVector), buffer=byt, dtype='uint8').swapaxes(0,1)
-		ax = self.figure.add_subplot(111, polar='True')
+		fig = plt.figure()
+		ax = fig.add_subplot(111, polar='True')
 		ax.axis('off')
 		ax.set_thetamin(0)
 		ax.set_thetamax(180)
 		ax.pcolormesh(self.thetaspace, self.radspace, data, cmap='gray')
-		canvas = FigureCanvasAgg(self.figure)
+		canvas = FigureCanvasAgg(fig)
 		canvas.draw()
 		ret = Image.frombytes('RGBA', canvas.get_width_height(), canvas.tostring_argb())
-		plt.clf()
+		plt.close(fig)
 		return ret
 
 	def getFrameTimes(self):

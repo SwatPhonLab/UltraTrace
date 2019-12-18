@@ -84,7 +84,7 @@ class ZoomFrame(Frame):
 
     def setImage(self, image): # expect an Image() instance
         self.image = image
-        if self.width == 0:
+        if self.width == 0 and image:
             self.width, self.height = self.image.size
             self.aspect_ratio = self.width/self.height
         win_width = self.app.RIGHT.winfo_width()
