@@ -11,6 +11,7 @@ def get_platform():
         except ImportError:
             __platform = 'generic'
         return __platform
+    return __platform
 
 def printProgressBar(iteration, total, prefix = '', suffix = '', decimals = 1, length = 25, fill = '█'):
     """
