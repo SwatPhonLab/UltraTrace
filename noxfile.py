@@ -18,3 +18,9 @@ def typecheck(session):
     """Run static analyzer against source files."""
     session.install(".[dev]")
     session.run("mypy", "ultratrace2")
+
+
+@nox.session
+def tests(session):
+    session.install(".[dev]")
+    session.run("pytest", "ultratrace2")

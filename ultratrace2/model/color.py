@@ -1,11 +1,46 @@
 import random
 
+PIXEL_MIN = 0
+PIXEL_MAX = 255
+
+
+def _pixel_value(raw_value: int) -> int:
+    if not (PIXEL_MIN <= raw_value <= PIXEL_MAX):
+        raise ValueError(
+            f"Color must be in [{PIXEL_MIN}, {PIXEL_MAX}], but got {raw_value}"
+        )
+    return raw_value
+
 
 class Color:
     def __init__(self, r: int, g: int, b: int):
-        self.r = r
-        self.g = g
-        self.b = b
+        self._r = _pixel_value(r)
+        self._g = _pixel_value(g)
+        self._b = _pixel_value(b)
+
+    @property
+    def r(self) -> int:
+        return self._r
+
+    @r.setter
+    def r(self, raw_value: int) -> None:
+        self._r = _pixel_value(raw_value)
+
+    @property
+    def g(self) -> int:
+        return self._g
+
+    @g.setter
+    def g(self, raw_value: int) -> None:
+        self._g = _pixel_value(raw_value)
+
+    @property
+    def b(self) -> int:
+        return self._b
+
+    @b.setter
+    def b(self, raw_value: int) -> None:
+        self._b = _pixel_value(raw_value)
 
     def __repr__(self) -> str:
         return f"Color(0x{self.r:02x},0x{self.g:02x},0x{self.b:02x})"
@@ -13,12 +48,12 @@ class Color:
 
 def get_random_color() -> Color:
     return Color(
-        random.randint(0x00, 0xFF),
-        random.randint(0x00, 0xFF),
-        random.randint(0x00, 0xFF),
+        random.randint(PIXEL_MIN, PIXEL_MAX),
+        random.randint(PIXEL_MIN, PIXEL_MAX),
+        random.randint(PIXEL_MIN, PIXEL_MAX),
     )
 
 
-RED = Color(0xFF, 0x00, 0x00)
-GREEN = Color(0x00, 0xFF, 0x00)
-BLUE = Color(0x00, 0x00, 0xFF)
+RED = Color(PIXEL_MAX, PIXEL_MIN, PIXEL_MIN)
+GREEN = Color(PIXEL_MIN, PIXEL_MAX, PIXEL_MIN)
+BLUE = Color(PIXEL_MIN, PIXEL_MIN, PIXEL_MAX)
