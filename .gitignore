@@ -13,3 +13,4 @@ Pipfile*
 __pycache__
 *.pyc
 .mypy_cache
+.nox

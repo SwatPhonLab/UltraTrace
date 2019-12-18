@@ -11,3 +11,10 @@ def format(session):
 def install(session):
     """Install ultratrace2. Assumes required system libraries are installed."""
     session.install(".")
+
+
+@nox.session
+def typecheck(session):
+    """Run static analyzer against source files."""
+    session.install(".[dev]")
+    session.run("mypy", "ultratrace2")
