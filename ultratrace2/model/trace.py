@@ -1,4 +1,5 @@
-from typing import ClassVar, Dict, List, Set, TYPE_CHECKING
+from collections import OrderedDict
+from typing import ClassVar, Dict, Set, TYPE_CHECKING
 from uuid import uuid4, UUID
 
 from .color import Color, get_random_color, RED
@@ -55,7 +56,7 @@ class Trace:
 
 class TraceList:
     def __init__(self):
-        self.traces: List[Trace] = []
+        self.traces: OrderedDict[UUID, Trace] = OrderedDict()
         default_trace = self.add_trace(
             Trace.DEFAULT_TRACE_NAME, Trace.DEFAULT_TRACE_COLOR,
         )
@@ -64,7 +65,7 @@ class TraceList:
 
     def add_trace(self, name: str, color: Color) -> Trace:
         trace = Trace(name, color)
-        self.traces.append(trace)
+        self.traces[trace.id] = trace
         return trace
 
     def get_default_trace(self) -> Trace:
