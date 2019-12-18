@@ -5,8 +5,8 @@ from .app import initialize_app
 
 logging.basicConfig(level=logging.DEBUG)
 
-if __name__ == "__main__":
 
+def main():
     parser = argparse.ArgumentParser()
 
     # noqa: E128
@@ -57,3 +57,7 @@ if __name__ == "__main__":
 
     app = initialize_app(args)
     app.main()
+
+
+if __name__ == "__main__":
+    main()
