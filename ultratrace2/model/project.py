@@ -34,8 +34,10 @@ class Project:
     def get_by_path(cls, root_path) -> "Project":
 
         root_path = os.path.realpath(os.path.abspath(root_path))  # absolute path
-        if not os.path.exists(root_path):
-            raise ValueError(f"cannot initialize project at {root_path}")
+        if not os.path.exists(root_path) or not os.path.isdir(root_path):
+            raise ValueError(
+                f"cannot initialize project at {root_path}: not a directory"
+            )
 
         save_dir = Project.get_save_dir(root_path)
         if not os.path.exists(save_dir):
