@@ -148,7 +148,7 @@ class DicomPNGReader(DicomReader):
 		for f in range(frames):
 			printProgressBar(f+1, frames, prefix = 'Processing:', suffix = ('complete (%d of %d)' % (f+1,frames)))
 			arr = pixels[ f,:,:,: ] if RGB else pixels[ f,:,: ]
-			img = PIL.Image.fromarray( arr )
+			img = Image.fromarray( arr )
 			img.save(self.png_name % (f+1), format='PNG', compress_level=1)
 
 		self.loaded = True
