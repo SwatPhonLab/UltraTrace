@@ -1,7 +1,7 @@
 import logging
 import os
 
-from typing import Dict, List, Set
+from typing import Dict, List, Sequence, Set
 
 from .impls import Sound, Alignment, ImageSet
 
@@ -45,25 +45,27 @@ class FileBundleList:
         ]
     )
 
-    def __init__(self, path: str, extra_exclude_dirs: List[str] = []):
+    def __init__(self, extra_exclude_dirs: Sequence[str] = []):
 
         # FIXME: implement `extra_exclude_dirs` as a command-line arg
         for extra_exclude_dir in extra_exclude_dirs:
             self.exclude_dirs.add(extra_exclude_dir)
 
-        self.path = path
         self.has_alignment_impl = False
         self.has_image_impl = False
         self.has_sound_impl = False
 
         self.current_bundle = None
+        self.bundles: List[FileBundle] = []  # FIXME: build up this data structure
+
+    def scan_dir(self, root_path):
 
         bundles: Dict[str, FileBundle] = {}
 
         # NB: `topdown=True` increases runtime cost from O(n) -> O(n^2), but it allows us to
         #     modify `dirs` in-place so that we can skip certain directories.  For more info,
         #     see https://stackoverflow.com/questions/19859840/excluding-directories-in-os-walk
-        for path, dirs, filenames in os.walk(path, topdown=True):
+        for path, dirs, filenames in os.walk(root_path, topdown=True):
             dirs[:] = [d for d in dirs if d not in self.exclude_dirs]
 
             for filename in filenames:
