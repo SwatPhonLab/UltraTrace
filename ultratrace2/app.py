@@ -48,7 +48,9 @@ class App:
         if project_hash in self.project_hashes:
             project_path = self.get_project_path(project_hash)
             return Project.load(project_path)
-        return Project.initialize_from_path(path)
+        project = Project.initialize_from_path(path)
+        self.project_hashes.add(project_hash)
+        return project
 
     def main(self) -> None:
         pass
