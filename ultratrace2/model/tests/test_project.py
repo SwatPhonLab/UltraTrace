@@ -1,6 +1,8 @@
 import pytest
 
 from ..project import Project
+from ..trace import TraceList
+from ..files.bundle import FileBundle, FileBundleList
 
 
 @pytest.mark.parametrize(
@@ -22,3 +24,15 @@ def test_load_project_invalid(save_file: str, error: Exception) -> None:
 def test_load_project_valid(save_file) -> None:
     pass
 """
+
+
+@pytest.mark.parametrize(
+    "traces,files",
+    [
+        (TraceList(), FileBundleList({})),
+        (TraceList(), FileBundleList({"x": FileBundle("x")})),
+    ],
+)
+def test_init_project(traces: TraceList, files: FileBundleList) -> None:
+    p = Project(traces, files)
+    assert isinstance(p, Project)

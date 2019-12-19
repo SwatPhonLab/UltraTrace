@@ -82,7 +82,7 @@ class Project:
         return self.files.has_alignment_impl
 
     def has_image_impl(self) -> bool:
-        return self.files.has_image_impl
+        return self.files.has_image_set_impl
 
     def has_sound_impl(self) -> bool:
         return self.files.has_sound_impl
