@@ -48,7 +48,7 @@ class Project:
         if not os.path.exists(save_dir):
             os.mkdir(save_dir, mode=0o755)
 
-        save_file = Project.get_save_file(root_path)
+        save_file = cls.get_save_file(root_path)
         try:
             return Project.load(save_file)
         except RuntimeError:
