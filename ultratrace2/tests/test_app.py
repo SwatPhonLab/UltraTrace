@@ -8,7 +8,7 @@ from ..app import App, initialize_app
 
 
 @pytest.mark.parametrize(
-    "kwargs,expected",
+    "kwargs,error",
     [
         (dict(headless=True), ValueError),
         (dict(headless=True, path="/path/to/nowhere"), ValueError),
@@ -17,10 +17,10 @@ from ..app import App, initialize_app
     ],
 )
 def test_initialize_app_invalid(
-    kwargs: Dict[str, Any], expected: Exception, tmpdir
+    kwargs: Dict[str, Any], error: Exception, tmpdir
 ) -> None:
     app_py.app = None  # overwrite global object
-    with pytest.raises(expected):
+    with pytest.raises(error):
         initialize_app(**kwargs)
 
 
