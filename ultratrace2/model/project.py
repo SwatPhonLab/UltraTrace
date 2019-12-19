@@ -20,7 +20,7 @@ class Project:
         raise NotImplementedError()
 
     @classmethod
-    def load(cls, save_file) -> "Project":
+    def load(cls, save_file: str) -> "Project":
         try:
             with open(save_file, "rb") as fp:
                 project = pickle.load(fp)
