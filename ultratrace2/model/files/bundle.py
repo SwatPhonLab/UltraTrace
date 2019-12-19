@@ -1,7 +1,7 @@
 import logging
 import os
 
-from typing import Dict, Sequence, Set
+from typing import Dict, Sequence, FrozenSet
 
 from .impls import Sound, Alignment, ImageSet
 
@@ -36,7 +36,7 @@ class FileBundle:
 
 class FileBundleList:
 
-    exclude_dirs: Set[str] = set(
+    exclude_dirs: FrozenSet[str] = frozenset(
         [
             ".git",
             "node_modules",
