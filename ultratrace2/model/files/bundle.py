@@ -96,4 +96,4 @@ class FileBundleList:
                 if not bundles[name].interpret(filepath):
                     logger.warning(f"unrecognized filetype: {filepath}")
 
-        return FileBundleList(bundles)
+        return cls(bundles)
