@@ -31,7 +31,7 @@ class Project:
             raise RuntimeError(str(e))
 
     @classmethod
-    def get_by_path(cls, root_path) -> "Project":
+    def get_by_path(cls, root_path: str) -> "Project":
 
         root_path = os.path.realpath(os.path.abspath(root_path))  # absolute path
         if not os.path.exists(root_path) or not os.path.isdir(root_path):
