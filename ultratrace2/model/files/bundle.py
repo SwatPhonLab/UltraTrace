@@ -56,12 +56,9 @@ class FileBundleList:
         self.has_sound_impl: bool = False
 
         for bundle in bundles.values():
-            if not self.has_alignment_impl and bundle.alignment_file.has_impl():
-                self.has_alignment_impl = True
-            if not self.has_image_impl and bundle.image_file.has_impl():
-                self.has_image_impl = True
-            if not self.has_sound_impl and bundle.sound_file.has_impl():
-                self.has_sound_impl = True
+            self.has_alignment_impl |= bundle.alignment_file.has_impl()
+            self.has_image_impl |= bundle.image_file.has_impl()
+            self.has_sound_impl |= bundle.sound_file.has_impl()
 
     @classmethod
     def build_from_dir(
