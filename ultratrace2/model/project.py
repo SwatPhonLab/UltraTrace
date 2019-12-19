@@ -50,7 +50,7 @@ class Project:
 
         save_file = cls.get_save_file(root_path)
         try:
-            return Project.load(save_file)
+            return cls.load(save_file)
         except RuntimeError:
             logger.info(
                 f"Unable to find existing project at {root_path}, creating new one..."
