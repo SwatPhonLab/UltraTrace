@@ -1,8 +1,8 @@
 import logging
+import mimetypes
 import os
 
 from abc import ABC, abstractmethod
-from magic import Magic  # type: ignore
 from typing import ClassVar, Sequence
 
 
@@ -23,7 +23,7 @@ class TypedFile(ABC):
     @classmethod
     def is_valid(cls, path: str) -> bool:
         _, extension = os.path.splitext(path.lower())
-        mimetype = Magic(mime=True).from_file(path)
+        mimetype, _ = mimetypes.guess_type(path)
         return extension in cls.extensions and mimetype in cls.mimetypes
 
     @property
