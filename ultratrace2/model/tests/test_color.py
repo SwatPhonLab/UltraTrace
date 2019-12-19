@@ -1,5 +1,5 @@
 from contextlib import nullcontext
-from typing import Optional, Type, Union
+from typing import Any, Optional, Type, Union
 
 import pytest
 
@@ -38,3 +38,18 @@ def test_set_r(raw_value: int, expected: Union[int, Type[Exception]]):
             c.r = raw_value
     else:
         raise AssertionError()
+
+
+@pytest.mark.parametrize(
+    "color,other,should_be_equal",
+    [
+        (Color(0, 0, 0), Color(0, 0, 0), True),
+        (Color(0, 0, 1), Color(0, 0, 0), False),
+        (Color(0, 0, 0), "not a color", False),
+    ],
+)
+def test_color_eq(color: Color, other: Any, should_be_equal: bool):
+    if should_be_equal:
+        assert color == other
+    else:
+        assert color != other
