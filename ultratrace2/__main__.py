@@ -12,9 +12,20 @@ def main():
 
     # noqa: E128
     parser.add_argument(
+        "--headless",
+        action="store_true",
+        default=False,
+        help="run ultratrace without a GUI interface",
+    )
+    parser.add_argument(
         "path",
         default=None,
         help="path (unique to a participant) where subdirectories contain raw data",
+    )
+    parser.add_argument(
+        "theme",  # FIXME: not yet supported
+        default=None,
+        help="name of Ttk theme to use for widgets",
     )
     parser.add_argument(
         "--no-audio",
@@ -56,7 +67,8 @@ def main():
 
     args = parser.parse_args()
 
-    app = initialize_app(args)
+    app = initialize_app(headless=args.headless, path=args.path, theme=args.theme)
+
     app.main()
 
 
