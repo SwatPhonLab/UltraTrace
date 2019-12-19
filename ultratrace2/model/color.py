@@ -1,4 +1,5 @@
 import random
+from typing import Any
 
 PIXEL_MIN = 0
 PIXEL_MAX = 255
@@ -44,6 +45,11 @@ class Color:
 
     def __repr__(self) -> str:
         return f"Color(0x{self.r:02x},0x{self.g:02x},0x{self.b:02x})"
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        return self.r == other.r and self.g == other.g and self.b == other.b
 
 
 def get_random_color() -> Color:
