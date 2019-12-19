@@ -17,7 +17,7 @@ class Trace:
     def __init__(self, name: str, color: Color):
         self.id: UUID = uuid4()
         self.is_visible: bool = True
-        self.xhairs: Dict[FileBundle, Dict[int, Set[XHair]]] = {}
+        self.xhairs: Dict["FileBundle", Dict[int, Set[XHair]]] = {}
         self.name = name
         self.color = color
 
@@ -45,7 +45,7 @@ class Trace:
     def hide(self) -> None:
         self.is_visible = False
 
-    def add_xhair(self, bundle: FileBundle, frame: int, x: float, y: float) -> None:
+    def add_xhair(self, bundle: "FileBundle", frame: int, x: float, y: float) -> None:
         if bundle not in self.xhairs:
             self.xhairs[bundle] = {}
         if frame not in self.xhairs[bundle]:

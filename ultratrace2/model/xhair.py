@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 
 class XHair:
-    def __init__(self, trace: Trace, x: float, y: float):
+    def __init__(self, trace: "Trace", x: float, y: float):
 
         self.id = uuid4()
         self.trace = trace
@@ -49,5 +49,5 @@ class XHair:
         self.x = x
         self.y = y
 
-    def get_color(self) -> Color:
+    def get_color(self) -> "Color":
         return self.trace.get_color()
