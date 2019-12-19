@@ -15,6 +15,7 @@ def _get_black() -> Color:
     [
         (XHair(_get_black, 0, 0), XHair(_get_black, 1, 0), 1),
         (XHair(_get_black, 0, 0), XHair(_get_black, 1, 1), 2),
+        (XHair(_get_black, 2, 0), XHair(_get_black, 0, 2), 8),
         (XHair(_get_black, math.inf, 0), XHair(_get_black, 0, 0), math.inf),
     ],
 )
