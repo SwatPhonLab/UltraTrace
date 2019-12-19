@@ -69,7 +69,7 @@ class FileBundleList:
     ) -> "FileBundleList":
 
         # FIXME: implement `extra_exclude_dirs` as a command-line arg
-        exclude_dirs = cls.exclude_dirs.copy().union(extra_exclude_dirs)
+        exclude_dirs = cls.exclude_dirs.union(extra_exclude_dirs)
 
         bundles: Dict[str, FileBundle] = {}
 
@@ -96,4 +96,4 @@ class FileBundleList:
                 if not bundles[name].interpret(filepath):
                     logger.warning(f"unrecognized filetype: {filepath}")
 
-        return FileBundleList(bundles)
+        return cls(bundles)

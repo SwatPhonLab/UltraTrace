@@ -20,7 +20,7 @@ class Project:
         raise NotImplementedError()
 
     @classmethod
-    def load(cls, save_file) -> "Project":
+    def load(cls, save_file: str) -> "Project":
         try:
             with open(save_file, "rb") as fp:
                 project = pickle.load(fp)
@@ -31,7 +31,7 @@ class Project:
             raise RuntimeError(str(e))
 
     @classmethod
-    def get_by_path(cls, root_path) -> "Project":
+    def get_by_path(cls, root_path: str) -> "Project":
 
         root_path = os.path.realpath(os.path.abspath(root_path))  # absolute path
         if not os.path.exists(root_path):
