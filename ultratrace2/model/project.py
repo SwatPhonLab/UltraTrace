@@ -58,7 +58,7 @@ class Project:
 
         traces = TraceList()
         file_bundles = FileBundleList.build_from_dir(root_path)
-        return Project(traces, file_bundles)
+        return cls(traces, file_bundles)
 
     @staticmethod
     def get_save_dir(path: str) -> str:
