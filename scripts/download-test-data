@@ -94,7 +94,7 @@ cd ./test-data
 
 # extract tarballs
 for tarball in $S3_KEYS; do
-    tar xvf "./$tarball.tar.gz" "./$tarball"
+    tar xvf "./$tarball.tar.gz"
     rm "./$tarball.tar.gz"
 done
 
