@@ -1,16 +1,14 @@
-from typing import Tuple, TYPE_CHECKING, Union
+from typing import Callable, Tuple, Union
 from uuid import uuid4
 
-if TYPE_CHECKING:
-    from .color import Color
-    from .trace import Trace
+from .color import Color
 
 
 class XHair:
-    def __init__(self, trace: "Trace", x: float, y: float):
+    def __init__(self, color_factory: Callable[[], Color], x: float, y: float):
 
         self.id = uuid4()
-        self.trace = trace
+        self._color_factory = color_factory
         self.x = x
         self.y = y
 
@@ -49,5 +47,5 @@ class XHair:
         self.x = x
         self.y = y
 
-    def get_color(self) -> "Color":
-        return self.trace.get_color()
+    def get_color(self) -> Color:
+        return self._color_factory()

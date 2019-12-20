@@ -191,8 +191,12 @@ class App(ThemedTk):
 		self.framesSubframe.grid( row=1 )
 
 		# non-module-specific bindings
-		self.bind('<Option-Left>', self.filesPrev )
-		self.bind('<Option-Right>', self.filesNext )
+		if util.get_platform() == 'Linux':
+			self.bind('<Control-Left>', self.filesPrev )
+			self.bind('<Control-Right>', self.filesNext )
+		else:
+			self.bind('<Option-Left>', self.filesPrev )
+			self.bind('<Option-Right>', self.filesNext )
 		self.bind('<Left>', self.framesPrev )
 		self.bind('<Right>', self.framesNext )
 		self.bind('<BackSpace>', self.onBackspace )

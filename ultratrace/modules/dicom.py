@@ -135,6 +135,7 @@ class Dicom(Module):
         # self.grid_remove()
 
         self.zframe.shown = False
+        self.zframe.setImage(None)
         self.frame.destroy()
         self.frame = Frame(self.frame_holder)
         self.frame.pack(expand=True)
@@ -147,6 +148,7 @@ class Dicom(Module):
         else:
             self.mode = None
 
+        self.method.set('')
         self.methodMenu = OptionMenu(self.frame, self.method, *[x.label for x in READERS[self.mode]] or ['[no ultrasound]'], command=self.chooseMethod)
         self.methodMenu.grid(row=0)
         self.loadBtn = Button(self.frame, text='Load frames', command=self.load, takefocus=0, state='disabled')

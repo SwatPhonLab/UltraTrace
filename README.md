@@ -16,10 +16,24 @@ $ python3 -m ultratrace /path/to/data
 
 The minimum data required for UltraTrace to run is at least one ultrasound file and at least one audio file (supported formats listed below).  Annotation files store timing of the ultrasound frames as well as any linguistic information of use (words, segments, etc.).  Corresponding ultrasound, audio, and annotation files should have the same base name (everything except the extension), and may be symlinked or stored in subdirectories.  (The naming convention for AAA-exported data is a little different.)
 
-#### Supported formats
+#### Supported data formats
 * ultrasound: DICOM (.dicom, .dcm), AAA-exported scanline data (.ult)
 * audio: .wav, .flac
-* annotation: .TextGrid
+* text alignment: .TextGrid
+* traces/splines: native .json, old native .measurement, AAA-exported splines
+
+#### Supported data access methods:
+Reading DICOM data is supported in the following ways:
+* Reading native pixel data directly
+* Converting pixel data to PNG
+* Reading from Philips scanline data
+
+Alignment of audio and ultrasound frames supports the following methods:
+* From native Philips timing data
+* Generated from DICOM frametime (or framerate) specification
+* Manual adjustment of alignment
+* Stored in TextGrids (actively stores above methods this way; can read alignment previously stored this way)
+* Future: auxiliary synchronisation data
 
 ### Themes
 
