@@ -2,6 +2,7 @@ import logging
 
 from abc import ABC, abstractmethod
 from PIL import Image  # type: ignore
+from typing import Type, TypeVar
 
 
 logger = logging.getLogger(__name__)
@@ -9,6 +10,9 @@ logger = logging.getLogger(__name__)
 
 class FileLoadError(Exception):
     pass
+
+
+Self = TypeVar("Self", bound="FileLoaderBase")
 
 
 class FileLoaderBase(ABC):
@@ -27,7 +31,7 @@ class FileLoaderBase(ABC):
 
     @classmethod
     @abstractmethod
-    def from_file(cls, path: str) -> "FileLoaderBase":
+    def from_file(cls: Type[Self], path: str) -> Self:
         # NB: If this concrete method fails to load the data at the given path, then
         #     it should throw a `FileLoadError`.
         pass
