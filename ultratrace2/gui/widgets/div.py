@@ -8,5 +8,5 @@ class Div(tk.Frame):
     def grid(self, *args, **kwargs):
         super().grid(*args, **kwargs)
 
-    def grid_remove(self, *args, **kwargs):
-        super().grid_remove(*args, **kwargs)
+    def grid_remove(self):
+        super().grid_remove()

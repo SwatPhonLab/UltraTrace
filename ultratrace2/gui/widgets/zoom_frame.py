@@ -142,5 +142,5 @@ class ZoomFrame(tk.Frame):
         self.canvas.grid(sticky="news", column=0, row=0, rowspan=2)
 
     def grid_remove(self):
-        super().grid_remove(self)
+        super().grid_remove()
         self.canvas.grid_remove()
