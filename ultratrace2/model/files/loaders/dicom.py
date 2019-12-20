@@ -50,7 +50,9 @@ class DICOMLoader(ImageSetFileLoader):
         try:
             dicom = pydicom.read_file(path)
         except pydicom.errors.InvalidDicomError as e:
-            raise FileLoadError(str(e))
+            raise FileLoadError(
+                "Invalid DICOM ({path}), unable to read: {str(e)}"
+            ) from e
 
         pixels: np.ndarray = dicom.pixel_array
 
