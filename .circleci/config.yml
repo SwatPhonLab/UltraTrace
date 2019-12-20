@@ -6,5 +6,6 @@ jobs:
     steps:
       - checkout
       - run: ./install.sh
+      - run: ./scripts/download-test-data
       - run: sudo pip install nox
       - run: nox
