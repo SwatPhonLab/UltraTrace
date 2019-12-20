@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -euo pipefail
+
+cat <<DOWNLOAD | python3
+
+import boto3
+
+BUCKET = "swatphonlab"
+PREFIX = "ultratrace-test-data"
+KEYS = "$S3_KEYS".split()
+
+s3 = boto3.resource("s3")
+
+for key in KEYS:
+    print(key)
+
+DOWNLOAD
+
+
