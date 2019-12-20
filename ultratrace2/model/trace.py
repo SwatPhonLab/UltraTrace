@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import ClassVar, Dict, Set, TYPE_CHECKING
+from typing import ClassVar, Dict, Optional, Set, TYPE_CHECKING
 from uuid import uuid4, UUID
 
 from .color import Color, get_random_color, RED
@@ -24,7 +24,7 @@ class Trace:
     def get_color(self) -> Color:
         return self.color
 
-    def change_color(self, new_color: Color) -> Color:
+    def change_color(self, new_color: Optional[Color]) -> Color:
         if new_color is None:
             new_color = get_random_color()
         old_color = self.color
