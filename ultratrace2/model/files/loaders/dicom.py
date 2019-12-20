@@ -8,12 +8,18 @@ from .base import FileLoadError, ImageSetFileLoader
 
 
 class DICOMLoader(ImageSetFileLoader):
+    def get_path(self) -> str:
+        return self._path
+
+    def set_path(self, path) -> None:
+        self._path = path
+
     def __init__(self, path: str, pixels: np.ndarray):
         """Construct the DICOMLoader from a pixel array.
 
         The `shape` of the pixel array should be `(n_frames, n_rows, n_columns)` for greyscale
         images and `(n_frames, n_rows, n_columns, rgb_data)` for full-color images."""
-        super().__init__(path)
+        self.set_path(path)
         self.pixels = pixels
         # FIXME: these should be in the `.ultratrace/` dir
         self.png_dir = f"{self.path}-frames"

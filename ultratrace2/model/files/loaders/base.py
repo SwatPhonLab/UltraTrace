@@ -16,9 +16,15 @@ Self = TypeVar("Self", bound="FileLoaderBase")
 
 
 class FileLoaderBase(ABC):
+    @abstractmethod
+    def get_path(self) -> str:
+        ...
 
-    def __init__(self, path: str):
-        self.path = path
+    @abstractmethod
+    def set_path(self, path) -> None:
+        ...
+
+    path = property(get_path, set_path)
 
     def __repr__(self):
         return f"{type(self).__name__}({self.path})"
@@ -26,9 +32,10 @@ class FileLoaderBase(ABC):
     @classmethod
     @abstractmethod
     def from_file(cls: Type[Self], path: str) -> Self:
-        # NB: If this concrete method fails to load the data at the given path, then
-        #     it should throw a `FileLoadError`.
-        pass
+        """Construct an instance from a path.
+
+        NB: If this concrete method fails to load the data at the given path, then
+            it should throw a `FileLoadError`."""
 
 
 class AlignmentFileLoader(FileLoaderBase):
