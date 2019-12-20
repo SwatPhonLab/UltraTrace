@@ -50,7 +50,6 @@ class ImageSetFileLoader(FileLoaderBase):
         number can then be used to "slice up" any accompanying Alignment or Sound
         files.
         """
-        pass
 
     @abstractmethod
     def get_frame(self, i: int) -> Image.Image:
