@@ -14,7 +14,7 @@ BUCKET = "swatphonlab"
 PREFIX = "ultratrace-test-data"
 KEYS = "$S3_KEYS".split()
 
-s3 = boto3.resource("s3")
+s3 = boto3.client("s3")
 
 for key in KEYS:
     res = s3.get_object(
