@@ -8,6 +8,7 @@ from .loaders.base import (
     ImageSetFileLoader,
     SoundFileLoader,
     FileLoaderBase,
+    FileLoadError,
 )
 from .registry import get_loader_for
 
@@ -114,13 +115,16 @@ class FileBundleList:
                 if name not in bundles:
                     bundles[name] = FileBundle(filepath)
 
-                loaded_file = file_loader(filepath)
-                if loaded_file is not None:
-                    if isinstance(loaded_file, AlignmentFileLoader):
-                        bundles[name].set_alignment_file(loaded_file)
-                    elif isinstance(loaded_file, ImageSetFileLoader):
-                        bundles[name].set_image_set_file(loaded_file)
-                    elif isinstance(loaded_file, SoundFileLoader):
-                        bundles[name].set_sound_file(loaded_file)
+                try:
+                    loaded_file = file_loader.from_file(filepath)
+                    if loaded_file is not None:
+                        if isinstance(loaded_file, AlignmentFileLoader):
+                            bundles[name].set_alignment_file(loaded_file)
+                        elif isinstance(loaded_file, ImageSetFileLoader):
+                            bundles[name].set_image_set_file(loaded_file)
+                        elif isinstance(loaded_file, SoundFileLoader):
+                            bundles[name].set_sound_file(loaded_file)
+                except FileLoadError as e:
+                    logger.error(e)
 
         return cls(bundles)

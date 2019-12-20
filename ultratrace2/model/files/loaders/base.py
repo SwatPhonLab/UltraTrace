@@ -16,12 +16,6 @@ Self = TypeVar("Self", bound="FileLoaderBase")
 
 
 class FileLoaderBase(ABC):
-    def __new__(cls, path: str):
-        try:
-            return cls.from_file(path)
-        except FileLoadError as e:
-            logger.error(e)
-            return None
 
     def __init__(self, path: str):
         self.path = path
