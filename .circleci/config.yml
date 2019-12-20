@@ -6,6 +6,6 @@ jobs:
     steps:
       - checkout
       - run: ./install.sh
+      - run: sudo pip install boto3 nox
       - run: ./scripts/download-test-data
-      - run: sudo pip install nox
       - run: nox
