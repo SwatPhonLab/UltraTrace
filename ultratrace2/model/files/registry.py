@@ -30,9 +30,6 @@ def register_loader_for_extensions_and_mime_types(
         loader_cls: A file loader which knows how to load files with the given file extensions and MIME types
     """
 
-    global __extension_to_loaders_map
-    global __mime_type_to_loaders_map
-
     for extension in extensions:
         __extension_to_loaders_map[extension].add(loader_cls)
 
@@ -41,9 +38,6 @@ def register_loader_for_extensions_and_mime_types(
 
 
 def get_loader_for(path: str) -> Optional[Type[FileLoaderBase]]:
-
-    global __extension_to_loaders_map
-    global __mime_type_to_loaders_map
 
     _, extension = os.path.splitext(path.lower())
     mime_type, _ = mimetypes.guess_type(path)
