@@ -6,19 +6,24 @@ from .model.project import Project
 
 
 class App:
-    def __init__(self, args):  # FIXME: be more granular here
+    def __init__(
+        self,
+        headless: bool = False,
+        path: Optional[str] = None,
+        theme: Optional[str] = None,
+    ):
 
-        if args.path is None:
+        if path is None and not headless:
             path = choose_dir()
-            if not path:
-                raise ValueError("You must choose a directory to open")
-        else:
-            path = args.path
+        if not path:
+            raise ValueError("You must choose a directory to open")
 
-        self.project = Project(path)
-        self.gui = GUI(theme=args.theme)
+        self.project: Project = Project.get_by_path(path)
 
-    def main(self):
+        if not headless:
+            self.gui = GUI(theme=theme)
+
+    def main(self) -> None:
         pass
 
 
@@ -26,7 +31,10 @@ class App:
 app: Optional[App] = None
 
 
-def initialize_app(args) -> App:  # FIXME: be more granular here
+def initialize_app(
+    headless: bool = False, path: Optional[str] = None, theme: Optional[str] = None
+) -> App:
+
     global app
-    app = App(args)
+    app = App(headless=headless, path=path, theme=theme,)
     return app

@@ -1,70 +1,100 @@
 import logging
 import os
 
-from typing import Dict, List, Set
+from typing import Dict, FrozenSet, Optional, Sequence, Type
 
-from .impls import Sound, Alignment, ImageSet
+from .loaders.base import (
+    AlignmentFileLoader,
+    ImageSetFileLoader,
+    SoundFileLoader,
+    FileLoaderBase,
+    FileLoadError,
+)
+from .registry import get_loader_for
 
 
 logger = logging.getLogger(__name__)
 
 
 class FileBundle:
-    def __init__(self, name: str):
+    def __init__(
+        self,
+        name: str,
+        alignment_file: Optional[AlignmentFileLoader] = None,
+        image_set_file: Optional[ImageSetFileLoader] = None,
+        sound_file: Optional[SoundFileLoader] = None,
+    ):
         self.name = name
-        self.alignment_file = Alignment()
-        self.image_file = ImageSet()
-        self.sound_file = Sound()
-
-    def interpret(self, path: str):  # FIXME: add signature
-        return (
-            self.alignment_file.interpret(path)
-            or self.image_file.interpret(path)
-            or self.sound_file.interpret(path)
-        )  # noqa: E126
+        self.alignment_file = alignment_file
+        self.image_set_file = image_set_file
+        self.sound_file = sound_file
 
     def has_impl(self) -> bool:
-        return (
-            self.alignment_file.has_impl()
-            or self.image_file.has_impl()
-            or self.sound_file.has_impl()
+        return any(
+            f is not None
+            for f in [self.alignment_file, self.image_set_file, self.sound_file]
         )
 
+    def set_alignment_file(self, alignment_file: AlignmentFileLoader) -> None:
+        if self.alignment_file is not None:
+            logger.warning("Overwriting existing alignment file")
+        self.alignment_file = alignment_file
+
+    def set_image_set_file(self, image_set_file: ImageSetFileLoader) -> None:
+        if self.image_set_file is not None:
+            logger.warning("Overwriting existing image-set file")
+        self.image_set_file = image_set_file
+
+    def set_sound_file(self, sound_file: SoundFileLoader) -> None:
+        if self.sound_file is not None:
+            logger.warning("Overwriting existing sound file")
+        self.sound_file = sound_file
+
     def __repr__(self):
-        return f'Bundle("{self.name}",{self.alignment_file},{self.image_file},{self.sound_file})'
+        return f'Bundle("{self.name}",{self.alignment_file},{self.image_set_file},{self.sound_file})'
 
 
 class FileBundleList:
 
-    exclude_dirs: Set[str] = set(
+    exclude_dirs: FrozenSet[str] = frozenset(
         [
             ".git",
             "node_modules",
             "__pycache__",
+            ".ultratrace",
             # FIXME: add more ignoreable dirs
         ]
     )
 
-    def __init__(self, path: str, extra_exclude_dirs: List[str] = []):
-
-        # FIXME: implement `extra_exclude_dirs` as a command-line arg
-        for extra_exclude_dir in extra_exclude_dirs:
-            self.exclude_dirs.add(extra_exclude_dir)
-
-        self.path = path
-        self.has_alignment_impl = False
-        self.has_image_impl = False
-        self.has_sound_impl = False
+    def __init__(self, bundles: Dict[str, FileBundle]):
 
         self.current_bundle = None
+        self.bundles: Dict[str, FileBundle] = bundles
+
+        self.has_alignment_impl: bool = False
+        self.has_image_set_impl: bool = False
+        self.has_sound_impl: bool = False
+
+        for bundle in bundles.values():
+            self.has_alignment_impl |= bundle.alignment_file is not None
+            self.has_image_set_impl |= bundle.image_set_file is not None
+            self.has_sound_impl |= bundle.sound_file is not None
+
+    @classmethod
+    def build_from_dir(
+        cls, root_path: str, extra_exclude_dirs: Sequence[str] = []
+    ) -> "FileBundleList":
+
+        # FIXME: implement `extra_exclude_dirs` as a command-line arg
+        exclude_dirs = cls.exclude_dirs.union(extra_exclude_dirs)
 
         bundles: Dict[str, FileBundle] = {}
 
         # NB: `topdown=True` increases runtime cost from O(n) -> O(n^2), but it allows us to
         #     modify `dirs` in-place so that we can skip certain directories.  For more info,
         #     see https://stackoverflow.com/questions/19859840/excluding-directories-in-os-walk
-        for path, dirs, filenames in os.walk(path, topdown=True):
-            dirs[:] = [d for d in dirs if d not in self.exclude_dirs]
+        for path, dirs, filenames in os.walk(root_path, topdown=True):
+            dirs[:] = [d for d in dirs if d not in exclude_dirs]
 
             for filename in filenames:
 
@@ -77,18 +107,24 @@ class FileBundleList:
                     )
                     continue
 
-                if name not in bundles:
-                    bundles[name] = FileBundle(name)
-
-                if not bundles[name].interpret(filepath):
+                file_loader: Optional[Type[FileLoaderBase]] = get_loader_for(filepath)
+                if file_loader is None:
                     logger.warning(f"unrecognized filetype: {filepath}")
+                    continue
 
-        # FIXME: do this when we add to our data structure
-        for filename, bundle in bundles.items():
-            # build up self.bundles here
-            if not self.has_alignment_impl and bundle.alignment_file.has_impl():
-                self.has_alignment_impl = True
-            if not self.has_image_impl and bundle.image_file.has_impl():
-                self.has_image_impl = True
-            if not self.has_sound_impl and bundle.sound_file.has_impl():
-                self.has_sound_impl = True
+                if name not in bundles:
+                    bundles[name] = FileBundle(filepath)
+
+                try:
+                    loaded_file = file_loader.from_file(filepath)
+                    if loaded_file is not None:
+                        if isinstance(loaded_file, AlignmentFileLoader):
+                            bundles[name].set_alignment_file(loaded_file)
+                        elif isinstance(loaded_file, ImageSetFileLoader):
+                            bundles[name].set_image_set_file(loaded_file)
+                        elif isinstance(loaded_file, SoundFileLoader):
+                            bundles[name].set_sound_file(loaded_file)
+                except FileLoadError as e:
+                    logger.error(e)
+
+        return cls(bundles)

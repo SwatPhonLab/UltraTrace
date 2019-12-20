@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 
 if which brew &> /dev/null; then
-    brew install portaudio libmagic ffmpeg libav
+    brew install portaudio ffmpeg libav
 elif which apt-get &> /dev/null; then
     sudo apt-get update
     sudo apt-get install \
         portaudio19-dev libportaudio2 \
-        libmagic-dev \
         ffmpeg \
         libav-tools
 else
