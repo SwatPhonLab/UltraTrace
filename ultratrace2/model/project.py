@@ -21,14 +21,10 @@ class Project:
 
     @classmethod
     def load(cls, save_file: str) -> "Project":
-        try:
-            with open(save_file, "rb") as fp:
-                project = pickle.load(fp)
-                assert isinstance(project, Project)
-                return project
-        except Exception as e:
-            logger.error(e)
-            raise RuntimeError(str(e))
+        with open(save_file, "rb") as fp:
+            project = pickle.load(fp)
+            assert isinstance(project, Project)
+            return project
 
     @classmethod
     def get_by_path(cls, root_path: str) -> "Project":
@@ -51,7 +47,8 @@ class Project:
         save_file = cls.get_save_file(root_path)
         try:
             return cls.load(save_file)
-        except RuntimeError:
+        except Exception as e:
+            logger.warning(e)
             logger.info(
                 f"Unable to find existing project at {root_path}, creating new one..."
             )
