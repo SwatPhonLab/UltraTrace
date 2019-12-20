@@ -1,12 +1,74 @@
 #!/bin/bash
+#
+# Kevin Murphy
+# keggsmurph21 at gmail dot com
 
 set -euo pipefail
 
-mkdir -p test-data
+usage() {
+    cat <<EOM
 
+usage: $0
+
+    This script downloads and extracts tarballs from an AWS S3
+    bucket into the ./test-data folder.  In order to run this
+    script, the following environment variables must be set and
+    exported:
+
+     - S3_KEYS
+     - AWS_ACCESS_KEY_ID
+     - AWS_SECRET_ACCESS_KEY
+
+    To set and export these variables, you can run the following
+    command from the root of the project repository:
+
+     $ source .env
+
+    If that file does not exist on your system, please contact
+    one of the project maintainers for a copy.
+
+EOM
+    exit 1
+}
+
+# This is the output from the command
+#
+#   $ git hash-object ./test-data
+#
+# when all of the required files are present and in the right place.
+# If we run this command and it has a different output from the value
+# below, that means we are missing files and should reconstruct the
+# test data from the S3 tarballs.
+#
+# This value should be updated every time we make updates to ./test-data.
+MAGIC_HASH="x"  # FIXME: implement this!
+
+# enforce that all environment variables are set
+[ -z "${S3_KEYS:-}" ] && usage
+[ -z "${AWS_ACCESS_KEY_ID:-}" ] && usage
+[ -z "${AWS_SECRET_ACCESS_KEY:-}" ] && usage
+
+# go to the repository root
+cd "$(dirname "$0")/.."
+
+# see if we need to download anything
+if [ -d ./test-data ]; then
+    current_hash=$(git hash-object ./test-data 2>/dev/null || true)
+    if [[ $current_hash == $MAGIC_HASH ]]; then
+        exit 0
+    else
+        rm -rf ./test-data
+    fi
+fi
+
+mkdir ./test-data
+
+# download the files using python AWS SDK
+set -x
 cat <<DOWNLOAD | python3
 
 import boto3
+import sys
 
 BUCKET = "swatphonlab"
 PREFIX = "ultratrace-test-data"
@@ -15,12 +77,27 @@ KEYS = "$S3_KEYS".split()
 s3 = boto3.client("s3")
 
 for key in KEYS:
+    tarball = f"{PREFIX}/{key}.tar.gz"
+    print(
+        f"downloading s3://{BUCKET}/{tarball} ...",
+        file=sys.stderr,
+    )
     s3.download_file(
         Bucket=BUCKET,
-        Key=f"{PREFIX}/{key}",
-        Filename=f"test-data/{key}",
+        Key=tarball,
+        Filename=f"./test-data/{key}.tar.gz",
     )
 
 DOWNLOAD
 
-ls test-data
+cd ./test-data
+
+# extract tarballs
+for tarball in $S3_KEYS; do
+    tar xvf "./$tarball.tar.gz" "./$tarball"
+    rm "./$tarball.tar.gz"
+done
+
+cd ..
+
+# FIXME: Build up some more trivial test directories

@@ -1,5 +1,6 @@
 # don't track our data
 test
+test-data
 data
 
 # or annoying system files
@@ -15,3 +16,6 @@ __pycache__
 .mypy_cache
 .nox
 .coverage
+
+# local environment setup
+.env
