@@ -2,9 +2,13 @@
 
 set -euo pipefail
 
+mkdir -p test-data
+
 cat <<DOWNLOAD | python3
 
+from io import BytesIO
 import boto3
+import gzip
 
 BUCKET = "swatphonlab"
 PREFIX = "ultratrace-test-data"
@@ -13,7 +17,14 @@ KEYS = "$S3_KEYS".split()
 s3 = boto3.resource("s3")
 
 for key in KEYS:
-    print(key)
+    res = s3.get_object(
+        Bucket=BUCKET,
+        Key=f"{PREFIX}/key",
+    )
+    key_bytes = BytesIO(res["Body"].read())
+    gzip_file = gzip.GzipFile(fileobj=key_bytes)
+    print(gzip_file)
+    print(gzip_file.read())
 
 DOWNLOAD
 
