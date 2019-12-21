@@ -15,7 +15,6 @@ usage: $0
     script, the following environment variables must be set and
     exported:
 
-     - S3_KEYS
      - AWS_ACCESS_KEY_ID
      - AWS_SECRET_ACCESS_KEY
 
@@ -31,9 +30,29 @@ EOM
     exit 1
 }
 
-# This is the output from the command
+# Helper functions to hash an entire directory, so that we can check if
+# contents match some known expected value (see below).
+get_hash() {
+    hash_func=md5sum  # not sure how portable this is
+    echo "$@" | md5sum | cut -d' ' -f1
+}
+
+# For each file in the directory, use `get_hash` to compute a hash of
+# its contents, then concat that hash to the `running_hash` string. Then,
+# when each of the individual files has been hashed, use `get_hash` to
+# echo out the hash of the `running_hash` string.
+hash_dir() {
+    echo "computing hash for $1 ..." >&2
+    running_hash=""
+    for file in $(find "$1" -type f | sort); do
+        running_hash="${running_hash}$(get_hash "$file")"
+    done
+    get_hash $running_hash
+}
+
+# This is the output from
 #
-#   $ git hash-object ./test-data
+#   $ hash_dir $REPO/test-data
 #
 # when all of the required files are present and in the right place.
 # If we run this command and it has a different output from the value
@@ -41,10 +60,12 @@ EOM
 # test data from the S3 tarballs.
 #
 # This value should be updated every time we make updates to ./test-data.
-MAGIC_HASH="x"  # FIXME: implement this!
+MAGIC_HASH="326e33e80882799e088c0f34fb39aa8f"
+
+# Download each of these dataset tarballs (space-delimited)
+DATASETS="ftyers qumuq"
 
 # enforce that all environment variables are set
-[ -z "${S3_KEYS:-}" ] && usage
 [ -z "${AWS_ACCESS_KEY_ID:-}" ] && usage
 [ -z "${AWS_SECRET_ACCESS_KEY:-}" ] && usage
 
@@ -53,10 +74,12 @@ cd "$(dirname "$0")/.."
 
 # see if we need to download anything
 if [ -d ./test-data ]; then
-    current_hash=$(git hash-object ./test-data 2>/dev/null || true)
+    current_hash=$(hash_dir ./test-data)
     if [[ $current_hash == $MAGIC_HASH ]]; then
+        echo "hash matches expected value, exiting!" >&2
         exit 0
     else
+        echo "hash doesn't match expected value, pulling latest data ..." >&2
         rm -rf ./test-data
     fi
 fi
@@ -64,7 +87,6 @@ fi
 mkdir ./test-data
 
 # download the files using python AWS SDK
-set -x
 cat <<DOWNLOAD | python3
 
 import boto3
@@ -72,12 +94,11 @@ import sys
 
 BUCKET = "swatphonlab"
 PREFIX = "ultratrace-test-data"
-KEYS = "$S3_KEYS".split()
 
 s3 = boto3.client("s3")
 
-for key in KEYS:
-    tarball = f"{PREFIX}/{key}.tar.gz"
+for dataset in "$DATASETS".split():
+    tarball = f"{PREFIX}/{dataset}.tar.gz"
     print(
         f"downloading s3://{BUCKET}/{tarball} ...",
         file=sys.stderr,
@@ -85,7 +106,7 @@ for key in KEYS:
     s3.download_file(
         Bucket=BUCKET,
         Key=tarball,
-        Filename=f"./test-data/{key}.tar.gz",
+        Filename=f"./test-data/{dataset}.tar.gz",
     )
 
 DOWNLOAD
@@ -93,11 +114,14 @@ DOWNLOAD
 cd ./test-data
 
 # extract tarballs
-for tarball in $S3_KEYS; do
-    tar xvf "./$tarball.tar.gz"
-    rm "./$tarball.tar.gz"
+for dataset in $DATASETS; do
+    echo "extracting ./$dataset.tar.gz ..." >&2
+    tar xf "./$dataset.tar.gz"
+    rm "./$dataset.tar.gz"
 done
 
 cd ..
+
+echo "done!" >&2
 
 # FIXME: Build up some more trivial test directories
