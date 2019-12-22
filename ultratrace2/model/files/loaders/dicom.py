@@ -1,10 +1,15 @@
-from PIL import Image  # type: ignore
+from PIL import Image, ImageFile  # type: ignore
 
 import numpy as np
 import os
 import pydicom  # type: ignore
 
 from .base import FileLoadError, ImageSetFileLoader
+
+
+# PIL (via pydicom) will fail to load "truncated" images sometimes, so we need to tell it to
+# ignore these.  For context, see https://github.com/python-pillow/Pillow/issues/1510
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class DICOMLoader(ImageSetFileLoader):
