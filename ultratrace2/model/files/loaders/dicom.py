@@ -32,7 +32,7 @@ class DICOMLoader(ImageSetFileLoader):
             os.mkdir(self.png_dir, mode=0o755)
 
     def is_greyscale(self) -> bool:
-        return len(self.pixels) == 3
+        return len(self.pixels.shape) == 3
 
     def __len__(self) -> int:
         return self.pixels.shape[0]
