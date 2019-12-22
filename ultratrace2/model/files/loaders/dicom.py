@@ -60,38 +60,44 @@ class DICOMLoader(ImageSetFileLoader):
 
     @classmethod
     def from_file(cls, path: str) -> "DICOMLoader":
-
-        if not os.path.exists(path):
-            raise FileLoadError("Cannot load from path: '{path}': cannot find")
-
         try:
+
+            if not os.path.exists(path):
+                raise FileNotFoundError("Cannot load from path: '{path}'")
+
             dicom = pydicom.read_file(path)
-        except pydicom.errors.InvalidDicomError as e:
+
+            pixels: np.ndarray = dicom.pixel_array
+            print(pixels.shape)
+
+            if len(pixels.shape) == 2:
+                # For DICOM consisting of a single frame, we need to add a singleton axis.
+                pixels = np.expand_dims(pixels, axis=0)
+                return cls(path, pixels)
+
+            elif len(pixels.shape) == 3:
+                n_frames, n_rows, n_columns = pixels.shape
+                return cls(path, pixels)
+
+            elif len(pixels.shape) == 4:
+                # full-color RGB
+                if pixels.shape[0] == 3:
+                    # RGB-first
+                    rgb, n_frames, n_rows, n_columns = pixels.shape
+                    pixels.reshape((n_frames, n_rows, n_columns, rgb))
+                    return cls(path, pixels)
+
+                elif pixels.shape[3] == 3:
+                    # RGB-last
+                    n_frames, n_rows, n_columns, rgb = pixels.shape
+                    return cls(path, pixels)
+
+            raise ValueError(f"Invalid DICOM ({path}), unknown shape {pixels.shape}")
+
+        except Exception as e:
             raise FileLoadError(
-                "Invalid DICOM ({path}), unable to read: {str(e)}"
+                f"Invalid DICOM ({path}), unable to read: {str(e)}"
             ) from e
-
-        pixels: np.ndarray = dicom.pixel_array
-
-        # check encoding, manipulate array if we need to
-        if len(pixels.shape) == 3:
-            n_frames, n_rows, n_columns = pixels.shape
-            return cls(path, pixels)
-
-        elif len(pixels.shape) == 4:
-            # full-color RGB
-            if pixels.shape[0] == 3:
-                # RGB-first
-                rgb, n_frames, n_rows, n_columns = pixels.shape
-                pixels.reshape((n_frames, n_rows, n_columns, rgb))
-                return cls(path, pixels)
-
-            elif pixels.shape[3] == 3:
-                # RGB-last
-                n_frames, n_rows, n_columns, rgb = pixels.shape
-                return cls(path, pixels)
-
-        raise FileLoadError("Invalid DICOM ({path}), unknown shape {pixels.shape}")
 
     def convert_to_png(self, *args, **kwargs):
         # FIXME: implement this as a helper function
