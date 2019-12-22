@@ -55,6 +55,14 @@ class ImageSetFileLoader(FileLoaderBase):
         """ImageSets should support random access of frames."""
         pass
 
+    @abstractmethod
+    def get_height(self) -> int:
+        ...
+
+    @abstractmethod
+    def get_width(self) -> int:
+        ...
+
 
 class SoundFileLoader(FileLoaderBase):
     pass

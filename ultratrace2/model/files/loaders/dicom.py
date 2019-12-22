@@ -32,6 +32,12 @@ class DICOMLoader(ImageSetFileLoader):
     def __len__(self) -> int:
         return self.pixels.shape[0]
 
+    def get_height(self) -> int:
+        return self.pixels.shape[1]
+
+    def get_width(self) -> int:
+        return self.pixels.shape[2]
+
     def get_png_filepath_for_frame(self, i: int) -> str:
         return os.path.join(self.png_dir, f"{i:06}.png")
 
