@@ -22,7 +22,7 @@ class DICOMLoader(ImageSetFileLoader):
         self.set_path(path)
         self.pixels = pixels
         # FIXME: these should be in the `.ultratrace/` dir
-        self.png_dir = f"{self.path}-frames"
+        self.png_dir = f"{path}-frames"
         if not os.path.exists(self.png_dir):
             os.mkdir(self.png_dir, mode=0o755)
 
