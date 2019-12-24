@@ -78,11 +78,11 @@ if __name__ == "__main__":
 
     s3 = boto3.client("s3")
 
+    os.makedirs("./test-data", exist_ok=True)
+
     download_file(s3, f"{PREFIX}/manifest.json", "./test-data/manifest.json")
     with open("./test-data/manifest.json") as fp:
         manifest = json.load(fp)
-
-    os.makedirs("./test-data", exist_ok=True)
 
     for dataset_name, dataset_metadata in manifest["datasets"].items():
         local_path = f"./test-data/{dataset_name}"
