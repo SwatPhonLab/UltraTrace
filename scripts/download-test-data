@@ -1,14 +1,28 @@
-#!/bin/bash
-#
-# Kevin Murphy
-# keggsmurph21 at gmail dot com
+#!/usr/bin/env python
+"""
+Kevin Murphy
+keggsmurph21 at gmail dot com
+"""
 
-set -euo pipefail
+from mypy_boto3_s3 import Client as S3Client
 
-usage() {
-    cat <<EOM >&2
+import boto3  # type: ignore
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tarfile
 
-usage: $0
+
+BUCKET = "swatphonlab"
+PREFIX = "ultratrace-test-data"
+
+
+def usage() -> None:
+    print(
+        f"""
+usage: {sys.argv[0]}
 
     This script downloads and extracts tarballs from an AWS S3
     bucket into the ./test-data folder.  In order to run this
@@ -25,83 +39,73 @@ usage: $0
 
     If that file does not exist on your system, please contact
     one of the project maintainers for a copy.
-
-EOM
-    exit 1
-}
-
-# This is the output from
-#
-#   $ ./scripts/hash-path ./test-data
-#
-# when all of the required files are present and in the right place.
-# If we run this command and it has a different output from the value
-# below, that means we are missing files and should reconstruct the
-# test data from the S3 tarballs.
-#
-# This value should be updated every time we make updates to ./test-data.
-MAGIC_HASH="b05464f112f6ea8dd7bf9b8301a2f450"
-
-# Download each of these dataset tarballs (space-delimited)
-DATASETS="ftyers qumuq"
-
-# enforce that all environment variables are set
-[ -z "${AWS_ACCESS_KEY_ID:-}" ] && usage
-[ -z "${AWS_SECRET_ACCESS_KEY:-}" ] && usage
-
-# go to the repository root
-cd "$(dirname "$0")/.."
-
-# see if we need to download anything
-if [ -d ./test-data ]; then
-    current_hash=$(./scripts/hash-path ./test-data)
-    if [[ $current_hash == $MAGIC_HASH ]]; then
-        echo "hash matches expected value, exiting!" >&2
-        exit 0
-    else
-        echo "hash doesn't match expected value, pulling latest data ..." >&2
-        rm -rf ./test-data
-    fi
-fi
-
-mkdir ./test-data
-
-# download the files using python AWS SDK
-cat <<DOWNLOAD | python3
-
-import boto3
-import sys
-
-BUCKET = "swatphonlab"
-PREFIX = "ultratrace-test-data"
-
-s3 = boto3.client("s3")
-
-for dataset in "$DATASETS".split():
-    tarball = f"{PREFIX}/{dataset}.tar.gz"
-    print(
-        f"downloading s3://{BUCKET}/{tarball} ...",
-        file=sys.stderr,
+"""
     )
+    sys.exit(1)
+
+
+def hash_path(path: str) -> str:
+    assert os.path.exists(path)
+    proc = subprocess.run(
+        ["./scripts/hash-path", path], stdout=subprocess.PIPE, encoding="utf-8"
+    )
+    if proc.returncode:
+        raise RuntimeError("Unable to hash path")
+    return proc.stdout.strip()
+
+
+def download_file(s3: S3Client, key: str, local_path: str) -> None:
+    print(f"downloading s3://{BUCKET}/{key} ...", file=sys.stderr)
     s3.download_file(
-        Bucket=BUCKET,
-        Key=tarball,
-        Filename=f"./test-data/{dataset}.tar.gz",
+        Bucket=BUCKET, Key=key, Filename=local_path,
     )
 
-DOWNLOAD
 
-cd ./test-data
+def check_hash(local_path: str, expected_hash: str) -> bool:
+    return os.path.exists(local_path) and hash_path(local_path) == expected_hash
 
-# extract tarballs
-for dataset in $DATASETS; do
-    echo "extracting ./$dataset.tar.gz ..." >&2
-    tar xf "./$dataset.tar.gz"
-    rm "./$dataset.tar.gz"
-done
 
-cd ..
+if __name__ == "__main__":
 
-echo "done!" >&2
+    if os.environ.get("AWS_ACCESS_KEY_ID", None) is None:
+        usage()
+    if os.environ.get("AWS_SECRET_ACCESS_KEY", None) is None:
+        usage()
 
-# FIXME: Build up some more trivial test directories
+    repo_root = os.path.realpath(os.path.join(os.path.dirname(sys.argv[0]), "..",))
+
+    os.chdir(repo_root)
+
+    s3 = boto3.client("s3")
+
+    download_file(s3, f"{PREFIX}/manifest.json", "./test-data/manifest.json")
+    with open("./test-data/manifest.json") as fp:
+        manifest = json.load(fp)
+
+    os.makedirs("./test-data", exist_ok=True)
+
+    for dataset_name, dataset_metadata in manifest["datasets"].items():
+        local_path = f"./test-data/{dataset_name}"
+        dataset_version = int(dataset_metadata["version"])
+        dataset_hash = dataset_metadata["hash"]
+        if os.path.exists(local_path):
+            if check_hash(local_path, dataset_hash):
+                print("hash matches expected value, skipping ...", file=sys.stderr)
+                continue
+            print(
+                "hash doesn't match expected value, pulling latest archive ...",
+                file=sys.stderr,
+            )
+            shutil.rmtree(local_path)
+        local_archive_path = f"{local_path}.tar.gz"
+        download_file(
+            s3,
+            f"{PREFIX}/{dataset_name}/v{dataset_version}.tar.gz",
+            local_archive_path,
+        )
+        with tarfile.open(local_archive_path, "r:gz") as tf:
+            tf.extractall("./test-data")
+            assert check_hash(local_path, dataset_hash)
+        os.unlink(local_archive_path)
+
+    print("done!", file=sys.stderr)
