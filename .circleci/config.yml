@@ -6,6 +6,6 @@ jobs:
     steps:
       - checkout
       - run: ./install.sh
-      - run: sudo pip install boto3 nox
+      - run: sudo pip install boto3 mypy_boto3_s3 nox
       - run: ./scripts/download-test-data
       - run: nox

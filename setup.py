@@ -36,6 +36,7 @@ setup(
             "pytest-cov",
             "pytest-mock",
             "boto3",
+            "mypy-boto3-s3",
         ]
     },
 )
