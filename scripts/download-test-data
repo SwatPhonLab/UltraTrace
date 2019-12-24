@@ -7,6 +7,7 @@ keggsmurph21 at gmail dot com
 from mypy_boto3_s3 import Client as S3Client
 
 import boto3  # type: ignore
+import botocore  # type: ignore
 import json
 import os
 import shutil
@@ -39,7 +40,11 @@ usage: {sys.argv[0]}
 
     If that file does not exist on your system, please contact
     one of the project maintainers for a copy.
-"""
+
+    Further, the IAM role associated with the credentials must have
+    the correct permissions (READ and/or WRITE) on the S3 bucket.
+""",
+        file=sys.stderr,
     )
     sys.exit(1)
 
@@ -56,9 +61,13 @@ def hash_path(path: str) -> str:
 
 def download_file(s3: S3Client, key: str, local_path: str) -> None:
     print(f"downloading s3://{BUCKET}/{key} ...", file=sys.stderr)
-    s3.download_file(
-        Bucket=BUCKET, Key=key, Filename=local_path,
-    )
+    try:
+        s3.download_file(
+            Bucket=BUCKET, Key=key, Filename=local_path,
+        )
+    except botocore.exceptions.ClientError as e:
+        print(repr(e), file=sys.stderr)
+        usage()
 
 
 def check_hash(local_path: str, expected_hash: str) -> bool:
