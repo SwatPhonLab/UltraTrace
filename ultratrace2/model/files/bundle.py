@@ -1,7 +1,7 @@
 import logging
 import os
 
-from typing import Dict, FrozenSet, Optional, Sequence, Type
+from typing import Dict, FrozenSet, Mapping, Optional, Sequence, Type
 
 from .loaders.base import (
     AlignmentFileLoader,
@@ -66,10 +66,10 @@ class FileBundleList:
         ]
     )
 
-    def __init__(self, bundles: Dict[str, FileBundle]):
+    def __init__(self, bundles: Mapping[str, FileBundle]):
 
         self.current_bundle = None
-        self.bundles: Dict[str, FileBundle] = bundles
+        self.bundles: Mapping[str, FileBundle] = bundles
 
         self.has_alignment_impl: bool = False
         self.has_image_set_impl: bool = False
@@ -84,6 +84,8 @@ class FileBundleList:
     def build_from_dir(
         cls, root_path: str, extra_exclude_dirs: Sequence[str] = []
     ) -> "FileBundleList":
+
+        assert os.path.exists(root_path)  # should have been validated by Project
 
         # FIXME: implement `extra_exclude_dirs` as a command-line arg
         exclude_dirs = cls.exclude_dirs.union(extra_exclude_dirs)
