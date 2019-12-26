@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+"""
+Kevin Murphy
+keggsmurph21 at gmail dot com
+"""
+
+from mypy_boto3_s3 import Client as S3Client
+from typing import Dict, Mapping, NoReturn, Union
+
+import boto3  # type: ignore
+import botocore  # type: ignore
+import json
+import os
+import subprocess
+import sys
+import tarfile
+
+
+BUCKET = "swatphonlab"
+PREFIX = "ultratrace-test-data"
+
+
+def usage() -> NoReturn:
+    print(
+        f"""
+usage: {sys.argv[0]}
+
+    This script packages and uploads tarballs to an AWS S3 bucket
+    from the ./test-data folder.  In order to run this script, the
+    following environment variables must be set and exported:
+
+     - AWS_ACCESS_KEY_ID
+     - AWS_SECRET_ACCESS_KEY
+
+    To set and export these variables, you can run the following
+    command from the root of the project repository:
+
+     $ source .env
+
+    If that file does not exist on your system, please contact
+    one of the project maintainers for a copy.
+
+    Further, the IAM role associated with the credentials must have
+    the correct permissions (READ and/or WRITE) on the S3 bucket.
+""",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
+def hash_path(path: str) -> str:
+    assert os.path.exists(path)
+    return subprocess.check_output(
+        ["./scripts/hash-path", path], encoding="utf-8"
+    ).strip()
+
+
+def download_file(s3: S3Client, key: str, local_path: str) -> None:
+    print(f"downloading s3://{BUCKET}/{key} ...", file=sys.stderr)
+    try:
+        s3.download_file(
+            Bucket=BUCKET, Key=key, Filename=local_path,
+        )
+    except botocore.exceptions.ClientError as e:
+        print(repr(e), file=sys.stderr)
+        usage()
+
+
+def upload_file(s3: S3Client, key: str, local_path: str) -> None:
+    print(f"uploading s3://{BUCKET}/{key} ...", file=sys.stderr)
+    try:
+        s3.upload_file(Bucket=BUCKET, Key=key, Filename=local_path)
+    except botocore.exceptions.ClientError as e:
+        print(repr(e), file=sys.stderr)
+        usage()
+
+
+if __name__ == "__main__":
+
+    if os.environ.get("AWS_ACCESS_KEY_ID", None) is None:
+        usage()
+    if os.environ.get("AWS_SECRET_ACCESS_KEY", None) is None:
+        usage()
+
+    repo_root = os.path.realpath(os.path.join(os.path.dirname(sys.argv[0]), "..",))
+
+    os.chdir(repo_root)
+
+    s3 = boto3.client("s3")
+
+    download_file(s3, f"{PREFIX}/manifest.json", "./test-data/manifest.json")
+    with open("./test-data/manifest.json") as fp:
+        old_manifest = json.load(fp)
+
+    assert os.path.exists("./test-data")
+
+    for dataset_name in old_manifest["datasets"]:
+        assert os.path.exists(f"./test-data/{dataset_name}")
+
+    new_manifest: Mapping[str, Dict[str, Dict[str, Union[str, int]]]] = {"datasets": {}}
+
+    for dataset_name in os.listdir("./test-data"):
+        if dataset_name == "manifest.json":
+            continue
+
+        assert not dataset_name.endswith(".tar.gz")
+
+        local_path = f"./test-data/{dataset_name}"
+        local_hash = hash_path(local_path)
+        if dataset_name in old_manifest["datasets"]:
+            old_metadata = old_manifest["datasets"][dataset_name]
+            old_hash = old_metadata["hash"]
+            if local_hash == old_hash:
+                print("hash matches expected value, skipping ...", file=sys.stderr)
+                new_manifest["datasets"][dataset_name] = old_metadata
+                continue
+            print(
+                "hash doesn't match expected value, pushing latest archive ...",
+                file=sys.stderr,
+            )
+            old_version = old_metadata["version"]
+            new_version = old_version + 1
+        else:
+            print("new dataset detected, pushing latest archive ...", file=sys.stderr)
+            new_version = 1
+
+        new_manifest["datasets"][dataset_name] = {
+            "hash": local_hash,
+            "version": new_version,
+        }
+
+        os.chdir("./test-data")
+        local_archive_path = f"{dataset_name}.tar.gz"
+        assert not os.path.exists(local_archive_path)
+        with tarfile.open(local_archive_path, "w:gz") as tf:
+            tf.add(dataset_name)
+        s3_archive_path = f"{PREFIX}/{dataset_name}/v{new_version}.tar.gz"
+        upload_file(s3, s3_archive_path, local_archive_path)
+        os.unlink(local_archive_path)
+        os.chdir("..")
+
+    with open("./test-data/manifest.json", "w") as fp:
+        json.dump(new_manifest, fp)
+    upload_file(s3, f"{PREFIX}/manifest.json", "./test-data/manifest.json")
+
+    print("done!", file=sys.stderr)

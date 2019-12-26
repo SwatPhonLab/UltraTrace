@@ -24,10 +24,8 @@ class FileLoaderBase(ABC):
     def set_path(self, path) -> None:
         ...
 
-    path = property(get_path, set_path)
-
     def __repr__(self):
-        return f"{type(self).__name__}({self.path})"
+        return f"{type(self).__name__}({self.get_path()})"
 
     @classmethod
     @abstractmethod
@@ -56,6 +54,14 @@ class ImageSetFileLoader(FileLoaderBase):
     def get_frame(self, i: int) -> Image.Image:
         """ImageSets should support random access of frames."""
         pass
+
+    @abstractmethod
+    def get_height(self) -> int:
+        ...
+
+    @abstractmethod
+    def get_width(self) -> int:
+        ...
 
 
 class SoundFileLoader(FileLoaderBase):
