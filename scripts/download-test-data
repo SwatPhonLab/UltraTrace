@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Kevin Murphy
 keggsmurph21 at gmail dot com
 """
 
 from mypy_boto3_s3 import Client as S3Client
+from typing import NoReturn
 
 import boto3  # type: ignore
 import botocore  # type: ignore
@@ -20,7 +21,7 @@ BUCKET = "swatphonlab"
 PREFIX = "ultratrace-test-data"
 
 
-def usage() -> None:
+def usage() -> NoReturn:
     print(
         f"""
 usage: {sys.argv[0]}
@@ -51,12 +52,9 @@ usage: {sys.argv[0]}
 
 def hash_path(path: str) -> str:
     assert os.path.exists(path)
-    proc = subprocess.run(
-        ["./scripts/hash-path", path], stdout=subprocess.PIPE, encoding="utf-8"
-    )
-    if proc.returncode:
-        raise RuntimeError("Unable to hash path")
-    return proc.stdout.strip()
+    return subprocess.check_output(
+        ["./scripts/hash-path", path], encoding="utf-8"
+    ).strip()
 
 
 def download_file(s3: S3Client, key: str, local_path: str) -> None:
