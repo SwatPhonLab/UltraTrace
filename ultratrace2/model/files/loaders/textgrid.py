@@ -1,4 +1,4 @@
-from typing import Optional, IO
+from typing import IO, Optional, Sequence
 
 import logging
 import os
@@ -21,6 +21,22 @@ class TextGridLoader(AlignmentFileLoader):
     def __init__(self, path: str, tg_data: textgrid.TextGrid):
         self.set_path(path)
         self.tg_data = tg_data
+        self.offset = 0.0
+
+    def get_tier_names(self) -> Sequence[str]:
+        return self.tg_data.getNames()
+
+    def get_start(self) -> float:
+        return self.tg_data.minTime + self.offset
+
+    def get_end(self) -> float:
+        return self.tg_data.maxTime + self.offset
+
+    def get_offset(self) -> float:
+        return self.offset
+
+    def set_offset(self, offset: float) -> None:
+        self.offset = offset
 
     @classmethod
     def from_file(cls, path: str) -> "TextGridLoader":

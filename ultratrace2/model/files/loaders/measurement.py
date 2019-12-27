@@ -1,3 +1,5 @@
+from typing import Sequence
+
 from .base import AlignmentFileLoader
 
 
@@ -12,6 +14,21 @@ class MeasurementLoader(AlignmentFileLoader):
 
     def __init__(self, path: str):
         self.set_path(path)
+
+    def get_tier_names(self) -> Sequence[str]:
+        raise NotImplementedError()
+
+    def get_start(self) -> float:
+        raise NotImplementedError()
+
+    def get_end(self) -> float:
+        raise NotImplementedError()
+
+    def get_offset(self) -> float:
+        raise NotImplementedError()
+
+    def set_offset(self, offset: float) -> None:
+        raise NotImplementedError()
 
     @classmethod
     def from_file(cls, path: str) -> "MeasurementLoader":

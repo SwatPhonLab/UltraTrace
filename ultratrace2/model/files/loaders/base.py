@@ -2,7 +2,7 @@ import logging
 
 from abc import ABC, abstractmethod
 from PIL import Image  # type: ignore
-from typing import Type, TypeVar
+from typing import Sequence, Type, TypeVar
 
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,25 @@ class FileLoaderBase(ABC):
 
 
 class AlignmentFileLoader(FileLoaderBase):
-    pass
+    @abstractmethod
+    def get_tier_names(self) -> Sequence[str]:
+        ...
+
+    @abstractmethod
+    def get_start(self) -> float:
+        ...
+
+    @abstractmethod
+    def get_end(self) -> float:
+        ...
+
+    @abstractmethod
+    def get_offset(self) -> float:
+        ...
+
+    @abstractmethod
+    def set_offset(self, offset: float) -> None:
+        ...
 
 
 class ImageSetFileLoader(FileLoaderBase):
@@ -53,7 +71,6 @@ class ImageSetFileLoader(FileLoaderBase):
     @abstractmethod
     def get_frame(self, i: int) -> Image.Image:
         """ImageSets should support random access of frames."""
-        pass
 
     @abstractmethod
     def get_height(self) -> int:
