@@ -17,6 +17,107 @@ def test_loading_from_invalid_file(path) -> None:
 @pytest.mark.parametrize(
     "path,tier_names,intervals,start_time,end_time",
     [
+        # FIXME: The textgrid library is unable to parse `manual-00-short` and `manual-00-mixed`
+        #        even though those are taken directly from the Praat TextGrid file formats page.
+        #        We should probably (eventually) commit upstream to the textgrid lib directly
+        #        and then add those tests here.
+        (
+            "./test-data/example-textgrid/manual-00-pretty.TextGrid",
+            ["Mary", "John", "bell"],
+            [("Mary", []), ("John", [])],
+            0.0,
+            2.3,
+        ),
+        (
+            "./test-data/example-textgrid/manual-01-ascii.TextGrid",
+            ["sentence", "phonemes", "bell"],
+            [
+                ("sentence", [(0.0, 2.3, 'kej "ahoj" dvakrt')]),
+                (
+                    "phonemes",
+                    [(0.0, 0.7, "rikj"), (0.7, 1.6, "aj"), (1.6, 2.3, "dakrat")],
+                ),
+            ],
+            0.0,
+            2.3,
+        ),
+        (
+            "./test-data/example-textgrid/manual-01-latin1.TextGrid",
+            ["sentence", "phonemes", "bell"],
+            [
+                ("sentence", [(0.0, 2.3, 'нkej "ahoj" dvakrбt')]),
+                (
+                    "phonemes",
+                    [(0.0, 0.7, "rikj"), (0.7, 1.6, "aj"), (1.6, 2.3, "dakrat")],
+                ),
+            ],
+            0.0,
+            2.3,
+        ),
+        (
+            "./test-data/example-textgrid/manual-01-macroman.TextGrid",
+            ["sentence", "phonemes", "bell"],
+            [
+                ("sentence", [(0.0, 2.3, '’kej "ahoj" dvakr‡t')]),
+                (
+                    "phonemes",
+                    [(0.0, 0.7, "rikj"), (0.7, 1.6, "aj"), (1.6, 2.3, "dakrat")],
+                ),
+            ],
+            0.0,
+            2.3,
+        ),
+        (
+            "./test-data/example-textgrid/manual-01-utf16.TextGrid",
+            ["sentence", "phonemes", "bell"],
+            [
+                ("sentence", [(0.0, 2.3, 'říkej "ahoj" dvakrát')]),
+                (
+                    "phonemes",
+                    [
+                        (0.0, 0.7, "r̝iːkɛj"),
+                        (0.7, 1.6, "ʔaɦɔj"),
+                        (1.6, 2.3, "dʋakraːt"),
+                    ],
+                ),
+            ],
+            0.0,
+            2.3,
+        ),
+        (
+            "./test-data/example-textgrid/manual-01-utf8.TextGrid",
+            ["sentence", "phonemes", "bell"],
+            [
+                ("sentence", [(0.0, 2.3, 'říkej "ahoj" dvakrát')]),
+                (
+                    "phonemes",
+                    [
+                        (0.0, 0.7, "r̝iːkɛj"),
+                        (0.7, 1.6, "ʔaɦɔj"),
+                        (1.6, 2.3, "dʋakraːt"),
+                    ],
+                ),
+            ],
+            0.0,
+            2.3,
+        ),
+        (
+            "./test-data/example-textgrid/manual-02.TextGrid",
+            ["sentence", "phonemes", "bell"],
+            [
+                ("sentence", [(0.0, 2.3, "\\r<\\i'kej \"ahoj\" dvakr\\a't")]),
+                (
+                    "phonemes",
+                    [
+                        (0.0, 0.7, "r\\T^i\\:fk\\efj"),
+                        (0.7, 1.6, "\\?ga\\h^\\ctj"),
+                        (1.6, 2.3, "d\\vsakra\\:ft"),
+                    ],
+                ),
+            ],
+            0.0,
+            2.3,
+        ),
         (
             "./test-data/ftyers/20150629171639.TextGrid",
             [

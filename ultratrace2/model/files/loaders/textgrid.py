@@ -1,4 +1,4 @@
-from typing import IO, Optional, Sequence
+from typing import IO, Sequence
 
 import logging
 import os
@@ -76,9 +76,21 @@ class TextGridLoader(AlignmentFileLoader):
             if not os.path.exists(path):
                 raise FileNotFoundError(f"Cannot load from path: '{path}'")
 
-            for encoding in ("utf-8", "Windows-1251", "Windows-1252", "ISO-8859-1"):
-                tg_data = TextGridLoader.try_load_with_encoding(path, encoding)
-                return cls(path, tg_data)
+            for encoding in (
+                "utf-8",
+                "utf-16",
+                "Windows-1251",
+                "Windows-1252",
+                "ISO-8859-1",  # aka Latin-1
+                "macroman",
+            ):
+                try:
+                    tg_data = TextGridLoader.load_with_encoding(path, encoding)
+                    return cls(path, tg_data)
+                except UnicodeDecodeError:
+                    pass
+                except textgrid.exceptions.TextGridError as e:
+                    logger.error(e)
 
             raise ValueError("Unable to parse file")
 
@@ -88,18 +100,12 @@ class TextGridLoader(AlignmentFileLoader):
             ) from e
 
     @classmethod
-    def try_load_with_encoding(
-        cls, path: str, encoding: str
-    ) -> Optional[textgrid.TextGrid]:
-        try:
-            if encoding == "utf-8":
-                return textgrid.TextGrid.fromFile(path)
-            else:
-                transcoded_file = cls.copy_to_temp_file_with_encoding(path, encoding)
-                return textgrid.TextGrid.fromFile(transcoded_file.name)
-        except textgrid.exceptions.TextGridError as e:
-            logger.error(e)
-            raise  # FIXME: implement something here?
+    def load_with_encoding(cls, path: str, encoding: str) -> textgrid.TextGrid:
+        if encoding == "utf-8" or encoding == "utf-16":
+            return textgrid.TextGrid.fromFile(path)
+        else:
+            transcoded_file = cls.copy_to_temp_file_with_encoding(path, encoding)
+            return textgrid.TextGrid.fromFile(transcoded_file.name)
 
     @classmethod
     def copy_to_temp_file_with_encoding(
@@ -110,4 +116,5 @@ class TextGridLoader(AlignmentFileLoader):
         with open(original_path, "rb") as orig_file:
             transcoded_contents = orig_file.read().decode(encoding).encode("utf-8")
             temp_file.write(transcoded_contents)
+            temp_file.seek(0)
         return temp_file
