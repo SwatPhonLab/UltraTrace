@@ -1,0 +1,54 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Helper function to hash an entire directory, so that we can check if
+# contents match some known expected value (see below).
+get_hash() {
+    hash_func=md5sum  # not sure how portable this is
+    echo "$@" | md5sum | cut -d' ' -f1
+}
+
+# Helper function to normalize the order that files are listed across diff
+# operating systems (currently tested on MacOS 10.14 and Ubuntu 18.04). This
+# function just chomps all "problematic" characters (based on the data it's
+# been tested on ... it's possible there might be other discrepancies). Doing
+# this means files like `hello.txt` and `h e l l o.txt` both map to `hellotxt`,
+# which may be problematic for `sort`.
+normalize_filenames() {
+    while read filename; do
+        echo "$filename" \
+            | sed -E 's,[. _],,g' \
+            | sed -E 's,^\.*/*,,g' \
+            | sed -E 's,//+,/,g'
+    done | sort --ignore-case
+}
+
+# For each file under the path, use `get_hash` to compute a hash of its
+# contents, then concat that hash to the `running_hash` string. Then, when
+# each of the individual files has been hashed, use `get_hash` to echo out
+# the hash of the `running_hash` string.
+hash_path() {
+    echo "computing hash for $1 ..." >&2
+    filenames="$(find "$1" -type f | normalize_filenames)"
+    running_hash=""
+    for file in $filenames; do
+        running_hash="${running_hash}$(get_hash "$file")"
+    done
+    get_hash $running_hash
+}
+
+if [[ $# -ne 1 ]]; then
+    cat <<EOM >&2
+
+usage: $0 <path>
+
+    This script takes a single path (file, dir, symlink, etc.) as a parameter
+    and recursively hashes the contents of that path, echoing as a single string
+    to stdout.
+
+EOM
+    exit 1
+fi
+
+hash_path "$1"

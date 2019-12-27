@@ -35,6 +35,8 @@ setup(
             "numpy-stubs @ git+https://github.com/numpy/numpy-stubs.git@master",
             "pytest-cov",
             "pytest-mock",
+            "boto3",
+            "mypy-boto3-s3",
         ]
     },
 )
