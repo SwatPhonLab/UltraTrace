@@ -2,7 +2,8 @@ import logging
 
 from abc import ABC, abstractmethod
 from PIL import Image  # type: ignore
-from typing import Sequence, Type, TypeVar
+from typing import Sequence, Tuple, Type, TypeVar
+from typing_extensions import Protocol
 
 
 logger = logging.getLogger(__name__)
@@ -36,9 +37,31 @@ class FileLoaderBase(ABC):
             it should throw a `FileLoadError`."""
 
 
+class IntervalBase(Protocol):
+    def get_start(self) -> float:
+        ...
+
+    def get_end(self) -> float:
+        ...
+
+    def get_contents(self) -> str:
+        ...
+
+    def __bool__(self) -> bool:
+        ...
+
+
+# NB: the Tuple is <interval_name, intervals>
+Intervals = Sequence[Tuple[str, Sequence[IntervalBase]]]
+
+
 class AlignmentFileLoader(FileLoaderBase):
     @abstractmethod
     def get_tier_names(self) -> Sequence[str]:
+        ...
+
+    @abstractmethod
+    def get_intervals(self) -> Intervals:
         ...
 
     @abstractmethod

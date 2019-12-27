@@ -5,10 +5,27 @@ import os
 import tempfile
 import textgrid  # type: ignore
 
-from .base import AlignmentFileLoader, FileLoadError
+from .base import AlignmentFileLoader, FileLoadError, Intervals
 
 
 logger = logging.getLogger(__name__)
+
+
+class TextGridInterval:
+    def __init__(self, tg_interval: textgrid.Interval):
+        self.tg_interval = tg_interval
+
+    def get_start(self) -> float:
+        return self.tg_interval.minTime
+
+    def get_end(self) -> float:
+        return self.tg_interval.maxTime
+
+    def get_contents(self) -> str:
+        return self.tg_interval.mark
+
+    def __bool__(self) -> bool:
+        return bool(self.get_contents())
 
 
 class TextGridLoader(AlignmentFileLoader):
@@ -25,6 +42,20 @@ class TextGridLoader(AlignmentFileLoader):
 
     def get_tier_names(self) -> Sequence[str]:
         return self.tg_data.getNames()
+
+    def get_intervals(self) -> Intervals:
+        all_intervals = []
+        for tier in self.tg_data.tiers:
+            if isinstance(tier, textgrid.PointTier):
+                continue
+            tier_intervals = []
+            for tier_interval in tier:
+                tg_interval = TextGridInterval(tier_interval)
+                if not tg_interval:
+                    continue
+                tier_intervals.append(tg_interval)
+            all_intervals.append((tier.name, tier_intervals))
+        return all_intervals
 
     def get_start(self) -> float:
         return self.tg_data.minTime + self.offset

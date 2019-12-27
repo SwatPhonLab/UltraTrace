@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from .base import AlignmentFileLoader
+from .base import AlignmentFileLoader, Intervals
 
 
 class MeasurementLoader(AlignmentFileLoader):
@@ -16,6 +16,9 @@ class MeasurementLoader(AlignmentFileLoader):
         self.set_path(path)
 
     def get_tier_names(self) -> Sequence[str]:
+        raise NotImplementedError()
+
+    def get_intervals(self) -> Intervals:
         raise NotImplementedError()
 
     def get_start(self) -> float:
