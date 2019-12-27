@@ -68,7 +68,6 @@ class DICOMLoader(ImageSetFileLoader):
             dicom = pydicom.read_file(path)
 
             pixels: np.ndarray = dicom.pixel_array
-            print(pixels.shape)
 
             if len(pixels.shape) == 2:
                 # For DICOM consisting of a single frame, we need to add a singleton axis.
