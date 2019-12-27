@@ -63,7 +63,7 @@ class DICOMLoader(ImageSetFileLoader):
         try:
 
             if not os.path.exists(path):
-                raise FileNotFoundError("Cannot load from path: '{path}'")
+                raise FileNotFoundError(f"Cannot load from path: '{path}'")
 
             dicom = pydicom.read_file(path)
 
