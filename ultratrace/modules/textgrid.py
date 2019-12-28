@@ -409,7 +409,7 @@ class TextGrid(Module):
 
         '''
         if self.selectedItem:
-            duration = self.end - self.start
+            duration = decimal.Decimal(self.end) - self.start
 
             # There might be a more efficient way to get the tier name:
             widg = self.selectedItem[0]

@@ -67,10 +67,12 @@ class Metadata(Module):
                 'audio/wav'     :   ['.wav'],
                 'audio/flac'        :   ['.flac'],
                 'application/dicom' :   ['.dicom'],
-                'text/plain'        :   ['.TextGrid', 'US.txt'],
+                'text/plain'        :   ['.TextGrid', 'US.txt', '.txt', '.dat'],
                 'application/octet-stream' : ['.ult']
             }
             files = {}
+
+            splines = None
 
             # now get the objects in subdirectories
             for path, dirs, fs in os.walk( self.path ):
@@ -92,10 +94,11 @@ class Metadata(Module):
                         filename = filename[:-2]
                         extension = 'US.txt'
                     if extension == '.wav' and filename.endswith('_Track0'):
-                        debug(filename)
                         filename = filename[:-7]
-                        debug(filename, mime_type)
                     elif extension == '.wav' and filename.endswith('_Track1'):
+                        continue
+                    elif extension == '.dat' and filename == 'SPLINES':
+                        splines = filepath
                         continue
 
                     if (mime_type == 'text/plain' or mime_type == 'application/json') and extension == '.measurement':
@@ -137,6 +140,10 @@ class Metadata(Module):
             # sort files, set the geometry, and write
             self.data[ 'files' ] = [ files[key] for key in sorted(files.keys()) ]
             self.data[ 'geometry' ] = '1150x800+1400+480'
+
+            if splines != None:
+                self.importULTMeasurement(splines)
+
             self.write()
 
         self.app.geometry( self.getTopLevel('geometry') )
@@ -167,6 +174,64 @@ class Metadata(Module):
         if not filenum in list_of_files:
             list_of_files[filenum]={}
         list_of_files[filenum][framenum] = new_array
+
+    def importULTMeasurement(self, filepath):
+        from ..util.framereader import ULTScanLineReader
+        f = open(filepath)
+        lines = [x.replace(',', '.').strip().split('\t') for x in f.readlines()[1:]]
+        f.close()
+        defaultx = 120
+        defaulty = 100
+        self.data['traces'] = {'tongue': {'color': 'red', 'files': {}}, 'roof': {'color': 'blue', 'files': {}}}
+        for linenum, line in enumerate(lines):
+            if len(line) <= 3:
+                continue
+            timestamp = float(line[1])
+            date = line[2]
+            tongue = []
+            roof = []
+            for i in range(3, len(line)):
+                if '.' not in line[i]:
+                    ls = line[3:i]
+                    for i in range(0, len(ls), 2):
+                        tongue.append({'x': float(ls[i])/defaultx, 'y': 1-(float(ls[i+1])/defaulty)})
+                    break
+            for i in range(len(line)-1, 0, -1):
+                if '.' not in line[i]:
+                    ls = line[i+1:]
+                    for i in range(0, len(ls), 2):
+                        roof.append({'x': float(ls[i])/defaultx, 'y': 1-(float(ls[i+1])/defaulty)})
+                    break
+            for fblob in self.data['files']:
+                if '.txt' not in fblob or '.ult' not in fblob or 'US.txt' not in fblob:
+                    continue
+                f = open(fblob['.txt'], 'rb')
+                byt = f.read()
+                f.close()
+                s = ''
+                for enc in ['utf-8', 'Windows-1251', 'Windows-1252', 'ISO-8859-1']:
+                    try:
+                        s = byt.decode(enc)
+                        break
+                    except:
+                        pass
+                if date in s:
+                    reader = ULTScanLineReader(fblob['.ult'], fblob['US.txt'])
+                    ts = reader.getFrameTimes()
+                    framenum = 0
+                    for i in range(len(ts)):
+                        if ts[i] > timestamp:
+                            framenum = i
+                            break
+                    if fblob['name'] not in self.data['traces']['tongue']['files']:
+                        self.data['traces']['tongue']['files'][fblob['name']] = {}
+                        self.data['traces']['roof']['files'][fblob['name']] = {}
+                    self.data['traces']['tongue']['files'][fblob['name']][str(framenum)] = tongue
+                    self.data['traces']['roof']['files'][fblob['name']][str(framenum)] = roof
+                    info('Line %s of %s imported as %s frame %s' % (linenum+1, filepath, fblob['name'], framenum))
+                    break
+            else:
+                warn('Unable to import line %s of %s' % (linenum+1, filepath))
 
     def write(self, _mdfile=None):
         '''
