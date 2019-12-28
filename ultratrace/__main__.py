@@ -610,5 +610,6 @@ if __name__=='__main__':
 	while True:
 		try:
 			app.mainloop()
+			break
 		except UnicodeDecodeError as e:
 			error(e)
