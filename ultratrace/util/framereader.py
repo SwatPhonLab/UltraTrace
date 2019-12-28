@@ -168,9 +168,12 @@ class ULTScanLineReader(FrameReader):
 
 	def __init__(self, data, metadata):
 		FrameReader.__init__(self, data)
-		f = open(data, 'rb')
-		self.data.write(f.read())
-		f.close()
+		#f = open(data, 'rb')
+		#self.data.write(f.read())
+		#f.close()
+		self.data = open(data, 'rb')
+		# sometimes copying to a temporary file misses things
+		# however, if we do this it might not get closed
 		f = open(metadata)
 		for l in f.readlines():
 			k, v = l.strip().split('=')
@@ -202,7 +205,7 @@ class ULTScanLineReader(FrameReader):
 		ax.pcolormesh(self.thetaspace, self.radspace, data, cmap='gray')
 		canvas = FigureCanvasAgg(fig)
 		canvas.draw()
-		ret = Image.frombytes('RGBA', canvas.get_width_height(), canvas.tostring_argb())
+		ret = Image.frombytes('RGB', canvas.get_width_height(), canvas.tostring_rgb())
 		plt.close(fig)
 		return ret
 
