@@ -7,6 +7,8 @@ import numpy as np
 import pydicom as dicom
 from PIL import Image, ImageTk, ImageEnhance
 import tempfile
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import zlib
