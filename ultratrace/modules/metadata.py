@@ -177,7 +177,7 @@ class Metadata(Module):
 
     def importULTMeasurement(self, filepath):
         from ..util.framereader import ULTScanLineReader
-        f = open(filepath)
+        f = open(self.unrelativize(filepath))
         lines = [x.replace(',', '.').strip().split('\t') for x in f.readlines()[1:]]
         f.close()
         defaultx = 120
@@ -205,7 +205,7 @@ class Metadata(Module):
             for fblob in self.data['files']:
                 if '.txt' not in fblob or '.ult' not in fblob or 'US.txt' not in fblob:
                     continue
-                f = open(fblob['.txt'], 'rb')
+                f = open(self.unrelativize(fblob['.txt']), 'rb')
                 byt = f.read()
                 f.close()
                 s = ''
@@ -216,7 +216,7 @@ class Metadata(Module):
                     except:
                         pass
                 if date in s:
-                    reader = ULTScanLineReader(fblob['.ult'], fblob['US.txt'])
+                    reader = ULTScanLineReader(self.unrelativize(fblob['.ult']), self.unrelativize(fblob['US.txt']))
                     ts = reader.getFrameTimes()
                     framenum = 0
                     for i in range(len(ts)):
