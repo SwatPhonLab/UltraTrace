@@ -178,30 +178,42 @@ class Metadata(Module):
     def importULTMeasurement(self, filepath):
         from ..util.framereader import ULTScanLineReader
         f = open(self.unrelativize(filepath))
-        lines = [x.replace(',', '.').strip().split('\t') for x in f.readlines()[1:]]
+        data = [x.split('\t') for x in f.readlines()]
+        lines = []
+        coords_loc = {}
+        confidence_loc = {}
+        offset = 3
+        for col in data[0][3:]:
+            name = col.split('"')[1]
+            if col.startswith('X,Y'):
+                coords_loc[name] = offset
+                offset += 84
+            elif col.startswith('Confidence'):
+                confidence_loc[name] = offset
+                offset += 42
+        for linenum, line in enumerate(data[1:], start=2):
+            dt = {}
+            for k in coords_loc:
+                conf = [100]*42
+                if k in confidence_loc:
+                    offset = confidence_loc[k]
+                    for i in range(42):
+                        if line[i+offset]: conf[i] = int(line[i+offset])
+                pts = []
+                offset = coords_loc[k]
+                for i in range(42):
+                    xs = line[(2*i)+offset]
+                    ys = line[(2*i)+offset+1]
+                    if xs and ys and conf[i] > 50:
+                        pts.append((float(xs.replace(',', '.')), float(ys.replace(',', '.'))))
+                if pts:
+                    dt[k] = pts
+            if dt:
+                lines.append((linenum, float(line[1].replace(',', '.')), line[2], dt))
         f.close()
-        defaultx = 120
-        defaulty = 100
-        self.data['traces'] = {'tongue': {'color': 'red', 'files': {}}, 'roof': {'color': 'blue', 'files': {}}}
-        for linenum, line in enumerate(lines):
-            if len(line) <= 3:
-                continue
-            timestamp = float(line[1])
-            date = line[2]
-            tongue = []
-            roof = []
-            for i in range(3, len(line)):
-                if '.' not in line[i]:
-                    ls = line[3:i]
-                    for i in range(0, len(ls), 2):
-                        tongue.append({'x': float(ls[i])/defaultx, 'y': 1-(float(ls[i+1])/defaulty)})
-                    break
-            for i in range(len(line)-1, 0, -1):
-                if '.' not in line[i]:
-                    ls = line[i+1:]
-                    for i in range(0, len(ls), 2):
-                        roof.append({'x': float(ls[i])/defaultx, 'y': 1-(float(ls[i+1])/defaulty)})
-                    break
+        self.data['traces'] = {k: {'color': 'red', 'files': {}} for k in coords_loc}
+        # TODO: all traces are imported as the same color
+        for linenum, timestamp, date, data in lines:
             for fblob in self.data['files']:
                 if '.txt' not in fblob or '.ult' not in fblob or 'US.txt' not in fblob:
                     continue
@@ -220,18 +232,22 @@ class Metadata(Module):
                     ts = reader.getFrameTimes()
                     framenum = 0
                     for i in range(len(ts)):
-                        if ts[i] > timestamp:
-                            framenum = i
+                        if ts[i] >= timestamp:
+                            framenum = i-1
                             break
-                    if fblob['name'] not in self.data['traces']['tongue']['files']:
-                        self.data['traces']['tongue']['files'][fblob['name']] = {}
-                        self.data['traces']['roof']['files'][fblob['name']] = {}
-                    self.data['traces']['tongue']['files'][fblob['name']][str(framenum)] = tongue
-                    self.data['traces']['roof']['files'][fblob['name']][str(framenum)] = roof
-                    info('Line %s of %s imported as %s frame %s' % (linenum+1, filepath, fblob['name'], framenum))
+                    height = (reader.PixPerVector + reader.ZeroOffset) / reader.PixelsPerMm
+                    width = 200
+                    for k in data:
+                        if fblob['name'] not in self.data['traces'][k]['files']:
+                            self.data['traces'][k]['files'][fblob['name']] = {}
+                        conv = []
+                        for pt in data[k]:
+                            conv.append({'x': pt[0] / width, 'y': 1 - (pt[1] / height)})
+                        self.data['traces'][k]['files'][fblob['name']][str(framenum)] = conv
+                    info('Line %s of %s imported as %s frame %s' % (linenum, filepath, fblob['name'], framenum))
                     break
             else:
-                warn('Unable to import line %s of %s' % (linenum+1, filepath))
+                warn('Unable to import line %s of %s' % (linenum, filepath))
 
     def write(self, _mdfile=None):
         '''
