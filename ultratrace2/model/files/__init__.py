@@ -19,7 +19,7 @@ try:
     from .loaders import FLACLoader
 
     __register(
-        [], [], FLACLoader,
+        [".flac"], ["audio/flac"], FLACLoader,
     )
 except ImportError as e:
     logger.warning(e)
@@ -37,7 +37,7 @@ try:
     from .loaders import MP3Loader
 
     __register(
-        [], [], MP3Loader,
+        [".mp3"], ["audio/mp3", "audio/MPA", "audio/mpa-robust"], MP3Loader,
     )
 except ImportError as e:
     logger.warning(e)
@@ -46,7 +46,7 @@ try:
     from .loaders import OggLoader
 
     __register(
-        [], [], OggLoader,
+        [".ogg", ".oga", ".spx"], ["audio/ogg"], OggLoader,
     )
 except ImportError as e:
     logger.warning(e)
