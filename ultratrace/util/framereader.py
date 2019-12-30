@@ -205,9 +205,15 @@ class ULTScanLineReader(FrameReader):
 		ax.pcolormesh(self.thetaspace, self.radspace, data, cmap='gray')
 		canvas = FigureCanvasAgg(fig)
 		canvas.draw()
+		r = self.ZeroOffset+self.PixPerVector
+		px = ax.transData.transform([[0,0], [math.pi/2, r], [self.thetaspace[0], r], [self.thetaspace[-1], r]])
+		xmin = math.floor(px[2][0])
+		xmax = math.ceil(px[3][0])
+		ymin = math.floor(px[0][1])
+		ymax = math.ceil(px[1][1])
 		ret = Image.frombytes('RGB', canvas.get_width_height(), canvas.tostring_rgb())
 		plt.close(fig)
-		return ret
+		return ret.crop((xmin, ymin, xmax, ymax))
 
 	def getFrameTimes(self):
 		inc = 1.0 / self.FramesPerSec
