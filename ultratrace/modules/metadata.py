@@ -3,6 +3,7 @@ from ..util.logging import *
 
 import json
 import os
+import math
 
 from tkinter import filedialog
 from magic import Magic # python-magic
@@ -236,7 +237,7 @@ class Metadata(Module):
                             framenum = i-1
                             break
                     height = (reader.PixPerVector + reader.ZeroOffset) / reader.PixelsPerMm
-                    width = 200
+                    width = 2*math.cos((math.pi/2) - (reader.Angle * reader.NumVectors/2))*height
                     for k in data:
                         if fblob['name'] not in self.data['traces'][k]['files']:
                             self.data['traces'][k]['files'][fblob['name']] = {}
