@@ -65,4 +65,6 @@ class ImageSetFileLoader(FileLoaderBase):
 
 
 class SoundFileLoader(FileLoaderBase):
-    pass
+    @abstractmethod
+    def __len__(self) -> int:
+        """Length of file in ms"""
