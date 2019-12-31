@@ -1,4 +1,4 @@
-import mimetypes
+import magic  # type: ignore
 import os
 
 from typing import Dict, Mapping, Optional, Sequence, Set, Type, Union
@@ -64,7 +64,7 @@ def register_loader_for_extensions_and_mime_types(
 def get_loader_for(path: str) -> Optional[Type[FileLoaderBase]]:
 
     _, extension = os.path.splitext(path.lower())
-    mime_type, _ = mimetypes.guess_type(path)
+    mime_type = magic.Magic(mime=True).from_file(path)
     if mime_type is None:
         # Early return since we can't possibly match anymore
         return None
