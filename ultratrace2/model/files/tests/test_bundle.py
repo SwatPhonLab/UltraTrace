@@ -1,9 +1,16 @@
+from typing import Dict, Mapping, Sequence, Tuple, Type
+
 import os
 import pytest
 
 from ..bundle import FileBundle, FileBundleList
 from ..loaders import DICOMLoader, MP3Loader, TextGridLoader, WAVLoader
-from ..loaders.base import AlignmentFileLoader, ImageSetFileLoader, SoundFileLoader
+from ..loaders.base import (
+    FileLoaderBase,
+    AlignmentFileLoader,
+    ImageSetFileLoader,
+    SoundFileLoader,
+)
 
 
 @pytest.mark.parametrize(
@@ -19,7 +26,7 @@ from ..loaders.base import AlignmentFileLoader, ImageSetFileLoader, SoundFileLoa
         dict(alignment_file=None, image_set_file=None, sound_file=None),
     ],
 )
-def test_empty_file_bundle_constructor(kwargs) -> None:
+def test_empty_file_bundle_constructor(kwargs: Mapping[str, None]) -> None:
     fb = FileBundle("test", **kwargs)
     assert not fb.has_impl()
     assert str(fb) == 'Bundle("test",None,None,None)'
@@ -140,13 +147,36 @@ def test_build_from_nonexistent_dir(mocker) -> None:
             {"file00": [(TextGridLoader, "sub01/file00.TextGrid")]},
             True,
         ),
-        # ("./test-data/example-bundles/ex014", FIXME),
-        # ("./test-data/example-bundles/ex015", FIXME),
-        # ("./test-data/example-bundles/ex016", FIXME),
+        (
+            "./test-data/example-bundles/ex014",
+            {"link00": [(TextGridLoader, "../ex004/file00.TextGrid")]},
+            False,
+        ),
+        (
+            "./test-data/example-bundles/ex015",
+            {
+                "file00": [(MP3Loader, "file00.mp3")],
+                "link00": [(TextGridLoader, "../ex004/file00.TextGrid")],
+            },
+            False,
+        ),
+        (
+            "./test-data/example-bundles/ex016",
+            {
+                "link00": [
+                    (MP3Loader, "link00.mp3"),
+                    (TextGridLoader, "../ex004/file00.TextGrid"),
+                ]
+            },
+            False,
+        ),
     ],
 )
 def test_build_from_dir(
-    mocker, source_dir, expected_file_map, should_emit_warning
+    mocker,
+    source_dir: str,
+    expected_file_map: Dict[str, Sequence[Tuple[Type[FileLoaderBase], str]]],
+    should_emit_warning: bool,
 ) -> None:
     mock_file_bundle_list_constructor = mocker.patch(
         "ultratrace2.model.files.bundle.FileBundleList.__init__", return_value=None,
