@@ -53,6 +53,14 @@ class FileBundle:
     def __repr__(self):
         return f'Bundle("{self.name}",{self.alignment_file},{self.image_set_file},{self.sound_file})'
 
+    def __eq__(self, other):
+        return (
+            self.name == other.name
+            and self.alignment_file == other.alignment_file
+            and self.image_set_file == other.image_set_file
+            and self.sound_file == other.sound_file
+        )
+
 
 class FileBundleList:
 
