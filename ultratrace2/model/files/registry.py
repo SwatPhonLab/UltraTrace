@@ -69,8 +69,8 @@ def get_loader_for(path: str) -> Optional[Type[FileLoaderBase]]:
         # Early return since we can't possibly match anymore
         return None
 
-    loader_cls_by_extension = __extension_to_loaders_map[extension]
-    loader_cls_by_mime_type = __mime_type_to_loaders_map[mime_type]
+    loader_cls_by_extension = __extension_to_loaders_map.get(extension, None)
+    loader_cls_by_mime_type = __mime_type_to_loaders_map.get(mime_type, None)
 
     # NB: Use set-intersection (could potentially use set-union instead).
     if loader_cls_by_extension is None or loader_cls_by_mime_type is None:

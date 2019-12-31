@@ -111,7 +111,7 @@ def test_build_from_nonexistent_dir(mocker) -> None:
             "./test-data/example-bundles/ex009",
             {"file00": [(WAVLoader, "file00.wav")]},
             True,
-        ),  # FIXME
+        ),
         (
             "./test-data/example-bundles/ex010",
             {"file00": [(TextGridLoader, "sub00/file00.TextGrid")]},
@@ -137,9 +137,9 @@ def test_build_from_nonexistent_dir(mocker) -> None:
         ),
         (
             "./test-data/example-bundles/ex013",
-            {"file00": [(TextGridLoader, "sub00/file00.TextGrid")]},
+            {"file00": [(TextGridLoader, "sub01/file00.TextGrid")]},
             True,
-        ),  # FIXME
+        ),
         # ("./test-data/example-bundles/ex014", FIXME),
         # ("./test-data/example-bundles/ex015", FIXME),
         # ("./test-data/example-bundles/ex016", FIXME),
