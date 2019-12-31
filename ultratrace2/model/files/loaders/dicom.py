@@ -63,12 +63,11 @@ class DICOMLoader(ImageSetFileLoader):
         try:
 
             if not os.path.exists(path):
-                raise FileNotFoundError("Cannot load from path: '{path}'")
+                raise FileNotFoundError(f"Cannot load from path: '{path}'")
 
             dicom = pydicom.read_file(path)
 
             pixels: np.ndarray = dicom.pixel_array
-            print(pixels.shape)
 
             if len(pixels.shape) == 2:
                 # For DICOM consisting of a single frame, we need to add a singleton axis.
