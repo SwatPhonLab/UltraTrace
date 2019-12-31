@@ -99,15 +99,15 @@ class TextGridLoader(AlignmentFileLoader):
                 f"Invalid TextGrid ({path}), unable to read: {str(e)}"
             ) from e
 
-    @classmethod
-    def load_with_encoding(cls, path: str, encoding: str) -> textgrid.TextGrid:
+    @staticmethod
+    def load_with_encoding(path: str, encoding: str) -> textgrid.TextGrid:
         if encoding == "utf-8" or encoding == "utf-16":
             return textgrid.TextGrid.fromFile(path)
         else:
-            transcoded_file = cls.copy_to_temp_file_with_encoding(path, encoding)
+            transcoded_file = TextGridLoader.copy_to_temp_file_with_encoding(path, encoding)
             return textgrid.TextGrid.fromFile(transcoded_file.name)
 
-    @classmethod
+    @staticmethod
     def copy_to_temp_file_with_encoding(
         cls, original_path: str, encoding: str
     ) -> IO[bytes]:
