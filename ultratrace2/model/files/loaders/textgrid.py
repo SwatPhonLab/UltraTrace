@@ -104,17 +104,17 @@ class TextGridLoader(AlignmentFileLoader):
         if encoding == "utf-8" or encoding == "utf-16":
             return textgrid.TextGrid.fromFile(path)
         else:
-            transcoded_file = TextGridLoader.copy_to_temp_file_with_encoding(path, encoding)
-            return textgrid.TextGrid.fromFile(transcoded_file.name)
+            with tempfile.NamedTemporaryFile() as temp_file:
+                TextGridLoader.copy_to_temp_file_with_encoding(
+                    path, temp_file, encoding
+                )
+                return textgrid.TextGrid.fromFile(temp_file.name)
 
     @staticmethod
     def copy_to_temp_file_with_encoding(
-        cls, original_path: str, encoding: str
-    ) -> IO[bytes]:
-        # this gets ::close()d when it is GC'ed
-        temp_file = tempfile.NamedTemporaryFile()
+        original_path: str, temp_file: IO[bytes], encoding: str
+    ) -> None:
         with open(original_path, "rb") as orig_file:
             transcoded_contents = orig_file.read().decode(encoding).encode("utf-8")
             temp_file.write(transcoded_contents)
             temp_file.seek(0)
-        return temp_file
