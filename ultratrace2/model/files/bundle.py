@@ -123,7 +123,7 @@ class FileBundleList:
                     continue
 
                 if name not in bundles:
-                    bundles[name] = FileBundle(filepath)
+                    bundles[name] = FileBundle(name)
 
                 try:
                     loaded_file = file_loader.from_file(filepath)
