@@ -22,6 +22,6 @@ def test_loading_from_invalid_file(path) -> None:
         ("./test-data/ftyers/20150629171639.flac", 28200),
     ],
 )
-def test_loading_from_valid_file(path: str, duration_ms: float) -> None:
+def test_loading_from_valid_file(path: str, duration_ms: int) -> None:
     flac_file = FLACLoader.from_file(path)
     assert len(flac_file) == duration_ms

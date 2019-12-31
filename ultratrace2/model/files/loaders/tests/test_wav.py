@@ -167,6 +167,6 @@ def test_loading_from_invalid_file(path) -> None:
         ("./test-data/qumuq/File068_Track1.wav", 3390),
     ],
 )
-def test_loading_from_valid_file(path: str, duration_ms: float) -> None:
+def test_loading_from_valid_file(path: str, duration_ms: int) -> None:
     wav_file = WAVLoader.from_file(path)
     assert len(wav_file) == duration_ms
