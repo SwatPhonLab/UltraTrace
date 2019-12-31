@@ -32,6 +32,78 @@ def test_empty_file_bundle_constructor(kwargs: Mapping[str, None]) -> None:
     assert str(fb) == 'Bundle("test",None,None,None)'
 
 
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        dict(
+            alignment_file=TextGridLoader.from_file(
+                "./test-data/example-bundles/ex000/file00.TextGrid"
+            )
+        ),
+        dict(
+            image_set_file=DICOMLoader.from_file(
+                "./test-data/example-bundles/ex004/file00.dicom"
+            )
+        ),
+        dict(
+            sound_file=MP3Loader.from_file(
+                "./test-data/example-bundles/ex002/file00.mp3"
+            )
+        ),
+        dict(
+            alignment_file=TextGridLoader.from_file(
+                "./test-data/example-bundles/ex000/file00.TextGrid"
+            ),
+            image_set_file=DICOMLoader.from_file(
+                "./test-data/example-bundles/ex004/file00.dicom"
+            ),
+        ),
+        dict(
+            alignment_file=TextGridLoader.from_file(
+                "./test-data/example-bundles/ex000/file00.TextGrid"
+            ),
+            sound_file=MP3Loader.from_file(
+                "./test-data/example-bundles/ex002/file00.mp3"
+            ),
+        ),
+        dict(
+            image_set_file=DICOMLoader.from_file(
+                "./test-data/example-bundles/ex004/file00.dicom"
+            ),
+            sound_file=MP3Loader.from_file(
+                "./test-data/example-bundles/ex002/file00.mp3"
+            ),
+        ),
+        dict(
+            alignment_file=TextGridLoader.from_file(
+                "./test-data/example-bundles/ex000/file00.TextGrid"
+            ),
+            image_set_file=DICOMLoader.from_file(
+                "./test-data/example-bundles/ex004/file00.dicom"
+            ),
+            sound_file=MP3Loader.from_file(
+                "./test-data/example-bundles/ex002/file00.mp3"
+            ),
+        ),
+    ],
+)
+def test_file_bundle_constructor(kwargs: Mapping[str, FileLoaderBase]) -> None:
+    fb = FileBundle("test", **kwargs)
+    assert fb.has_impl()
+    if "alignment_file" in kwargs:
+        alignment_file = fb.get_alignment_file()
+        assert isinstance(alignment_file, AlignmentFileLoader)
+        assert alignment_file.get_path() == kwargs["alignment_file"].get_path()
+    if "image_set_file" in kwargs:
+        image_set_file = fb.get_image_set_file()
+        assert isinstance(image_set_file, ImageSetFileLoader)
+        assert image_set_file.get_path() == kwargs["image_set_file"].get_path()
+    if "sound_file" in kwargs:
+        sound_file = fb.get_sound_file()
+        assert isinstance(sound_file, SoundFileLoader)
+        assert sound_file.get_path() == kwargs["sound_file"].get_path()
+
+
 def test_build_from_nonexistent_dir(mocker) -> None:
     mock_file_bundle_list_constructor = mocker.patch(
         "ultratrace2.model.files.bundle.FileBundleList.__init__", return_value=None,
