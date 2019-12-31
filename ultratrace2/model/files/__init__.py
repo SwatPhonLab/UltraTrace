@@ -37,7 +37,9 @@ try:
     from .loaders import MP3Loader
 
     __register(
-        [".mp3"], ["audio/mp3", "audio/MPA", "audio/mpa-robust"], MP3Loader,
+        [".mp3"],
+        ["audio/mp3", "audio/mpeg", "audio/MPA", "audio/mpa-robust"],
+        MP3Loader,
     )
 except ImportError as e:
     logger.warning(e)
