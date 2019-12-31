@@ -26,3 +26,7 @@ class WAVLoader(SoundFileLoader):
             raise FileLoadError(
                 f"Invalid WAV ({path}), unable to read: {str(e)}"
             ) from e
+
+    @staticmethod
+    def get_priority() -> int:
+        return 3

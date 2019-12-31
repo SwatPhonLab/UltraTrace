@@ -26,3 +26,7 @@ class MP3Loader(SoundFileLoader):
             raise FileLoadError(
                 f"Invalid MP3 ({path}), unable to read: {str(e)}"
             ) from e
+
+    @staticmethod
+    def get_priority() -> int:
+        return 1

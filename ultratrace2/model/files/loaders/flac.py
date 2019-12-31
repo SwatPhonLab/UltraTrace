@@ -26,3 +26,7 @@ class FLACLoader(SoundFileLoader):
             raise FileLoadError(
                 f"Invalid FLAC ({path}), unable to read: {str(e)}"
             ) from e
+
+    @staticmethod
+    def get_priority() -> int:
+        return 4
