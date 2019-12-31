@@ -4,7 +4,7 @@ import os
 import pytest
 
 from ..bundle import FileBundle, FileBundleList
-from ..loaders import DICOMLoader, MP3Loader, TextGridLoader, WAVLoader
+from ..loaders import DICOMLoader, FLACLoader, MP3Loader, TextGridLoader, WAVLoader
 from ..loaders.base import (
     FileLoaderBase,
     AlignmentFileLoader,
@@ -169,6 +169,17 @@ def test_build_from_nonexistent_dir(mocker) -> None:
                 ]
             },
             False,
+        ),
+        (
+            "./test-data/ftyers",
+            {
+                "20150629171639": [
+                    (DICOMLoader, "20150629171639.dicom"),
+                    (FLACLoader, "20150629171639.flac"),
+                    (TextGridLoader, "20150629171639.TextGrid"),
+                ],
+            },
+            True,
         ),
     ],
 )

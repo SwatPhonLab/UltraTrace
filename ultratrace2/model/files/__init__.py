@@ -19,7 +19,7 @@ try:
     from .loaders import FLACLoader
 
     __register(
-        [".flac"], ["audio/flac"], FLACLoader,
+        [".flac"], ["audio/flac", "audio/x-flac"], FLACLoader,
     )
 except ImportError as e:
     logger.warning(e)
