@@ -21,6 +21,6 @@ def test_loading_from_invalid_file(path) -> None:
         ("./test-data/example-audio/massenet_le_cid.ogg", 261078),
     ],
 )
-def test_loading_from_valid_file(path: str, duration_ms: float) -> None:
+def test_loading_from_valid_file(path: str, duration_ms: int) -> None:
     ogg_file = OggLoader.from_file(path)
     assert len(ogg_file) == duration_ms

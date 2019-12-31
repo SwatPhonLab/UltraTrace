@@ -22,6 +22,6 @@ def test_loading_from_invalid_file(path) -> None:
         ("./test-data/example-audio/pno-cs.mp3", 20064),
     ],
 )
-def test_loading_from_valid_file(path: str, duration_ms: float) -> None:
+def test_loading_from_valid_file(path: str, duration_ms: int) -> None:
     mp3_file = MP3Loader.from_file(path)
     assert len(mp3_file) == duration_ms
