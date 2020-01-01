@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 
 from abc import ABC, abstractmethod
 from PIL import Image  # type: ignore
@@ -104,7 +105,22 @@ class ImageSetFileLoader(FileLoaderBase):
         ...
 
 
+Spectrogram = np.ndarray
+
+
 class SoundFileLoader(FileLoaderBase):
     @abstractmethod
     def __len__(self) -> int:
         """Length of file in ms"""
+
+    @abstractmethod
+    def get_spectrogram(
+        self,
+        start_time: int,
+        stop_time: int,
+        window_length: float,
+        max_frequency: float,
+        dynamic_range: float,
+        n_slices: int,
+    ) -> Optional[Spectrogram]:
+        ...
