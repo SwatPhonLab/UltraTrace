@@ -3,7 +3,7 @@ import numpy as np
 
 from abc import ABC, abstractmethod
 from PIL import Image  # type: ignore
-from typing import Sequence, Tuple, Type, TypeVar
+from typing import Optional, Sequence, Tuple, Type, TypeVar
 from typing_extensions import Protocol
 
 
@@ -116,11 +116,18 @@ class SoundFileLoader(FileLoaderBase):
     @abstractmethod
     def get_spectrogram(
         self,
-        start_time: int,
-        stop_time: int,
+        start_time_ms: int,
+        stop_time_ms: int,
         window_length: float,
         max_frequency: float,
         dynamic_range: float,
         n_slices: int,
     ) -> Optional[Spectrogram]:
-        ...
+        """Return a numpy array representing the pixels in a spectrogram.
+
+        Ultimately, we should probably cache this to disk somehow, either
+        by converting it directly into a PNG via PIL or saving the raw array,
+        since the FFT operations are comparatively slow.
+
+        For now, at least until we have a stable API, it makes sense to me
+        to just generate this on-the-fly."""
