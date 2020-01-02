@@ -184,14 +184,19 @@ class Metadata(Module):
         coords_loc = {}
         confidence_loc = {}
         offset = 3
+        defaultTrace = None
         for col in data[0][3:]:
             name = col.split('"')[1]
             if col.startswith('X,Y'):
                 coords_loc[name] = offset
                 offset += 84
+                if not defaultTrace:
+                    defaultTrace = name
             elif col.startswith('Confidence'):
                 confidence_loc[name] = offset
                 offset += 42
+        if defaultTrace:
+            self.data['defaultTraceName'] = defaultTrace
         for linenum, line in enumerate(data[1:], start=2):
             dt = {}
             for k in coords_loc:

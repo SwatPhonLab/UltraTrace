@@ -33,7 +33,7 @@ class Trace(Module):
 
         # array of trace names for this directory
         self.available = self.app.Data.getTopLevel( 'traces' )
-        self.available = [] if self.available==None else self.available
+        self.available = {} if self.available==None else self.available
 
         # dictionary to hold trace -> [crosshairs] data
         self.crosshairs = {}
@@ -64,6 +64,11 @@ class Trace(Module):
             if item==self.app.Data.getTopLevel( 'defaultTraceName' ):
                 self.listbox.selection_clear(0, 'end')
                 self.listbox.select_set( i )
+                break
+        else:
+            self.listbox.select_set(0)
+            # select whatever is listed first
+            # TODO: this assumes that the list of traces is non-empty
 
         # this module is responsible for so many widgets that we need a different
         # strategy for keeping track of everything that needs constistent grid() /
