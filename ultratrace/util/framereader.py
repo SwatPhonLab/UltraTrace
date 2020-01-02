@@ -198,6 +198,7 @@ class ULTScanLineReader(FrameReader):
 		byt = self.data.read(self.FrameSize)
 		data = np.ndarray(shape=(self.NumVectors, self.PixPerVector), buffer=byt, dtype='uint8').swapaxes(0,1)
 		fig = plt.figure()
+		fig.patch.set_facecolor('black')
 		ax = fig.add_subplot(111, polar='True')
 		ax.axis('off')
 		ax.set_thetamin(0)
