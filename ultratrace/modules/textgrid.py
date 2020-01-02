@@ -251,7 +251,10 @@ class TextGrid(Module):
         if not self.TextGrid.maxTime or maxTime > self.TextGrid.maxTime:
             self.TextGrid.maxTime = maxTime
         self.TextGrid.append(tier)
-        self.TextGrid.write(self.app.Data.unrelativize(self.app.Data.getFileLevel( '.TextGrid' )))
+        path = self.app.Data.unrelativize(self.app.Data.getFileLevel( '.TextGrid' ))
+        self.TextGrid.write(path)
+        self.TextGrid = TextGridFile.fromFile(path)
+        # reload to account for length changes due to frames tier being different length than audio
 
     @staticmethod
     def isIntervalTier(tier):
