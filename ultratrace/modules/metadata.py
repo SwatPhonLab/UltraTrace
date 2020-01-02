@@ -69,7 +69,8 @@ class Metadata(Module):
                 'audio/flac'        :   ['.flac'],
                 'application/dicom' :   ['.dicom'],
                 'text/plain'        :   ['.TextGrid', 'US.txt', '.txt', '.dat'],
-                'application/octet-stream' : ['.ult']
+                'application/octet-stream' : ['.ult'],
+                'application/x-dosexec'    : ['.ult']
             }
             files = {}
 
@@ -253,7 +254,7 @@ class Metadata(Module):
                     info('Line %s of %s imported as %s frame %s' % (linenum, filepath, fblob['name'], framenum))
                     break
             else:
-                warn('Unable to import line %s of %s' % (linenum, filepath))
+                warn('Unable to import line %s of %s (could not match date %s)' % (linenum, filepath, date))
 
     def write(self, _mdfile=None):
         '''
