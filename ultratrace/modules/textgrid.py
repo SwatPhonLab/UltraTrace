@@ -144,6 +144,8 @@ class TextGrid(Module):
         # for wframe in [self.frame, self.canvas_frame]:
         #   for child in wframe.winfo_children():
         #       child.destroy()
+        self.start = decimal.Decimal(0)
+        self.end = decimal.Decimal(0)
         if LIBS_INSTALLED:
             self.loadOrGenerate()
             try:
