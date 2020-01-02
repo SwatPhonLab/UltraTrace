@@ -194,7 +194,7 @@ class ULTScanLineReader(FrameReader):
 		raise NotImplementedError()
 
 	def getFrame(self, framenum):
-		self.data.seek(self.FrameSize * (framenum - 1))
+		self.data.seek(max(self.FrameSize * (framenum - 1), 0))
 		byt = self.data.read(self.FrameSize)
 		data = np.ndarray(shape=(self.NumVectors, self.PixPerVector), buffer=byt, dtype='uint8').swapaxes(0,1)
 		fig = plt.figure()
