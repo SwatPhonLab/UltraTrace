@@ -225,7 +225,7 @@ class TextGrid(Module):
             self.TextGrid = TextGridFile(maxTime=maxTime)
             sentenceTier = IntervalTier("text")
             sentenceTier.add(minTime, maxTime, "text")
-            self.TextGrid.tiers.append(sentenceTier)
+            self.TextGrid.append(sentenceTier)
             fname = self.app.Data.unrelativize(self.app.Data.getCurrentFilename() + '.TextGrid')
             self.app.Data.setFileLevel('.TextGrid', fname)
         names = self.TextGrid.getNames()
@@ -253,6 +253,28 @@ class TextGrid(Module):
         if not self.TextGrid.maxTime or maxTime > self.TextGrid.maxTime:
             self.TextGrid.maxTime = maxTime
         self.TextGrid.append(tier)
+
+        keys = self.app.Data.getFileLevel('all')
+        if '.ult' in keys and '.txt' in keys:
+            fname = self.app.Data.unrelativize(self.app.Data.getFileLevel('.txt'))
+            f = open(fname, 'rb')
+            byt = f.read()
+            f.close()
+            s = ''
+            for encoding in ['utf-8', 'Windows-1251', 'Windows-1252', 'ISO-8859-1']:
+                try:
+                    s = byt.decode(encoding)
+                    break
+                except UnicodeDecodeError:
+                    pass
+            if s:
+                line = s.splitlines()[0]
+                sentenceTier = IntervalTier("sentence")
+                sentenceTier.add(decimal.Decimal(0), decimal.Decimal(self.app.Audio.duration), line)
+                self.TextGrid.append(sentenceTier)
+                self.TextGrid.tiers = [self.TextGrid.tiers[-1]] + self.TextGrid.tiers[:-1]
+                
+
         path = self.app.Data.unrelativize(self.app.Data.getFileLevel( '.TextGrid' ))
         self.TextGrid.write(path)
         self.TextGrid = TextGridFile.fromFile(path)
