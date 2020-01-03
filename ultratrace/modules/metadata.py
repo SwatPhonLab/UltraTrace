@@ -205,7 +205,7 @@ class Metadata(Module):
                 if k in confidence_loc:
                     offset = confidence_loc[k]
                     for i in range(42):
-                        if line[i+offset]: conf[i] = int(line[i+offset])
+                        if line[i+offset].strip(): conf[i] = int(line[i+offset])
                 pts = []
                 offset = coords_loc[k]
                 for i in range(42):
