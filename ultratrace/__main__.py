@@ -39,22 +39,29 @@ class App(ThemedTk):
 		# do the normal Tk init stuff
 		if util.get_platform()=='Linux':
 			try:
-				info('Loading platform-specific enhancements for Linux')
+				info(' - loading platform-specific enhancements for Linux')
 				import xrp  # pip3 install xparser
 				from pathlib import Path
-				Xresources = xrp.parse_file(os.path.join(str(Path.home()), '.Xresources'))
-				if '*TtkTheme' in Xresources.resources:
-					ttktheme = Xresources.resources['*TtkTheme']
-					info("Setting Linux Ttk theme to {}".format(ttktheme))
-				elif '*TkTheme' in Xresources.resources:
-					ttktheme = Xresources.resources['*TkTheme']
-					info("Setting Linux Tk theme to {}".format(ttktheme))
+				XresPath = os.path.join(str(Path.home()), '.Xresources')
+				if os.path.isfile(XresPath) or os.path.islink(XresPath):
+					info("   - found .Xresources file: {}".format(XresPath))
+					Xresources = xrp.parse_file(XresPath)
+					#info("Opened .Xresources file {}".format(XresPath))
+					if '*TtkTheme' in Xresources.resources:
+						ttktheme = Xresources.resources['*TtkTheme']
+						info("   - setting Linux Ttk theme to {}".format(ttktheme))
+					elif '*TkTheme' in Xresources.resources:
+						ttktheme = Xresources.resources['*TkTheme']
+						info("   - setting Linux Tk theme to {}".format(ttktheme))
+					else:
+						ttktheme = "clam"  # alt, clam, classic, default
+						info("   - falling back to default Linux Tk theme: {}.  You can set your theme to something else by adding a line like \"*TkTheme: alt\" or \"*TtkTheme: arc\" to ~/.Xresources".format(ttktheme))
 				else:
 					ttktheme = "clam"  # alt, clam, classic, default
-					info("Falling back to default Linux Tk theme: {}".format(ttktheme))
+					info("   - no ~/.Xresources file found; falling back to default Linux Tk theme: {}.  You can set your theme to something else by adding a line like \"*TkTheme: alt\" or \"*TtkTheme: arc\" to ~/.Xresources".format(ttktheme))
 				super().__init__(theme=ttktheme)
 			except Exception as e:
-				error(e)
+				error("Crash while loading .Xresources file or initialising T(t)k theme", e)
 				super().__init__()
 		else:
 			super().__init__()
