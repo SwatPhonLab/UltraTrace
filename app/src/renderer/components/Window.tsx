@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { List } from 'immutable';
-import { Segment, SemanticCOLORS } from 'semantic-ui-react';
+import { SemanticCOLORS } from 'semantic-ui-react';
 import Annotation, {
   AnnotationData,
   HighlightData,
@@ -9,6 +9,7 @@ import Annotation, {
 } from 'react-image-annotation';
 import { PointSelector } from 'react-image-annotation/lib/selectors';
 import { identity } from 'ramda';
+import { uuid } from 'uuidv4';
 import image from '../../img/img_grid_square.jpg';
 import { TraceItem } from './TraceSelectorRow';
 import Point from './Point';
@@ -24,6 +25,7 @@ interface TGeometry {
 }
 
 interface TMetadata {
+  id: string;
   color: SemanticCOLORS;
 }
 
@@ -39,16 +41,14 @@ export default function Window({ currentTrace }: Props): React.ReactElement {
 
   const commitAnnotation = React.useCallback(
     (annotation: MyAnnotationData): void => {
+      // Do nothing if the user doesn't currently have a trace selected
       if (currentTrace == null) {
         return;
       }
-      // Add the key `data` with an empty object because we're immediately
-      // committing the annotation as they're being added instead of having
-      // an intermediate submission step
       setAnnotations(
         annotations.push({
           ...annotation,
-          data: { color: currentTrace.color },
+          data: { id: uuid(), color: currentTrace.color },
         }),
       );
     },
@@ -73,20 +73,18 @@ export default function Window({ currentTrace }: Props): React.ReactElement {
   }
 
   return (
-    <Segment>
-      <Annotation
-        src={image}
-        alt=""
-        type={PointSelector.TYPE}
-        selectors={[PointSelector]}
-        annotations={annotations.toArray()}
-        value={{}}
-        onChange={commitAnnotation}
-        onSubmit={identity}
-        activeAnnotations={[]}
-        renderHighlight={renderHighlight}
-        disableEditor
-      />
-    </Segment>
+    <Annotation
+      src={image}
+      alt=""
+      type={PointSelector.TYPE}
+      selectors={[PointSelector]}
+      annotations={annotations.toArray()}
+      value={{}}
+      onChange={commitAnnotation}
+      onSubmit={identity}
+      activeAnnotations={[]}
+      renderHighlight={renderHighlight}
+      disableEditor
+    />
   );
 }

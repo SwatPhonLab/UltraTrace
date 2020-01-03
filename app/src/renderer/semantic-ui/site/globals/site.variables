@@ -1,0 +1,14 @@
+/*******************************
+     User Global Variables
+*******************************/
+
+// These overrides correspond to the Tachyons color palette
+@red            : #FF4136;
+@orange         : #FF6300;
+@yellow         : #FFD700;
+@green          : #19A974;
+@blue           : #357EDD;
+@purple         : #5E2CA5;
+@pink           : #FF80CC;
+@grey           : #777777;
+@black          : #000000;

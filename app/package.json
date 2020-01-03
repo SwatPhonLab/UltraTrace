@@ -6,7 +6,8 @@
   "scripts": {
     "build": "webpack --config ./webpack.config.js",
     "start": "npm run build && electron ./dist/main.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "electron": "electron ./dist/main.js",
+    "watch": "webpack --watch"
   },
   "repository": {
     "type": "git",
@@ -20,6 +21,7 @@
   "homepage": "https://github.com/SwatPhonLab/UltraTrace#readme",
   "devDependencies": {
     "@interactjs/types": "^1.8.0-rc.1",
+    "@types/classnames": "^2.2.9",
     "@types/node": "^12.12.21",
     "@types/ramda": "^0.26.38",
     "@types/react": "^16.9.17",
@@ -40,6 +42,8 @@
     "eslint-plugin-sort-imports-es6-autofix": "^0.5.0",
     "file-loader": "^5.0.2",
     "html-webpack-plugin": "^3.2.0",
+    "less": "^3.10.3",
+    "less-loader": "^5.0.0",
     "prettier": "^1.19.1",
     "source-map-loader": "^0.2.4",
     "style-loader": "^1.1.1",
@@ -47,9 +51,11 @@
     "typescript": "^3.7.4",
     "url-loader": "^3.0.0",
     "webpack": "^4.41.4",
-    "webpack-cli": "^3.3.10"
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.10.1"
   },
   "dependencies": {
+    "classnames": "^2.2.6",
     "electron": "^7.1.7",
     "immutable": "^4.0.0-rc.12",
     "interactjs": "^1.7.3",
@@ -60,9 +66,10 @@
     "react-dom": "^16.12.0",
     "react-image-annotation": "^0.9.10",
     "react-pinch-and-zoom": "^1.2.4",
-    "semantic-ui-css": "^2.4.1",
+    "semantic-ui-less": "^2.4.1",
     "semantic-ui-react": "^0.88.2",
     "styled-components": "^4.4.1",
+    "tachyons": "^4.11.1",
     "uuidv4": "^6.0.0"
   }
 }

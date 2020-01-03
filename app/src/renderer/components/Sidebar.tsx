@@ -9,10 +9,10 @@ import PlaybackControls from './PlaybackControls';
 import SeekableSelector from './SeekableSelector';
 import TraceSelector from './TraceSelector';
 
-interface Props {
+type Props = {
   currentTrace: TraceItem | null;
   setCurrentTrace: (item: TraceItem | null) => void;
-}
+};
 
 /**
  * The application sidebar. Provides an interface to select frames, modify
@@ -52,9 +52,13 @@ export default function Sidebar({
     ))
     .valueSeq();
   return (
-    <Segment>
-      <SeekableSelector placeholder="Bundle..." />
-      <SeekableSelector placeholder="Frame..." />
+    <Segment className="h-100">
+      <div className="pb3">
+        <SeekableSelector placeholder="Bundle..." />
+      </div>
+      <div className="pb3">
+        <SeekableSelector placeholder="Frame..." />
+      </div>
       <TraceSelector traces={traceElements} onAddTrace={upsertTrace} />
       <PlaybackControls />
     </Segment>

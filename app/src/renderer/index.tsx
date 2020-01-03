@@ -1,5 +1,5 @@
-import 'semantic-ui-css/semantic.min.css';
-import 'react-calendar-timeline/lib/Timeline.css';
+import 'tachyons';
+import 'semantic-ui-less/semantic.less';
 
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';

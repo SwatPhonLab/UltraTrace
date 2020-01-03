@@ -29,16 +29,18 @@ export default function TraceSelector({
     <Table selectable>
       <Table.Body>{traces}</Table.Body>
       <Table.Footer>
-        <Table.HeaderCell colSpan="3">
-          <Button.Group>
-            <Button icon>
-              <Icon name="minus" />
-            </Button>
-            <Button icon>
-              <Icon name="plus" onClick={addTrace} />
-            </Button>
-          </Button.Group>
-        </Table.HeaderCell>
+        <Table.Row>
+          <Table.HeaderCell colSpan="3">
+            <Button.Group>
+              <Button icon>
+                <Icon name="minus" />
+              </Button>
+              <Button icon>
+                <Icon name="plus" onClick={addTrace} />
+              </Button>
+            </Button.Group>
+          </Table.HeaderCell>
+        </Table.Row>
       </Table.Footer>
     </Table>
   );

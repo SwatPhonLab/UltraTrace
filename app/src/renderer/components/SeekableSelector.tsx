@@ -2,26 +2,26 @@ import * as React from 'react';
 
 import { Button, Icon, Input } from 'semantic-ui-react';
 
-interface Props {
+type Props = {
   placeholder: string;
-}
+};
 
 export default function SeekableSelector({
   placeholder,
 }: Props): React.ReactElement {
   return (
-    <div>
-      <Button icon>
+    <div className="flex">
+      <Button className="ph3" icon>
         <Icon name="fast backward" />
       </Button>
-      <Button icon>
+      <Button className="ph3" icon>
         <Icon name="backward" />
       </Button>
-      <Input placeholder={placeholder} />
-      <Button icon>
+      <Input className="ph3" placeholder={placeholder} />
+      <Button className="ph3" icon>
         <Icon name="forward" />
       </Button>
-      <Button icon>
+      <Button className="ph3" icon>
         <Icon name="fast forward" />
       </Button>
     </div>
