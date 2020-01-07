@@ -35,15 +35,24 @@ class FileBundle:
             for f in [self.alignment_file, self.image_set_file, self.sound_file]
         )
 
+    def get_alignment_file(self) -> Optional[AlignmentFileLoader]:
+        return self.alignment_file
+
     def set_alignment_file(self, alignment_file: AlignmentFileLoader) -> None:
         if self.alignment_file is not None:
             logger.warning("Overwriting existing alignment file")
         self.alignment_file = alignment_file
 
+    def get_image_set_file(self) -> Optional[ImageSetFileLoader]:
+        return self.image_set_file
+
     def set_image_set_file(self, image_set_file: ImageSetFileLoader) -> None:
         if self.image_set_file is not None:
             logger.warning("Overwriting existing image-set file")
         self.image_set_file = image_set_file
+
+    def get_sound_file(self) -> Optional[SoundFileLoader]:
+        return self.sound_file
 
     def set_sound_file(self, sound_file: SoundFileLoader) -> None:
         if self.sound_file is not None:
@@ -51,7 +60,13 @@ class FileBundle:
         self.sound_file = sound_file
 
     def __repr__(self):
-        return f'Bundle("{self.name}",{self.alignment_file},{self.image_set_file},{self.sound_file})'
+        return (
+            f'Bundle("{self.name}"'
+            f",{self.get_alignment_file()}"
+            f",{self.get_image_set_file()}"
+            f",{self.get_sound_file()}"
+            f")"
+        )
 
 
 class FileBundleList:
@@ -76,9 +91,9 @@ class FileBundleList:
         self.has_sound_impl: bool = False
 
         for bundle in bundles.values():
-            self.has_alignment_impl |= bundle.alignment_file is not None
-            self.has_image_set_impl |= bundle.image_set_file is not None
-            self.has_sound_impl |= bundle.sound_file is not None
+            self.has_alignment_impl |= bundle.get_alignment_file() is not None
+            self.has_image_set_impl |= bundle.get_image_set_file() is not None
+            self.has_sound_impl |= bundle.get_sound_file() is not None
 
     @classmethod
     def build_from_dir(
