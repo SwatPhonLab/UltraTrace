@@ -11,6 +11,7 @@ from .loaders.base import (
     FileLoaderBase,
     FileLoadError,
 )
+from .loaders.parselmouth_spectrogram import ParselmouthLoader
 from .registry import get_loader_for
 
 
@@ -68,6 +69,19 @@ class FileBundle:
         self.sound_file = sound_file
 
     def get_spectrogram_file(self) -> Optional[SpectrogramFileLoader]:
+        if self.spectrogram_file is None:
+            sound_file = self.get_sound_file()
+            if sound_file is not None:
+                try:
+                    logger.debug(
+                        "No spectrogram file found, trying to create from sound file"
+                    )
+                    self.set_spectrogram_file(
+                        ParselmouthLoader.from_sound_file(sound_file)
+                    )
+                except FileLoadError as e:
+                    logger.warning(e)
+
         return self.spectrogram_file
 
     def set_spectrogram_file(self, spectrogram_file: SpectrogramFileLoader) -> None:
