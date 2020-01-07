@@ -10,3 +10,6 @@ from .flac import FLACLoader  # noqa: F401
 from .mp3 import MP3Loader  # noqa: F401
 from .ogg import OggLoader  # noqa: F401
 from .wav import WAVLoader  # noqa: F401
+
+# spectrogram files
+from .parselmouth_spectrogram import ParselmouthLoader  # noqa: F401

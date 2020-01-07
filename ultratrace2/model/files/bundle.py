@@ -7,6 +7,7 @@ from .loaders.base import (
     AlignmentFileLoader,
     ImageSetFileLoader,
     SoundFileLoader,
+    SpectrogramFileLoader,
     FileLoaderBase,
     FileLoadError,
 )
@@ -23,16 +24,23 @@ class FileBundle:
         alignment_file: Optional[AlignmentFileLoader] = None,
         image_set_file: Optional[ImageSetFileLoader] = None,
         sound_file: Optional[SoundFileLoader] = None,
+        spectrogram_file: Optional[SpectrogramFileLoader] = None,
     ):
         self.name = name
         self.alignment_file = alignment_file
         self.image_set_file = image_set_file
         self.sound_file = sound_file
+        self.spectrogram_file = spectrogram_file
 
     def has_impl(self) -> bool:
         return any(
             f is not None
-            for f in [self.alignment_file, self.image_set_file, self.sound_file]
+            for f in [
+                self.alignment_file,
+                self.image_set_file,
+                self.sound_file,
+                self.spectrogram_file,
+            ]
         )
 
     def get_alignment_file(self) -> Optional[AlignmentFileLoader]:
@@ -59,12 +67,21 @@ class FileBundle:
             logger.warning("Overwriting existing sound file")
         self.sound_file = sound_file
 
+    def get_spectrogram_file(self) -> Optional[SpectrogramFileLoader]:
+        return self.spectrogram_file
+
+    def set_spectrogram_file(self, spectrogram_file: SpectrogramFileLoader) -> None:
+        if self.spectrogram_file is not None:
+            logger.warning("Overwriting existing spectrogram file")
+        self.spectrogram_file = spectrogram_file
+
     def __repr__(self):
         return (
             f'Bundle("{self.name}"'
             f",{self.get_alignment_file()}"
             f",{self.get_image_set_file()}"
             f",{self.get_sound_file()}"
+            f",{self.get_spectrogram_file()}"
             f")"
         )
 
@@ -89,11 +106,13 @@ class FileBundleList:
         self.has_alignment_impl: bool = False
         self.has_image_set_impl: bool = False
         self.has_sound_impl: bool = False
+        self.has_spectrogram_impl: bool = False
 
         for bundle in bundles.values():
             self.has_alignment_impl |= bundle.get_alignment_file() is not None
             self.has_image_set_impl |= bundle.get_image_set_file() is not None
             self.has_sound_impl |= bundle.get_sound_file() is not None
+            self.has_spectrogram_impl |= bundle.get_spectrogram_file() is not None
 
     @classmethod
     def build_from_dir(

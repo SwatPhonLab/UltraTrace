@@ -19,7 +19,7 @@ from ..bundle import FileBundle, FileBundleList
 def test_empty_file_bundle_constructor(kwargs) -> None:
     fb = FileBundle("test", **kwargs)
     assert not fb.has_impl()
-    assert str(fb) == 'Bundle("test",None,None,None)'
+    assert str(fb) == 'Bundle("test",None,None,None,None)'
 
 
 def test_build_from_nonexistent_dir(mocker) -> None:

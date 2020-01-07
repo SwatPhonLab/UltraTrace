@@ -4,10 +4,11 @@ import pytest
 
 from ..base import SoundFileLoader
 from ..mp3 import MP3Loader
+from ..parselmouth_spectrogram import ParselmouthLoader
 
 
 @pytest.mark.parametrize(
-    "loader, path",
+    "sound_file_loader, path",
     [
         (MP3Loader, "./test-data/example-audio/cello82.mp3"),
         (MP3Loader, "./test-data/example-audio/harpsi-cs.mp3"),
@@ -29,16 +30,49 @@ from ..mp3 import MP3Loader
         (MP3Loader, "./test-data/example-bundles/ex008/file02.mp3"),
     ],
 )
-def test_interpreting_as_image(loader: SoundFileLoader, path: str) -> None:
-    loaded_file = loader.from_file(path)
-    spec_arr = loaded_file.get_spectrogram(
+def test_loading_from_sound_file(sound_file_loader: SoundFileLoader, path: str) -> None:
+    try:
+        expected_pm_path = path + ".pmpkl"
+        assert not os.path.exists(expected_pm_path)
+        sound_file = sound_file_loader.from_file(path)
+        pm_file = ParselmouthLoader.from_sound_file(sound_file)
+        assert isinstance(pm_file, ParselmouthLoader)
+        assert pm_file.get_path() == expected_pm_path
+        assert os.path.exists(expected_pm_path)
+    finally:
+        if os.path.exists(expected_pm_path):
+            os.remove(expected_pm_path)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "./test-data/example-parselmouth/00.pmpkl",
+        "./test-data/example-parselmouth/01.pmpkl",
+        "./test-data/example-parselmouth/02.pmpkl",
+        "./test-data/example-parselmouth/03.pmpkl",
+        "./test-data/example-parselmouth/04.pmpkl",
+        "./test-data/example-parselmouth/05.pmpkl",
+        "./test-data/example-parselmouth/06.pmpkl",
+        "./test-data/example-parselmouth/07.pmpkl",
+        "./test-data/example-parselmouth/08.pmpkl",
+        "./test-data/example-parselmouth/09.pmpkl",
+        "./test-data/example-parselmouth/10.pmpkl",
+        "./test-data/example-parselmouth/11.pmpkl",
+        "./test-data/example-parselmouth/12.pmpkl",
+        "./test-data/example-parselmouth/13.pmpkl",
+        "./test-data/example-parselmouth/14.pmpkl",
+    ],
+)
+def test_loading_from_pmpkl_file(path: str) -> None:
+    pm_file = ParselmouthLoader.from_file(path)
+    assert isinstance(pm_file, ParselmouthLoader)
+    im = pm_file.get_image(
         start_time_ms=0,
-        stop_time_ms=len(loaded_file),
+        stop_time_ms=10,
         window_length=0.005,
         max_frequency=5000,
         dynamic_range=90,
         n_slices=10 ** 7,
     )
-    assert spec_arr is not None
-    im = PIL.Image.fromarray(spec_arr).convert("RGB").resize((800, 600))
-    im.save("/tmp/" + os.path.basename(path) + ".png")
+    assert isinstance(im, PIL.Image.Image)
