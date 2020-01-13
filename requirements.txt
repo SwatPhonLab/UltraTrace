@@ -1,5 +1,10 @@
+Click==7.0
 cycler==0.10.0
+Flask==1.1.1
+itsdangerous==1.1.0
+Jinja2==2.10.3
 kiwisolver==1.1.0
+MarkupSafe==1.1.1
 matplotlib==3.1.2
 numpy==1.17.4
 Pillow==6.2.1
@@ -13,4 +18,5 @@ six==1.13.0
 TextGrid==1.5
 tqdm==4.40.2
 ttkthemes==2.4.0
+Werkzeug==0.16.0
 xparser==0.0.4
