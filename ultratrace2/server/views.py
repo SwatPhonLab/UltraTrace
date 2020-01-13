@@ -2,10 +2,10 @@ from flask import Flask, request
 
 import logging
 
+from . import app
 from . import validate
 
 
-app = Flask(__name__)
 logger = logging.getLogger(__name__)
 
 
