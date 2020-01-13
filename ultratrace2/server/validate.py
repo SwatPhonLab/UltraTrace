@@ -1,6 +1,7 @@
 from typing import Sequence, TypeVar
 from werkzeug.datastructures import ImmutableMultiDict as RequestArgs
 
+from .project_cache import get_project_by_path
 from ..model.color import Color
 from ..model.project import Project
 from ..model.trace import Trace
@@ -17,7 +18,7 @@ class ValidationError(TypeError):
 def project(args: RequestArgs) -> Project:
     if "path" not in args:
         raise ValidationError("path", str, args)
-    return Project.get_by_path(args["path"])
+    return get_project_by_path(args["path"])
 
 
 def filename(args: RequestArgs, project: Project) -> str:
