@@ -174,9 +174,11 @@ class TextGrid(Module):
                 self.app.Audio.reset()
             maxTime = self.app.Audio.duration
             self.TextGrid = TextGridFile(maxTime=maxTime)
-            sentenceTier = IntervalTier("text")
-            sentenceTier.add(minTime, maxTime, "text")
-            self.TextGrid.append(sentenceTier)
+            keys = self.app.Data.getFileLevel('all')
+            if not ('.ult' in keys and '.txt' in keys):
+                sentenceTier = IntervalTier("text")
+                sentenceTier.add(minTime, maxTime, "text")
+                self.TextGrid.append(sentenceTier)
             fname = self.app.Data.unrelativize(self.app.Data.getCurrentFilename() + '.TextGrid')
             self.app.Data.setFileLevel('.TextGrid', fname)
         names = self.TextGrid.getNames()
