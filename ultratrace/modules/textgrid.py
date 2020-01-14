@@ -258,15 +258,8 @@ class TextGrid(Module):
         if '.ult' in keys and '.txt' in keys:
             fname = self.app.Data.unrelativize(self.app.Data.getFileLevel('.txt'))
             f = open(fname, 'rb')
-            byt = f.read()
+            s = util.decode_bytes(f.read())
             f.close()
-            s = ''
-            for encoding in ['utf-8', 'Windows-1251', 'Windows-1252', 'ISO-8859-1']:
-                try:
-                    s = byt.decode(encoding)
-                    break
-                except UnicodeDecodeError:
-                    pass
             if s:
                 line = s.splitlines()[0]
                 sentenceTier = IntervalTier("sentence")

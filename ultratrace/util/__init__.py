@@ -35,3 +35,11 @@ def printProgressBar(iteration, total, prefix = '', suffix = '', decimals = 1, l
 
 CROSSHAIR_SELECT_RADIUS = 9
 CROSSHAIR_DRAG_BUFFER = 20
+
+def decode_bytes(byt):
+    for encoding in ['utf-8', 'Windows-1251', 'Windows-1252', 'ISO-8859-1']:
+        try:
+            return byt.decode(encoding)
+        except UnicodeDecodeError:
+            pass
+    return ''

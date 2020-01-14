@@ -1,5 +1,6 @@
 from .base import Module
 from ..util.logging import *
+from .. import util
 
 import json
 import os
@@ -179,8 +180,10 @@ class Metadata(Module):
 
     def importULTMeasurement(self, filepath):
         from ..util.framereader import ULTScanLineReader
-        f = open(self.unrelativize(filepath))
-        data = [x.split('\t') for x in f.readlines()]
+        f = open(self.unrelativize(filepath), 'rb')
+        contents = util.decode_bytes(f.read())
+        f.close()
+        data = [x.split('\t') for x in contents.splitlines()]
         lines = []
         coords_loc = {}
         confidence_loc = {}
@@ -205,7 +208,7 @@ class Metadata(Module):
                 if k in confidence_loc:
                     offset = confidence_loc[k]
                     for i in range(42):
-                        if line[i+offset].strip(): conf[i] = int(line[i+offset])
+                        if line[i+offset]: conf[i] = int(line[i+offset])
                 pts = []
                 offset = coords_loc[k]
                 for i in range(42):
@@ -217,7 +220,6 @@ class Metadata(Module):
                     dt[k] = pts
             if dt:
                 lines.append((linenum, float(line[1].replace(',', '.')), line[2], dt))
-        f.close()
         self.data['traces'] = {k: {'color': 'red', 'files': {}} for k in coords_loc}
         # TODO: all traces are imported as the same color
         for linenum, timestamp, date, data in lines:
