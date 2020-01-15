@@ -173,11 +173,11 @@ class TextGrid(Module):
             if not hasattr(self.app.Audio, 'duration'):
                 self.app.Audio.reset()
             maxTime = self.app.Audio.duration
-            self.TextGrid = TextGridFile(maxTime=maxTime)
+            self.TextGrid = TextGridFile(maxTime=float(maxTime))
             keys = self.app.Data.getFileLevel('all')
             if not ('.ult' in keys and '.txt' in keys):
                 sentenceTier = IntervalTier("text")
-                sentenceTier.add(minTime, maxTime, "text")
+                sentenceTier.add(minTime, float(maxTime), "text")
                 self.TextGrid.append(sentenceTier)
             fname = self.app.Data.unrelativize(self.app.Data.getCurrentFilename() + '.TextGrid')
             self.app.Data.setFileLevel('.TextGrid', fname)
@@ -201,6 +201,7 @@ class TextGrid(Module):
             maxTime = max(self.app.Audio.duration, times[-1])
         except AttributeError:
             maxTime = times[-1]
+        maxTime = float(maxTime)
         tier = PointTier('frames', maxTime=maxTime)
         for f, t in enumerate(times):
             tier.addPoint(Point(t, str(f)))
@@ -217,7 +218,7 @@ class TextGrid(Module):
             if s:
                 line = s.splitlines()[0]
                 sentenceTier = IntervalTier("sentence")
-                sentenceTier.add(decimal.Decimal(0), decimal.Decimal(self.app.Audio.duration), line)
+                sentenceTier.add(0., float(self.app.Audio.duration), line)
                 self.TextGrid.append(sentenceTier)
                 self.TextGrid.tiers = [self.TextGrid.tiers[-1]] + self.TextGrid.tiers[:-1]
                 
