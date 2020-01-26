@@ -23,11 +23,6 @@ def main():
         help="path (unique to a participant) where subdirectories contain raw data",
     )
     parser.add_argument(
-        "theme",  # FIXME: not yet supported
-        default=None,
-        help="name of Ttk theme to use for widgets",
-    )
-    parser.add_argument(
         "--no-audio",
         dest="audio",
         action="store_false",
@@ -57,7 +52,9 @@ def main():
         action="store_false",
         help="don't try to load the video widget",
     )
-    parser.add_argument("--theme", help="TtkTheme to use for application")
+    parser.add_argument(
+        "--theme", help="name of Ttk theme to use for widgets",
+    )
     parser.add_argument(
         "--max-undo-memory",
         type=int,
