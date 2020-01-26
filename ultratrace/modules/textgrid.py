@@ -90,123 +90,76 @@ class TextGrid(Module):
         self.app.bind("<Shift-Right>", self.getBounds)
 
 
+    def setup(self):
+        if LIBS_INSTALLED:
+            self.loadOrGenerate()
+            try:
+                self.start = self.TextGrid.minTime
+                self.end = self.TextGrid.maxTime
+                self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
+                tiers = []
+                for tier in self.TextGrid.getNames():
+                    if tier != self.frameTierName and tier != self.frameTierName + '.original':
+                        tiers.append(tier)
+                if set(tiers) != self.tierNames:
+                    self.tierNames = set(tiers)
+                    self.TkWidgets = []
+                    for label in self.frame.winfo_children():
+                        label.destroy()
+                    for canvas in self.canvas_frame.winfo_children():
+                        canvas.destroy()
+                    for tier in self.TextGrid.getNames():
+                        if tier != self.frameTierName and tier != self.frameTierName + '.original':
+                            self.TkWidgets.append(self.makeTierWidgets(tier))
+                    self.makeFrameWidget()
+                    self.makeTimeWidget()
+                self.fillCanvases()
+                self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark) + 1
+                self.startFrame = self.firstFrame
+                self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
+                self.endFrame = self.lastFrame
+                self.grid()
+            except Exception as e:
+                error(e)
+
+
 
     def startup(self):
         '''
 
         '''
         if LIBS_INSTALLED:
-            # default Label in case there are errors below
-            # self.TkWidgets = [{ 'label':Label(self.frame, text="Unable to load TextGrid file") }]
-            self.loadOrGenerate()
-
-            try:
-                # reset default Label to actually be useful
-                # self.TkWidgets = [{ 'label':Label(self.frame, text="TextGrid tiers:") }]
-                self.TkWidgets = []
-                # iterate the tiers
-                self.frameTierName = self.getFrameTierName()
-                self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
-                for tier in self.TextGrid.getNames():
-                    if tier != self.frameTierName and tier != self.frameTierName + '.original':
-                        # make some widgets for each tier
-                        tierWidgets = self.makeTierWidgets( tier )
-                        self.TkWidgets.append( tierWidgets )
-                #make other widgets
-                self.makeFrameWidget()
-                self.makeTimeWidget()
-                #put items on canvases
-                self.fillCanvases()
-                #calculate first and last frames
-                self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark) + 1
-                self.startFrame = self.firstFrame
-                self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
-                self.endFrame = self.lastFrame
-            except Exception as e:
-                error(e)
-
-            self.grid()
+            self.tierNames = set()
+            self.setup()
 
     def reset(self, event=None):
         '''
         Try to load a TextGrid file based on information stored in the metadata
         '''
-        # for t in range(len(self.TkWidgets)):
-        #   tierWidgets = self.TkWidgets[t]
-        #   if 'canvas' in tierWidgets:
-        #       tierWidgets['canvas-label'].config(width=self.app.LEFT.winfo_width())
-        #       tierWidgets['canvas-label'].update()
-        #   if 'frames' in tierWidgets:
-        #       tierWidgets['frames-label'].config(width=self.app.LEFT.winfo_width())
-        self.selectedIntvlFrames = []
-        self.selectedItem = None
-        #destroy
-        # for wframe in [self.frame, self.canvas_frame]:
-        #   for child in wframe.winfo_children():
-        #       child.destroy()
         if LIBS_INSTALLED:
-            self.loadOrGenerate()
-            try:
-                self.frameTierName = self.getFrameTierName()
-                self.app.frames = len(self.TextGrid.getFirst(self.frameTierName))
-                # for tier in self.TextGrid.getNames():
-                #   if tier != self.frameTierName and tier != self.frameTierName + '.original':
-                #       # make some widgets for each tier
-                #       tierWidgets = self.makeTierWidgets( tier )
-                #       self.TkWidgets.append( tierWidgets )
-                self.start = self.TextGrid.minTime
-                self.end = self.TextGrid.maxTime
-                self.current = self.TextGrid.getFirst(self.frameTierName)[self.app.frame-1].time
-                #make other widgets
-                # self.makeFrameWidget()
-                #reset offset
-                offset = self.app.Data.getFileLevel( 'offset' )
-                if offset != None:
-                    self.frame_shift.set(offset)
-                else:
-                    self.frame_shift.set(0)
-                # self.makeTimeWidget()
-                #put items on canvases
-                self.fillCanvases()
-                #calculate first and last frames
-                self.firstFrame = int(self.TextGrid.getFirst(self.frameTierName)[0].mark) + 1
-                self.startFrame = self.firstFrame
-                self.lastFrame = int(self.TextGrid.getFirst(self.frameTierName)[-1].mark) + 1
-                self.endFrame = self.lastFrame
-            except Exception as e:
-                error(e)
-            # self.grid()
+            self.selectedIntvlFrames = []
+            self.selectedItem = None
+            self.setup()
 
     def fromFile(self, filename):
         if LIBS_INSTALLED:
             try:
                 return TextGridFile.fromFile(filename)
             except (TextGridError, UnicodeDecodeError) as e:
-                error(e)
                 f = open(filename, 'rb')
-                bytes = f.read()
+                contents = util.decode_bytes(f.read())
                 f.close()
-                tmp = tempfile.NamedTemporaryFile()
-                found = False
-                for encoding in ['Windows-1251', 'Windows-1252', 'ISO-8859-1']:
+                if contents:
+                    tmp = tempfile.NamedTemporaryFile()
+                    tmp.write(contents.encode('utf-8'))
+                    tmp.seek(0)
                     try:
-                        s = bytes.decode(encoding)
-                        tmp.write(s.encode('utf-8'))
-                        tmp.seek(0)
-                        found = True
-                        break
-                    except Exception as e:
-                        error(e)
-                if not found:
-                    raise
-                else:
-                    try:
-                        ret = TextGridFile.fromFile(tmp.name)
-                        tmp.close()
-                        return ret
+                        return TextGridFile.fromFile(tmp.name)
                     except TextGridError as e:
                         error(e)
                         return None
+                else:
+                    error("can't load from file: unable to decode non-Unicode textgrid", filename)
         else:
             error("can't load from file: textgrid lib not installed")
             return None
@@ -220,10 +173,12 @@ class TextGrid(Module):
             if not hasattr(self.app.Audio, 'duration'):
                 self.app.Audio.reset()
             maxTime = self.app.Audio.duration
-            self.TextGrid = TextGridFile(maxTime=maxTime)
-            sentenceTier = IntervalTier("text")
-            sentenceTier.add(minTime, maxTime, "text")
-            self.TextGrid.tiers.append(sentenceTier)
+            self.TextGrid = TextGridFile(maxTime=float(maxTime))
+            keys = self.app.Data.getFileLevel('all')
+            if not ('.ult' in keys and '.txt' in keys):
+                sentenceTier = IntervalTier("text")
+                sentenceTier.add(minTime, float(maxTime), "text")
+                self.TextGrid.append(sentenceTier)
             fname = self.app.Data.unrelativize(self.app.Data.getCurrentFilename() + '.TextGrid')
             self.app.Data.setFileLevel('.TextGrid', fname)
         names = self.TextGrid.getNames()
@@ -233,11 +188,12 @@ class TextGrid(Module):
                     self.TextGrid.pop(i)
                     break
                 else:
+                    self.frameTierName = n
                     return
         self.genFramesTier()
 
     def genFramesTier(self):
-        debug('generating frames tier')
+        debug('generating frames tier for %s' % self.app.Data.getCurrentFilename())
         self.frameTierName = 'frames'
         times = self.app.Dicom.getFrameTimes()
         self.app.Data.setFileLevel("NumberOfFrames", len(times))
@@ -245,13 +201,32 @@ class TextGrid(Module):
             maxTime = max(self.app.Audio.duration, times[-1])
         except AttributeError:
             maxTime = times[-1]
+        maxTime = float(maxTime)
         tier = PointTier('frames', maxTime=maxTime)
         for f, t in enumerate(times):
             tier.addPoint(Point(t, str(f)))
         if not self.TextGrid.maxTime or maxTime > self.TextGrid.maxTime:
             self.TextGrid.maxTime = maxTime
         self.TextGrid.append(tier)
-        self.TextGrid.write(self.app.Data.unrelativize(self.app.Data.getFileLevel( '.TextGrid' )))
+
+        keys = self.app.Data.getFileLevel('all')
+        if '.ult' in keys and '.txt' in keys:
+            fname = self.app.Data.unrelativize(self.app.Data.getFileLevel('.txt'))
+            f = open(fname, 'rb')
+            s = util.decode_bytes(f.read())
+            f.close()
+            if s:
+                line = s.splitlines()[0]
+                sentenceTier = IntervalTier("sentence")
+                sentenceTier.add(0., float(self.app.Audio.duration), line)
+                self.TextGrid.append(sentenceTier)
+                self.TextGrid.tiers = [self.TextGrid.tiers[-1]] + self.TextGrid.tiers[:-1]
+                
+
+        path = self.app.Data.unrelativize(self.app.Data.getFileLevel( '.TextGrid' ))
+        self.TextGrid.write(path)
+        self.TextGrid = TextGridFile.fromFile(path)
+        # reload to account for length changes due to frames tier being different length than audio
 
     @staticmethod
     def isIntervalTier(tier):

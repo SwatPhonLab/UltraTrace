@@ -97,20 +97,21 @@ class Spectrogram(Module):
 
         if self.app.Audio.current:
             sound = parselmouth.Sound(self.app.Audio.current)
+            self.canvas.delete('all')
 
             ts_fac = decimal.Decimal(10000.0)
             wl = decimal.Decimal(self.wl.get())
-            start_time = decimal.Decimal(self.app.TextGrid.start)
-            end_time = decimal.Decimal(self.app.TextGrid.end)
+            screen_start = decimal.Decimal(self.app.TextGrid.start)
+            screen_end = decimal.Decimal(self.app.TextGrid.end)
+            screen_duration = screen_end - screen_start
+            audio_start = decimal.Decimal(0)
+            audio_end = decimal.Decimal(sound.get_total_duration())
+            real_start = max(screen_start, audio_start)
+            real_end = min(screen_end, audio_end)
+            duration = real_end - real_start
 
-            # the spectrogram is for the audio file, so it makes sense
-            # to get the duration from the audio file and not from the
-            # textgrid -JNW
-            if start_time == end_time:
-                end_time = decimal.Decimal(sound.get_total_duration())
-            duration = end_time - start_time
-            #duration = decimal.Decimal(sound.get_total_duration())
-            # in case there isn't a TextGrid or there's some other issue: -JNW
+            if duration <= 0:
+                return
 
             self.ts = duration / ts_fac
             # the amount taken off in spectrogram creation seems to be
@@ -119,8 +120,8 @@ class Spectrogram(Module):
             # so the amount to increase the length by is ts * floor( wl / ts )
             # at either end - D.S.
             extra = self.ts * math.floor( wl / self.ts )
-            start_time = max(0, start_time - extra)
-            end_time = min(end_time + extra, sound.get_total_duration())
+            start_time = max(0, real_start - extra)
+            end_time = min(real_end + extra, sound.get_total_duration())
             sound_clip = sound.extract_part(from_time=start_time, to_time=end_time)
 
             spec = sound_clip.to_spectrogram(window_length=wl, time_step=self.ts, maximum_frequency=self.spec_freq_max.get())
@@ -144,7 +145,7 @@ class Spectrogram(Module):
             # contrast = ImageEnhance.Contrast(img)
             # img = contrast.enhance(5)
             # self.canvas_height = img.height
-            img = img.resize((self.canvas_width, self.canvas_height))
+            img = img.resize((self.canvas_width*(duration / screen_duration), self.canvas_height))
 
             photo_img = ImageTk.PhotoImage(img)
             self.canvas.config(height=self.canvas_height)
@@ -153,8 +154,9 @@ class Spectrogram(Module):
             # self.canvas.create_image(self.canvas_width/2,self.canvas_height/2, image=photo_img)
             if self.app.TextGrid.selectedItem:
                 tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
-            self.canvas.delete('all')
-            img = self.canvas.create_image(self.canvas_width, self.canvas_height, anchor='se', image=photo_img)
+            coord = decimal.Decimal(self.canvas_width)
+            coord *= decimal.Decimal(1) - ((screen_end - decimal.Decimal(real_end)) / screen_duration)
+            img = self.canvas.create_image(coord, self.canvas_height, anchor='se', image=photo_img)
             self.img = photo_img
             #pass on selected-ness
             if self.app.TextGrid.selectedItem:

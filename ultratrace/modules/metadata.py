@@ -1,5 +1,6 @@
 from .base import Module
 from ..util.logging import *
+from .. import util
 
 import json
 import os
@@ -69,7 +70,8 @@ class Metadata(Module):
                 'audio/flac'        :   ['.flac'],
                 'application/dicom' :   ['.dicom'],
                 'text/plain'        :   ['.TextGrid', 'US.txt', '.txt', '.dat'],
-                'application/octet-stream' : ['.ult']
+                'application/octet-stream' : ['.ult'],
+                'application/x-dosexec'    : ['.ult']
             }
             files = {}
 
@@ -178,20 +180,27 @@ class Metadata(Module):
 
     def importULTMeasurement(self, filepath):
         from ..util.framereader import ULTScanLineReader
-        f = open(self.unrelativize(filepath))
-        data = [x.split('\t') for x in f.readlines()]
+        f = open(self.unrelativize(filepath), 'rb')
+        contents = util.decode_bytes(f.read())
+        f.close()
+        data = [x.split('\t') for x in contents.splitlines()]
         lines = []
         coords_loc = {}
         confidence_loc = {}
         offset = 3
+        defaultTrace = None
         for col in data[0][3:]:
             name = col.split('"')[1]
             if col.startswith('X,Y'):
                 coords_loc[name] = offset
                 offset += 84
+                if not defaultTrace:
+                    defaultTrace = name
             elif col.startswith('Confidence'):
                 confidence_loc[name] = offset
                 offset += 42
+        if defaultTrace:
+            self.data['defaultTraceName'] = defaultTrace
         for linenum, line in enumerate(data[1:], start=2):
             dt = {}
             for k in coords_loc:
@@ -211,7 +220,6 @@ class Metadata(Module):
                     dt[k] = pts
             if dt:
                 lines.append((linenum, float(line[1].replace(',', '.')), line[2], dt))
-        f.close()
         self.data['traces'] = {k: {'color': 'red', 'files': {}} for k in coords_loc}
         # TODO: all traces are imported as the same color
         for linenum, timestamp, date, data in lines:
@@ -248,7 +256,7 @@ class Metadata(Module):
                     info('Line %s of %s imported as %s frame %s' % (linenum, filepath, fblob['name'], framenum))
                     break
             else:
-                warn('Unable to import line %s of %s' % (linenum, filepath))
+                warn('Unable to import line %s of %s (could not match date %s)' % (linenum, filepath, date))
 
     def write(self, _mdfile=None):
         '''
