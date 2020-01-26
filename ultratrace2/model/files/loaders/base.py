@@ -36,6 +36,13 @@ class FileLoaderBase(ABC):
         NB: If this concrete method fails to load the data at the given path, then
             it should throw a `FileLoadError`."""
 
+    def __eq__(self, other):
+        return self.get_path() == other.get_path() and type(self) == type(other)
+
+    @staticmethod
+    def get_priority() -> int:
+        return 0
+
 
 class IntervalBase(Protocol):
     def get_start(self) -> float:

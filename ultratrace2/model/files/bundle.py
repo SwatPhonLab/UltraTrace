@@ -35,15 +35,24 @@ class FileBundle:
             for f in [self.alignment_file, self.image_set_file, self.sound_file]
         )
 
+    def get_alignment_file(self) -> Optional[AlignmentFileLoader]:
+        return self.alignment_file
+
     def set_alignment_file(self, alignment_file: AlignmentFileLoader) -> None:
         if self.alignment_file is not None:
             logger.warning("Overwriting existing alignment file")
         self.alignment_file = alignment_file
 
+    def get_image_set_file(self) -> Optional[ImageSetFileLoader]:
+        return self.image_set_file
+
     def set_image_set_file(self, image_set_file: ImageSetFileLoader) -> None:
         if self.image_set_file is not None:
             logger.warning("Overwriting existing image-set file")
         self.image_set_file = image_set_file
+
+    def get_sound_file(self) -> Optional[SoundFileLoader]:
+        return self.sound_file
 
     def set_sound_file(self, sound_file: SoundFileLoader) -> None:
         if self.sound_file is not None:
@@ -52,6 +61,14 @@ class FileBundle:
 
     def __repr__(self):
         return f'Bundle("{self.name}",{self.alignment_file},{self.image_set_file},{self.sound_file})'
+
+    def __eq__(self, other):
+        return (
+            self.name == other.name
+            and self.alignment_file == other.alignment_file
+            and self.image_set_file == other.image_set_file
+            and self.sound_file == other.sound_file
+        )
 
 
 class FileBundleList:
@@ -115,7 +132,7 @@ class FileBundleList:
                     continue
 
                 if name not in bundles:
-                    bundles[name] = FileBundle(filepath)
+                    bundles[name] = FileBundle(name)
 
                 try:
                     loaded_file = file_loader.from_file(filepath)

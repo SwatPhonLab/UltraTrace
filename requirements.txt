@@ -14,3 +14,4 @@ TextGrid==1.5
 tqdm==4.40.2
 ttkthemes==2.4.0
 xparser==0.0.4
+python-magic==0.4.15
