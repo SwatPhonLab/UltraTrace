@@ -1,7 +1,6 @@
 from tkinter.filedialog import askdirectory as choose_dir
 from typing import Optional
 
-from .gui import GUI
 from .model.project import Project
 
 
@@ -19,9 +18,6 @@ class App:
             raise ValueError("You must choose a directory to open")
 
         self.project: Project = Project.get_by_path(path)
-
-        if not headless:
-            self.gui = GUI(theme=theme)
 
     def main(self) -> None:
         pass
