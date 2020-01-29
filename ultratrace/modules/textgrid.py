@@ -576,50 +576,53 @@ class TextGrid(Module):
                 canvas.delete('all')
                 #get starting interval
                 i = tier.indexContaining(self.start)
-                time = tier[i].maxTime
-                frame_i = 0
-                while i < len(tier) and tier[i].minTime <= self.end:
-                    if self.start >= tier[i].minTime:
-                        strtime = self.start
-                    else:
-                        strtime = tier[i].minTime
-                    if self.end <= tier[i].maxTime:
-                        time = self.end
-                    length = time - strtime
-                    pixel_length = length/duration*self.canvas_width
+                # not sure why, but this is sometimes None -JNW 2020-01-28
+                if i != None:
+                    #debug(self.TextGrid, self.current, el, tier, self.start, i)
+                    time = tier[i].maxTime
+                    frame_i = 0
+                    while i < len(tier) and tier[i].minTime <= self.end:
+                        if self.start >= tier[i].minTime:
+                            strtime = self.start
+                        else:
+                            strtime = tier[i].minTime
+                        if self.end <= tier[i].maxTime:
+                            time = self.end
+                        length = time - strtime
+                        pixel_length = length/duration*self.canvas_width
 
-                    mod = length/2
-                    rel_time = time-self.start
-                    loc=(rel_time-mod)/duration*self.canvas_width
+                        mod = length/2
+                        rel_time = time-self.start
+                        loc=(rel_time-mod)/duration*self.canvas_width
 
-                    text = canvas.create_text(loc, self.canvas_height/2, justify='center',
-                                        text=tier[i].mark, width=pixel_length, activefill='blue')
-                    minTimetag = "minTime"+str(tier[i].minTime)
-                    maxTimetag = "maxTime"+str(tier[i].maxTime)
-                    canvas.addtag_withtag(minTimetag, text)
-                    canvas.addtag_withtag(maxTimetag, text)
-                    #add containted frames to tags
-                    while frame_i < len(self.frameTier) and self.frameTier[frame_i].time <= tier[i].maxTime:
-                        if self.frameTier[frame_i].time >= tier[i].minTime:
-                            canvas.addtag_withtag("frame"+self.frameTier[frame_i].mark, text)
-                            if tier[i].mark != '':
-                                el['canvas-label'].addtag_all("frame"+self.frameTier[frame_i].mark)
-                        frame_i+=1
-                    #pass on selected-ness
-                    if self.selectedItem:
-                        if self.selectedItem[0] != self.app.Spectrogram.canvas:
-                            # old_selected_tags = self.selectedItem[0].gettags(self.selectedItem[1])
-                            if minTimetag in old_selected_tags and maxTimetag in old_selected_tags:
-                                self.selectedItem = (canvas, text)
-                    #create line
-                    loc=rel_time/duration*self.canvas_width
-                    i+=1
-                    if i < len(tier) and loc < self.canvas_width:
-                        canvas.create_line(loc,0,loc,self.canvas_height, tags='line')
-                        time = tier[i].maxTime #here so that loop doesn't run an extra time
+                        text = canvas.create_text(loc, self.canvas_height/2, justify='center',
+                                            text=tier[i].mark, width=pixel_length, activefill='blue')
+                        minTimetag = "minTime"+str(tier[i].minTime)
+                        maxTimetag = "maxTime"+str(tier[i].maxTime)
+                        canvas.addtag_withtag(minTimetag, text)
+                        canvas.addtag_withtag(maxTimetag, text)
+                        #add containted frames to tags
+                        while frame_i < len(self.frameTier) and self.frameTier[frame_i].time <= tier[i].maxTime:
+                            if self.frameTier[frame_i].time >= tier[i].minTime:
+                                canvas.addtag_withtag("frame"+self.frameTier[frame_i].mark, text)
+                                if tier[i].mark != '':
+                                    el['canvas-label'].addtag_all("frame"+self.frameTier[frame_i].mark)
+                            frame_i+=1
+                        #pass on selected-ness
+                        if self.selectedItem:
+                            if self.selectedItem[0] != self.app.Spectrogram.canvas:
+                                # old_selected_tags = self.selectedItem[0].gettags(self.selectedItem[1])
+                                if minTimetag in old_selected_tags and maxTimetag in old_selected_tags:
+                                    self.selectedItem = (canvas, text)
+                        #create line
+                        loc=rel_time/duration*self.canvas_width
+                        i+=1
+                        if i < len(tier) and loc < self.canvas_width:
+                            canvas.create_line(loc,0,loc,self.canvas_height, tags='line')
+                            time = tier[i].maxTime #here so that loop doesn't run an extra time
 
-                #fills labels with info about tiers w/traces
-                self.updateTierLabels()
+                    #fills labels with info about tiers w/traces
+                    self.updateTierLabels()
 
             elif 'frames' in el:
                 frames = el['frames']
