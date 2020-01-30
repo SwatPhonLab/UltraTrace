@@ -612,7 +612,11 @@ class TextGrid(Module):
                         if self.selectedItem:
                             if self.selectedItem[0] != self.app.Spectrogram.canvas:
                                 # old_selected_tags = self.selectedItem[0].gettags(self.selectedItem[1])
-                                if minTimetag in old_selected_tags and maxTimetag in old_selected_tags:
+                                if minTimetag in old_selected_tags and maxTimetag in old_selected_tags and canvas == self.selectedItem[0]:
+                                    # I'm not sure why, but when collapsing canvases this sometimes
+                                    # changes which tier is selected. Adding canvas == self.selectedItem[0]
+                                    # seems to fix this though.
+                                    # - D.S. 2020-01-30
                                     self.selectedItem = (canvas, text)
                         #create line
                         loc=rel_time/duration*self.canvas_width
@@ -783,10 +787,7 @@ class TextGrid(Module):
         '''
         collapse or uncollapse selected tier
         '''
-        if self.selectedItem != None:
-            widg = self.selectedItem[0]
-        else:
-            widg = event.widget
+        widg = event.widget
 
         if event.num == 1:
             h = self.collapse_height
