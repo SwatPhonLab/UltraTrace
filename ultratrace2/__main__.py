@@ -6,7 +6,7 @@ from .app import initialize_app
 logging.basicConfig(level=logging.DEBUG)
 
 
-def main():
+def main() -> None:
 
     parser = argparse.ArgumentParser(prog="ultratrace")
 

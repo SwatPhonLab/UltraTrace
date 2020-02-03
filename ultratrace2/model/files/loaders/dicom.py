@@ -16,7 +16,7 @@ class DICOMLoader(ImageSetFileLoader):
     def get_path(self) -> str:
         return self._path
 
-    def set_path(self, path) -> None:
+    def set_path(self, path: str) -> None:
         self._path = path
 
     def __init__(self, path: str, pixels: np.ndarray):
@@ -98,6 +98,6 @@ class DICOMLoader(ImageSetFileLoader):
                 f"Invalid DICOM ({path}), unable to read: {str(e)}"
             ) from e
 
-    def convert_to_png(self, *args, **kwargs):
+    def convert_to_png(self) -> None:
         # FIXME: implement this as a helper function
         raise NotImplementedError()

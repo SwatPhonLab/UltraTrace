@@ -1,5 +1,5 @@
-from typing import Sequence, TypeVar
-from werkzeug.datastructures import ImmutableMultiDict as RequestArgs
+from typing import Any, Sequence, Type, TYPE_CHECKING, TypeVar, Union
+from werkzeug.datastructures import ImmutableMultiDict
 
 from .project_cache import get_project_by_path
 from ..model.color import Color
@@ -8,10 +8,16 @@ from ..model.trace import Trace
 from ..model.xhair import XHair
 
 
+if TYPE_CHECKING:
+    RequestArgs = ImmutableMultiDict[Any, Any]
+else:
+    RequestArgs = ImmutableMultiDict
+
+
 class ValidationError(TypeError):
-    def __init__(self, name: str, type_factory: type, args: RequestArgs):
+    def __init__(self, name: str, cls: type, args: RequestArgs):
         super().__init__(
-            f"Invalid request param: '{name}': got '{type(args.get(name, None))}', expecting '{type_factory}'"
+            f"Invalid request param: '{name}': got '{type(args.get(name, None))}', expecting '{cls}'"
         )
 
 
@@ -59,15 +65,14 @@ def tier_names(args: RequestArgs, project: Project) -> Sequence[str]:
     raise NotImplementedError()
 
 
-_ValidateType = TypeVar("_ValidateType", bound=type)
+# _ValidateType = TypeVar("_ValidateType", bound=Union[Type[int], Type[float], Type[str]])
+_ValidateType = TypeVar("_ValidateType", int, float, str)
 
 
-def primitive(
-    args: RequestArgs, name: str, type_factory: _ValidateType
-) -> _ValidateType:
+def primitive(args: RequestArgs, name: str, cls: Type[_ValidateType]) -> _ValidateType:
     if name not in args:
-        raise ValidationError(name, type_factory, args)
+        raise ValidationError(name, cls, args)
     try:
-        return type_factory(args[name])
+        return cls(args[name])
     except TypeError as e:
-        raise ValidationError(name, type_factory, args) from e
+        raise ValidationError(name, cls, args) from e

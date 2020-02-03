@@ -1,4 +1,5 @@
 from flask import Flask, request
+from typing import Tuple
 
 import logging
 
@@ -8,9 +9,11 @@ from . import validate
 
 logger = logging.getLogger(__name__)
 
+Response = Tuple[str, int]
+
 
 @app.route("/project", methods=["PUT"])
-def load_project():
+def load_project() -> Response:
     """Main entrypoint.
 
     NB: To get the actual filename-specific data for a filetype, call
@@ -51,7 +54,7 @@ def load_project():
 
 
 @app.route("/image", methods=["GET"])
-def load_image():
+def load_image() -> Response:
     """Load *.dicom, *.png, etc.
 
     NB: "data" is serialized as a base64-encoded PNG file
@@ -80,7 +83,7 @@ def load_image():
 
 
 @app.route("/spectrogram", methods=["GET"])
-def get_spectrogram():
+def get_spectrogram() -> Response:
     """Load *.pmpkl, etc.
 
     NB: "data" is serialized as a base64-encoded PNG file
@@ -107,7 +110,7 @@ def get_spectrogram():
 
 
 @app.route("/audio", methods=["GET"])
-def get_audio():
+def get_audio() -> Response:
     """Load *.wav, etc.
 
     #FIXME: How do we want to serialize this data?  Should it be sent all at once
@@ -131,7 +134,7 @@ def get_audio():
 
 
 @app.route("/alignment", methods=["GET"])
-def get_alignment():
+def get_alignment() -> Response:
     """Load *.TextGrid, etc.
 
     NB: We'll have to do something different for Point/Interval tiers -- maybe set
@@ -166,7 +169,7 @@ def get_alignment():
 
 
 @app.route("/alignment/offset", methods=["PUT"])
-def set_alignment_offset():
+def set_alignment_offset() -> Response:
     """Set the offset for a given filename
 
     PUT /alignment/offset?path=<str>&filename=<str>&offset=<float>
@@ -183,7 +186,7 @@ def set_alignment_offset():
 
 
 @app.route("/traces/default", methods=["PUT"])
-def set_default_trace():
+def set_default_trace() -> Response:
     """Set the default trace
 
     PUT /traces/default?path=<str>&trace_id=<int>
@@ -199,7 +202,7 @@ def set_default_trace():
 
 
 @app.route("/traces/name", methods=["PUT"])
-def set_trace_name():
+def set_trace_name() -> Response:
     """Set the trace's name
 
     PUT /traces/name?path=<str>&trace_id=<int>&new_name=<str>
@@ -216,7 +219,7 @@ def set_trace_name():
 
 
 @app.route("/traces/color", methods=["PUT"])
-def set_trace_color():
+def set_trace_color() -> Response:
     """Set the trace's color
 
     NB: <new_color> should be given as a six-digit hex string
@@ -236,7 +239,7 @@ def set_trace_color():
 
 
 @app.route("/traces/create", methods=["POST"])
-def create_trace():
+def create_trace() -> Response:
     """Add a new trace
 
     NB: <color> should be given as a six-digit hex string
@@ -258,7 +261,7 @@ def create_trace():
 
 
 @app.route("/traces/delete", methods=["POST"])
-def delete_trace():
+def delete_trace() -> Response:
     """Delete a trace
 
     POST /traces/delete?path=<str>&trace_id=<int>
@@ -274,7 +277,7 @@ def delete_trace():
 
 
 @app.route("/xhairs/move", methods=["PUT"])
-def move_xhair():
+def move_xhair() -> Response:
     """Update an xhair's (x,y) position
 
     PUT /xhairs/move?path=<str>&xhair_id=<int>&x=<float>&y=<float>
@@ -292,7 +295,7 @@ def move_xhair():
 
 
 @app.route("/xhairs/create", methods=["POST"])
-def create_xhair():
+def create_xhair() -> Response:
     """Create a new xhair with given parameters
 
     POST /xhairs/create?path=<str>&filename=<str>&frame=<int>&trace_id=<int>&x=<float>&y=<float>
@@ -314,7 +317,7 @@ def create_xhair():
 
 
 @app.route("/xhairs/delete", methods=["POST"])
-def delete_xhair():
+def delete_xhair() -> Response:
     """Delete an xhair
 
     POST /xhairs/delete?path=<str>&xhair_id=<int>
@@ -330,7 +333,7 @@ def delete_xhair():
 
 
 @app.route("/search", methods=["GET"])
-def search():
+def search() -> Response:
     """Search query across project
 
     GET /search?path=<str>&filenames=<List<str>>&tier_names=<List<str>>&query=<str>
@@ -354,11 +357,12 @@ def search():
         filenames = validate.filenames(request.args, project)
         tier_names = validate.tier_names(request.args, project)
         query = validate.primitive(request.args, "query", str)
+        raise NotImplementedError
     except validate.ValidationError as e:
         logger.error(e)
         return str(e), 400
 
 
 @app.route("/export", methods=["POST"])
-def export():
+def export() -> Response:
     raise NotImplementedError()

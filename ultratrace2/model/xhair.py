@@ -25,7 +25,7 @@ class XHair:
             dy = self.y - other[1]
         return (dx ** 2) + (dy ** 2)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"XHair(id={self.id}, x={self.x}, y={self.y})"
 
     def toggle_select(self) -> None:
@@ -37,10 +37,10 @@ class XHair:
     def unselect(self) -> None:
         self.is_selected = False
 
-    def show(self):
+    def show(self) -> None:
         self.is_hidden = False
 
-    def hide(self):
+    def hide(self) -> None:
         self.is_hidden = True
 
     def move(self, x: float, y: float) -> None:

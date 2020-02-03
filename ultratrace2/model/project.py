@@ -16,7 +16,7 @@ class Project:
         self.traces = traces
         self.files = files
 
-    def save(self):
+    def save(self) -> None:
         raise NotImplementedError()
 
     @classmethod
@@ -66,13 +66,13 @@ class Project:
         save_dir = Project.get_save_dir(path)
         return os.path.join(save_dir, "project.pkl")
 
-    def filepath(self):
+    def filepath(self) -> None:
         raise NotImplementedError()
 
-    def current_trace(self):
+    def current_trace(self) -> None:
         raise NotImplementedError()
 
-    def current_frame(self):
+    def current_frame(self) -> None:
         raise NotImplementedError()
 
     def has_alignment_impl(self) -> bool:

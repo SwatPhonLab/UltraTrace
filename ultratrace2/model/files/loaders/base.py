@@ -22,10 +22,10 @@ class FileLoaderBase(ABC):
         ...
 
     @abstractmethod
-    def set_path(self, path) -> None:
+    def set_path(self, path: str) -> None:
         ...
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{type(self).__name__}({self.get_path()})"
 
     @classmethod

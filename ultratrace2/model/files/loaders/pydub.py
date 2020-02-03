@@ -7,7 +7,7 @@ class PydubLoader(SoundFileLoader):
     def get_path(self) -> str:
         return self._path
 
-    def set_path(self, path) -> None:
+    def set_path(self, path: str) -> None:
         self._path = path
 
     def __init__(self, path: str, audio_segment: pydub.AudioSegment):

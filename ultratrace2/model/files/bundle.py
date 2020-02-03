@@ -50,7 +50,7 @@ class FileBundle:
             logger.warning("Overwriting existing sound file")
         self.sound_file = sound_file
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'Bundle("{self.name}",{self.alignment_file},{self.image_set_file},{self.sound_file})'
 
 

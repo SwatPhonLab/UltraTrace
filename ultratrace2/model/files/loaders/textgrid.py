@@ -16,13 +16,13 @@ class TextGridInterval:
         self.tg_interval = tg_interval
 
     def get_start(self) -> float:
-        return self.tg_interval.minTime
+        return float(self.tg_interval.minTime)
 
     def get_end(self) -> float:
-        return self.tg_interval.maxTime
+        return float(self.tg_interval.maxTime)
 
     def get_contents(self) -> str:
-        return self.tg_interval.mark
+        return str(self.tg_interval.mark)
 
     def __bool__(self) -> bool:
         return bool(self.get_contents())
@@ -32,7 +32,7 @@ class TextGridLoader(AlignmentFileLoader):
     def get_path(self) -> str:
         return self._path
 
-    def set_path(self, path) -> None:
+    def set_path(self, path: str) -> None:
         self._path = path
 
     def __init__(self, path: str, tg_data: textgrid.TextGrid):
@@ -41,7 +41,7 @@ class TextGridLoader(AlignmentFileLoader):
         self.offset = 0.0
 
     def get_tier_names(self) -> Sequence[str]:
-        return self.tg_data.getNames()
+        return [str(n) for n in self.tg_data.getNames()]
 
     def get_intervals(self) -> Intervals:
         all_intervals = []
@@ -58,10 +58,10 @@ class TextGridLoader(AlignmentFileLoader):
         return all_intervals
 
     def get_start(self) -> float:
-        return self.tg_data.minTime + self.offset
+        return float(self.tg_data.minTime + self.offset)
 
     def get_end(self) -> float:
-        return self.tg_data.maxTime + self.offset
+        return float(self.tg_data.maxTime + self.offset)
 
     def get_offset(self) -> float:
         return self.offset
