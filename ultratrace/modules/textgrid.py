@@ -497,7 +497,7 @@ class TextGrid(Module):
         # debug(event.char, event.keysym, event.keycode)
         # debug(self.app.frame)
         f = decimal.Decimal(self.tg_zoom_factor)
-        a = self.end - self.start
+        a = decimal.Decimal(self.end - self.start)
         z_out = (a-(a/f))/2
         z_in = ((f*a)-a)/2
         old_start = self.start
