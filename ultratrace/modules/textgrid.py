@@ -90,6 +90,14 @@ class TextGrid(Module):
         self.app.bind("<Shift-Right>", self.getBounds)
 
 
+    def __setattr__(self, name, value):
+        if name in ['start', 'end', 'tg_zoom_factor']:
+            # we don't want to accidentally mix floats and Decimals
+            self.__dict__[name] = decimal.Decimal(value)
+        else:
+            self.__dict__[name] = value
+
+
     def setup(self):
         if LIBS_INSTALLED:
             self.loadOrGenerate()
@@ -579,7 +587,7 @@ class TextGrid(Module):
                 # not sure why, but this is sometimes None -JNW 2020-01-28
                 if i != None:
                     #debug(self.TextGrid, self.current, el, tier, self.start, i)
-                    time = tier[i].maxTime
+                    time = decimal.Decimal(tier[i].maxTime)
                     frame_i = 0
                     while i < len(tier) and tier[i].minTime <= self.end:
                         if self.start >= tier[i].minTime:
