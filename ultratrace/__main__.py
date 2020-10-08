@@ -379,8 +379,8 @@ class App(ThemedTk):
 			canvas = self.Spectrogram.canvas
 			t1 = self.Spectrogram.clicktime
 			t2 = self.Spectrogram.xToTime(canvas.canvasx(event.x))
-			# self.TextGrid.start = decimal.Decimal(min(t1,t2))
-			# self.TextGrid.end = decimal.Decimal(max(t1,t2))
+			# self.TextGrid.start = float(min(t1,t2))
+			# self.TextGrid.end = float(max(t1,t2))
 			# for itm in canvas.find_all()[0]:
 				# for tag in canvas.gettags(itm): #canvas.dtag() does not seem to work with one argument
 			if max(t1,t2) - min(t1,t2) > self.Spectrogram.ts: #if selected area is larger than one strip of Spectrogram

@@ -1,7 +1,6 @@
 from .base import Module
 from ..util.logging import *
 
-import decimal
 import math
 import PIL
 
@@ -99,13 +98,13 @@ class Spectrogram(Module):
             sound = parselmouth.Sound(self.app.Audio.current)
             self.canvas.delete('all')
 
-            ts_fac = decimal.Decimal(10000.0)
-            wl = decimal.Decimal(self.wl.get())
-            screen_start = decimal.Decimal(self.app.TextGrid.start)
-            screen_end = decimal.Decimal(self.app.TextGrid.end)
+            ts_fac = 10000.0
+            wl = self.wl.get()
+            screen_start = self.app.TextGrid.start
+            screen_end = self.app.TextGrid.end
             screen_duration = screen_end - screen_start
-            audio_start = decimal.Decimal(0)
-            audio_end = decimal.Decimal(sound.get_total_duration())
+            audio_start = 0
+            audio_end = sound.get_total_duration()
             real_start = max(screen_start, audio_start)
             real_end = min(screen_end, audio_end)
             duration = real_end - real_start
@@ -145,7 +144,7 @@ class Spectrogram(Module):
             # contrast = ImageEnhance.Contrast(img)
             # img = contrast.enhance(5)
             # self.canvas_height = img.height
-            img = img.resize((self.canvas_width*(duration / screen_duration), self.canvas_height))
+            img = img.resize((int(self.canvas_width*(duration / screen_duration)), self.canvas_height))
 
             photo_img = ImageTk.PhotoImage(img)
             self.canvas.config(height=self.canvas_height)
@@ -154,8 +153,8 @@ class Spectrogram(Module):
             # self.canvas.create_image(self.canvas_width/2,self.canvas_height/2, image=photo_img)
             if self.app.TextGrid.selectedItem:
                 tags = self.app.TextGrid.selectedItem[0].gettags(self.app.TextGrid.selectedItem[1])
-            coord = decimal.Decimal(self.canvas_width)
-            coord *= decimal.Decimal(1) - ((screen_end - decimal.Decimal(real_end)) / screen_duration)
+            coord = self.canvas_width
+            coord *= 1 - ((screen_end - real_end) / screen_duration)
             img = self.canvas.create_image(coord, self.canvas_height, anchor='se', image=photo_img)
             self.img = photo_img
             #pass on selected-ness
