@@ -653,13 +653,10 @@ class TextGrid(Module):
                 self.lastFrame = int(tier[i-1].mark)
 
         self.paintCanvases()
-        try:
-            if hasattr(self.app, 'Spectrogram'):
-                # don't try to call this during startup
-                # because TextGrid is loaded earlier
-                self.app.Spectrogram.reset()
-        except AttributeError as e:
-            error(e)
+        if hasattr(self.app, 'Spectrogram'):
+            # don't try to call this during startup
+            # because TextGrid is loaded earlier
+            self.app.Spectrogram.reset()
 
     def updateTimeLabels(self):
         '''
