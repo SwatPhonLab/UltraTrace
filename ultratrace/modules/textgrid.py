@@ -37,15 +37,15 @@ class TextGrid(Module):
         self.canvas_frame.grid(row=1, column=1 )
         self.TextGrid = None
         self.selectedTier = StringVar()
-        self.tg_zoom_factor = 1.5
+        self.tg_zoom_factor = decimal.Decimal(1.5)
         self.canvas_width=800
         self.canvas_height=60
         self.collapse_height=15
         self.selectedIntvlFrames = []
         self.selectedItem = None
-        self.start = 0
-        self.end = 0
-        self.current = 0
+        self.start = decimal.Decimal(0)
+        self.end = decimal.Decimal(0)
+        self.current = decimal.Decimal(0)
         self.frame_shift = DoubleVar()
 
         self.startup()
@@ -88,14 +88,6 @@ class TextGrid(Module):
         # these aren't Praat-like
         self.app.bind("<Shift-Left>", self.getBounds)
         self.app.bind("<Shift-Right>", self.getBounds)
-
-
-    def __setattr__(self, name, value):
-        if name in ['start', 'end', 'tg_zoom_factor']:
-            # we don't want to accidentally mix floats and Decimals
-            self.__dict__[name] = decimal.Decimal(value)
-        else:
-            self.__dict__[name] = value
 
 
     def setup(self):
@@ -177,15 +169,15 @@ class TextGrid(Module):
         if fname:
             self.TextGrid = self.fromFile(fname)
         else:
-            minTime = 0.
+            minTime = decimal.Decimal(0)
             if not hasattr(self.app.Audio, 'duration'):
                 self.app.Audio.reset()
-            maxTime = self.app.Audio.duration
-            self.TextGrid = TextGridFile(maxTime=float(maxTime))
+            maxTime = decimal.Decimal(self.app.Audio.duration)
+            self.TextGrid = TextGridFile(maxTime=maxTime)
             keys = self.app.Data.getFileLevel('all')
             if not ('.ult' in keys and '.txt' in keys):
                 sentenceTier = IntervalTier("text")
-                sentenceTier.add(minTime, float(maxTime), "text")
+                sentenceTier.add(minTime, maxTime, "text")
                 self.TextGrid.append(sentenceTier)
             fname = self.app.Data.unrelativize(self.app.Data.getCurrentFilename() + '.TextGrid')
             self.app.Data.setFileLevel('.TextGrid', fname)
@@ -209,10 +201,10 @@ class TextGrid(Module):
             maxTime = max(self.app.Audio.duration, times[-1])
         except AttributeError:
             maxTime = times[-1]
-        maxTime = float(maxTime)
+        maxTime = decimal.Decimal(maxTime)
         tier = PointTier('frames', maxTime=maxTime)
         for f, t in enumerate(times):
-            tier.addPoint(Point(t, str(f)))
+            tier.addPoint(Point(decimal.Decimal(t), str(f)))
         if not self.TextGrid.maxTime or maxTime > self.TextGrid.maxTime:
             self.TextGrid.maxTime = maxTime
         self.TextGrid.append(tier)
@@ -226,7 +218,7 @@ class TextGrid(Module):
             if s:
                 line = s.splitlines()[0]
                 sentenceTier = IntervalTier("sentence")
-                sentenceTier.add(0., float(self.app.Audio.duration), line)
+                sentenceTier.add(decimal.Decimal(0), decimal.Decimal(self.app.Audio.duration), line)
                 self.TextGrid.append(sentenceTier)
                 self.TextGrid.tiers = [self.TextGrid.tiers[-1]] + self.TextGrid.tiers[:-1]
                 
@@ -392,7 +384,7 @@ class TextGrid(Module):
 
         '''
         if self.selectedItem:
-            duration = decimal.Decimal(self.end) - self.start
+            duration = self.end - self.start
 
             # There might be a more efficient way to get the tier name:
             widg = self.selectedItem[0]
@@ -409,9 +401,9 @@ class TextGrid(Module):
             tags = widg.gettags(itm)
             while oldMinTime == None or oldMaxTime == None:
                 if tags[q][:7] == 'minTime':
-                    oldMinTime = float(tags[q][7:])
+                    oldMinTime = decimal.Decimal(tags[q][7:])
                 elif tags[q][:7] == 'maxTime':
-                    oldMaxTime = float(tags[q][7:])
+                    oldMaxTime = decimal.Decimal(tags[q][7:])
                 q+=1
 
             tier = self.TextGrid.getFirst(tier_name)
@@ -504,8 +496,8 @@ class TextGrid(Module):
         '''
         # debug(event.char, event.keysym, event.keycode)
         # debug(self.app.frame)
-        f = decimal.Decimal(self.tg_zoom_factor)
-        a = decimal.Decimal(self.end - self.start)
+        f = self.tg_zoom_factor
+        a = self.end - self.start
         z_out = (a-(a/f))/2
         z_in = ((f*a)-a)/2
         old_start = self.start
@@ -565,7 +557,7 @@ class TextGrid(Module):
 
         '''
         if self.start < 0:
-            self.start = 0
+            self.start = decimal.Decimal(0)
         if self.end > self.TextGrid.maxTime:
             self.end = self.TextGrid.maxTime
         self.updateTimeLabels()
@@ -587,7 +579,7 @@ class TextGrid(Module):
                 # not sure why, but this is sometimes None -JNW 2020-01-28
                 if i != None:
                     #debug(self.TextGrid, self.current, el, tier, self.start, i)
-                    time = decimal.Decimal(tier[i].maxTime)
+                    time = tier[i].maxTime
                     frame_i = 0
                     while i < len(tier) and tier[i].minTime <= self.end:
                         if self.start >= tier[i].minTime:
@@ -662,8 +654,10 @@ class TextGrid(Module):
 
         self.paintCanvases()
         try:
-            self.app.Spectrogram.reset()
-            # during startup this gets called before app.Spectrogram is initialized
+            if hasattr(self.app, 'Spectrogram'):
+                # don't try to call this during startup
+                # because TextGrid is loaded earlier
+                self.app.Spectrogram.reset()
         except AttributeError as e:
             error(e)
 
