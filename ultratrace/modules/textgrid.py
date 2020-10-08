@@ -5,7 +5,6 @@ from ..widgets import CanvasTooltip
 import copy
 
 from tkinter import Button, Canvas, Frame, Label, Spinbox, StringVar, DoubleVar
-import decimal
 import tempfile
 
 LIBS_INSTALLED = False
@@ -37,15 +36,15 @@ class TextGrid(Module):
         self.canvas_frame.grid(row=1, column=1 )
         self.TextGrid = None
         self.selectedTier = StringVar()
-        self.tg_zoom_factor = decimal.Decimal(1.5)
+        self.tg_zoom_factor = 1.5
         self.canvas_width=800
         self.canvas_height=60
         self.collapse_height=15
         self.selectedIntvlFrames = []
         self.selectedItem = None
-        self.start = decimal.Decimal(0)
-        self.end = decimal.Decimal(0)
-        self.current = decimal.Decimal(0)
+        self.start = 0
+        self.end = 0
+        self.current = 0
         self.frame_shift = DoubleVar()
 
         self.startup()
@@ -169,10 +168,14 @@ class TextGrid(Module):
         if fname:
             self.TextGrid = self.fromFile(fname)
         else:
-            minTime = decimal.Decimal(0)
+            minTime = 0.
             if not hasattr(self.app.Audio, 'duration'):
                 self.app.Audio.reset()
-            maxTime = decimal.Decimal(self.app.Audio.duration)
+            try:
+                maxTime = self.app.Audio.duration
+            except:
+                warn('Audio has no duration attribute after calling reset(), defaulting to 1 second')
+                maxTime = 1.
             self.TextGrid = TextGridFile(maxTime=maxTime)
             keys = self.app.Data.getFileLevel('all')
             if not ('.ult' in keys and '.txt' in keys):
@@ -201,10 +204,9 @@ class TextGrid(Module):
             maxTime = max(self.app.Audio.duration, times[-1])
         except AttributeError:
             maxTime = times[-1]
-        maxTime = decimal.Decimal(maxTime)
         tier = PointTier('frames', maxTime=maxTime)
         for f, t in enumerate(times):
-            tier.addPoint(Point(decimal.Decimal(t), str(f)))
+            tier.addPoint(Point(t, str(f)))
         if not self.TextGrid.maxTime or maxTime > self.TextGrid.maxTime:
             self.TextGrid.maxTime = maxTime
         self.TextGrid.append(tier)
@@ -218,7 +220,7 @@ class TextGrid(Module):
             if s:
                 line = s.splitlines()[0]
                 sentenceTier = IntervalTier("sentence")
-                sentenceTier.add(decimal.Decimal(0), decimal.Decimal(self.app.Audio.duration), line)
+                sentenceTier.add(0, self.app.Audio.duration, line)
                 self.TextGrid.append(sentenceTier)
                 self.TextGrid.tiers = [self.TextGrid.tiers[-1]] + self.TextGrid.tiers[:-1]
                 
@@ -262,7 +264,7 @@ class TextGrid(Module):
                 oldTier.removePoint(point)
 
             for point in originalTier:
-                new_time = point.time + decimal.Decimal(shift/1000) ## NOTE: currently in ms
+                new_time = point.time + shift/1000 ## NOTE: currently in ms
                 if self.TextGrid.minTime <= new_time <= self.TextGrid.maxTime:
                     self.TextGrid.getFirst(self.frameTierName).add(new_time, point.mark)
 
@@ -401,9 +403,9 @@ class TextGrid(Module):
             tags = widg.gettags(itm)
             while oldMinTime == None or oldMaxTime == None:
                 if tags[q][:7] == 'minTime':
-                    oldMinTime = decimal.Decimal(tags[q][7:])
+                    oldMinTime = float(tags[q][7:])
                 elif tags[q][:7] == 'maxTime':
-                    oldMaxTime = decimal.Decimal(tags[q][7:])
+                    oldMaxTime = float(tags[q][7:])
                 q+=1
 
             tier = self.TextGrid.getFirst(tier_name)
@@ -479,9 +481,9 @@ class TextGrid(Module):
 
         for tag in self.selectedItem[0].gettags(self.selectedItem[1]):
             if tag[:7] == 'minTime':
-                start = decimal.Decimal(tag[7:])
+                start = float(tag[7:])
             elif tag[:7] == 'maxTime':
-                end = decimal.Decimal(tag[7:])
+                end = float(tag[7:])
 
         if start==None:
             start=self.start
@@ -508,9 +510,9 @@ class TextGrid(Module):
                 self.start, self.end = self.getMinMaxTime()
             # for tag in self.selectedItem[0].gettags(self.selectedItem[1]):
             #   if tag[:7] == 'minTime':
-            #       self.start = decimal.Decimal(tag[7:])
+            #       self.start = float(tag[7:])
             #   elif tag[:7] == 'maxTime':
-            #       self.end = decimal.Decimal(tag[7:])
+            #       self.end = float(tag[7:])
         if event.keysym == 'a':
             self.start = 0
             self.end = self.TextGrid.maxTime
@@ -557,7 +559,7 @@ class TextGrid(Module):
 
         '''
         if self.start < 0:
-            self.start = decimal.Decimal(0)
+            self.start = 0.
         if self.end > self.TextGrid.maxTime:
             self.end = self.TextGrid.maxTime
         self.updateTimeLabels()
