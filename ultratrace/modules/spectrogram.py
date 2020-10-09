@@ -5,7 +5,12 @@ import math
 import PIL
 
 from tkinter.ttk import Button, Frame
-from tkinter import Canvas, DoubleVar, Spinbox
+from tkinter import Canvas, DoubleVar
+try:
+    # ttk.Spinbox was added in Python 3.7
+    from tkinter.ttk import Spinbox
+except ImportError:
+    from tkinter import Spinbox
 
 LIBS_INSTALLED = False
 

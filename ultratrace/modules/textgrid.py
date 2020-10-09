@@ -5,7 +5,12 @@ from ..widgets import CanvasTooltip
 import copy
 
 from tkinter.ttk import Button, Frame, Label
-from tkinter import Canvas, StringVar, DoubleVar, Spinbox
+from tkinter import Canvas, StringVar, DoubleVar
+try:
+    # ttk.Spinbox was added in Python 3.7
+    from tkinter.ttk import Spinbox
+except ImportError:
+    from tkinter import Spinbox
 import tempfile
 
 LIBS_INSTALLED = False
