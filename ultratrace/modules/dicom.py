@@ -6,7 +6,8 @@ from ..util.framereader import ULTScanLineReader, DicomReader, DicomPNGReader, L
 import os
 import PIL
 
-from tkinter import Button, Frame, StringVar, OptionMenu
+from tkinter.ttk import Button, Frame, OptionMenu
+from tkinter import StringVar
 
 LIBS_INSTALLED = False
 

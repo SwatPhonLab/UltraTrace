@@ -1,4 +1,5 @@
-from tkinter import Frame, Label, Toplevel
+from tkinter.ttk import Frame, Label
+from tkinter import Toplevel
 
 class CanvasTooltip:
     '''

@@ -10,7 +10,8 @@ import argparse
 import os
 import PIL
 
-from tkinter import Button, Entry, Frame, Tk, StringVar, OptionMenu, Spinbox
+from tkinter.ttk import Button, Entry, Frame, OptionMenu
+from tkinter import StringVar, Spinbox, Tk
 
 try:
     from ttkthemes import ThemedTk

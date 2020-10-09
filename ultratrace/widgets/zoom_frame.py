@@ -1,4 +1,5 @@
-from tkinter import Canvas, Frame
+from tkinter import Canvas
+from tkinter.ttk import Frame
 from PIL import ImageTk # pillow
 
 from .rect_tracker import RectTracker

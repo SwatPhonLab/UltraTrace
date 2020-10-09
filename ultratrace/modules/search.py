@@ -4,8 +4,8 @@ from ..util.logging import *
 
 import re
 
-from tkinter import Button, Entry, Label, Scrollbar, Toplevel, StringVar, Grid
-from tkinter.ttk import Treeview
+from tkinter import Toplevel, StringVar, Grid
+from tkinter.ttk import Treeview, Button, Entry, Label, Scrollbar
 
 class Search(Module):
     def __init__(self, app):

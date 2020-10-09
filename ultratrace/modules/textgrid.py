@@ -4,7 +4,8 @@ from ..util.logging import *
 from ..widgets import CanvasTooltip
 import copy
 
-from tkinter import Button, Canvas, Frame, Label, Spinbox, StringVar, DoubleVar
+from tkinter.ttk import Button, Frame, Label
+from tkinter import Canvas, Spinbox, StringVar, DoubleVar
 import tempfile
 
 LIBS_INSTALLED = False
