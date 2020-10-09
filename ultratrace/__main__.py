@@ -14,7 +14,7 @@ from tkinter.ttk import Button, Entry, Frame, OptionMenu
 from tkinter import StringVar, Spinbox, Tk
 
 try:
-    from ttkthemes import ThemedTk
+    from ttkthemes import ThemedTk, THEMES
 except ImportError as e:
     ThemedTk = Tk
     warn(e)
@@ -36,7 +36,8 @@ class App(ThemedTk):
 	def __init__(self):
 
 		info( 'initializing UltraTrace' )
-
+		
+		default_ttktheme = "clam"  # alt, clam, classic, default
 		# do the normal Tk init stuff
 		if util.get_platform()=='Linux':
 			try:
@@ -50,12 +51,16 @@ class App(ThemedTk):
 					#info("Opened .Xresources file {}".format(XresPath))
 					if '*TtkTheme' in Xresources.resources:
 						ttktheme = Xresources.resources['*TtkTheme']
-						info("   - setting Linux Ttk theme to {}".format(ttktheme))
+						if ttktheme in THEMES:
+							info("   - setting Linux Ttk theme to {}".format(ttktheme))
+						else:
+							warn("   - Ttk theme {} specified ~/.Xresources not available, defaulting to {}".format(ttktheme, default_ttktheme))
+							ttktheme = default_ttktheme
 					elif '*TkTheme' in Xresources.resources:
 						ttktheme = Xresources.resources['*TkTheme']
 						info("   - setting Linux Tk theme to {}".format(ttktheme))
 					else:
-						ttktheme = "clam"  # alt, clam, classic, default
+						ttktheme = default_ttktheme
 						info("   - falling back to default Linux Tk theme: {}.  You can set your theme to something else by adding a line like \"*TkTheme: alt\" or \"*TtkTheme: arc\" to ~/.Xresources".format(ttktheme))
 				else:
 					ttktheme = "clam"  # alt, clam, classic, default
