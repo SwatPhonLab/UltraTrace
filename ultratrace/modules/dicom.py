@@ -32,17 +32,23 @@ class Dicom(Module):
             self.frame_holder.grid( row=2 )
             self.frame = Frame(self.frame_holder)
             self.frame.pack(expand=True)
+
             self.method = StringVar(self.app)
             self.mode = None
             self.reader = None
+
+            # zoom buttons
+            self.zbframe = Frame(self.app.LEFT)
+            self.zbframe.grid( row=6, column=0)
 
             # zoom frame (contains our tracing canvas)
             self.zframe = ZoomFrame(self.app.RIGHT, 1.3, app)
 
             # zoom in, zoom out, reset zoom buttons
-            self.zoomResetBtn = Button(self.app.LEFT, text='⊜', command=self.zoomReset, width=1.5, style="symbol.TButton", takefocus=0)#, pady=7 )
-            self.zoomInBtn = Button(self.app.LEFT, text='⊕', command=self.zoomIn, width=1.5, style="symbol.TButton", takefocus=0)
-            self.zoomOutBtn = Button(self.app.LEFT, text='⊝', command=self.zoomOut, width=1.5, style="symbol.TButton", takefocus=0)
+            #self.header = Header(self.zbframe, text="Zoom")
+            self.zoomResetBtn = Button(self.zbframe, text='⊜', command=self.zoomReset, width=1.5, style="symbol.TButton", takefocus=0)#, pady=7 )
+            self.zoomInBtn = Button(self.zbframe, text='⊕', command=self.zoomIn, width=1.5, style="symbol.TButton", takefocus=0)
+            self.zoomOutBtn = Button(self.zbframe, text='⊝', command=self.zoomOut, width=1.5, style="symbol.TButton", takefocus=0)
 
             # reset zoom keyboard shortcut
             if util.get_platform() == 'Linux':
@@ -178,11 +184,10 @@ class Dicom(Module):
         self.app.framesEntryBtn.grid(  row=0, column=2 )
         self.app.framesNextBtn.grid(  row=0, column=3 )
 
-        self.header = Header(self.frame, text="Zoom")
-        self.header.grid(row=9, column=0, columnspan=3)
-        self.zoomInBtn.grid( row=9, column=0)
-        self.zoomResetBtn.grid( row=9, column=1 )
-        self.zoomOutBtn.grid( row=9, column=2 )
+        #self.header.grid(row=0, column=0, columnspan=5)
+        self.zoomInBtn.grid( row=0, column=1)
+        self.zoomResetBtn.grid( row=0, column=2 )
+        self.zoomOutBtn.grid( row=0, column=3)
         self.app.Control.grid()
 
     def grid_remove(self):
@@ -194,5 +199,7 @@ class Dicom(Module):
         self.app.framesEntryText.grid_remove()
         self.app.framesEntryBtn.grid_remove()
         self.app.framesNextBtn.grid_remove()
+        self.zoomInBtn.grid_remove()
         self.zoomResetBtn.grid_remove()
+        self.zoomOutBtn.grid_remove()
         self.app.Control.grid_remove()

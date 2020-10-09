@@ -312,7 +312,7 @@ class Playback(Module):
 
     def grid(self):
         ''' grid widgets '''
-        self.frame.grid( row=6 )
+        self.frame.grid( row=8 )
         self.header.grid()
         self.playBtn.grid()
 
