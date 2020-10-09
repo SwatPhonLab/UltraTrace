@@ -45,7 +45,7 @@ class App(ThemedTk):
 				XresPath = os.path.join(str(Path.home()), '.Xresources')
 				if os.path.isfile(XresPath) or os.path.islink(XresPath):
 					info("   - found .Xresources file: {}".format(XresPath))
-					Xresources = xrp.parse_file(XresPath)
+					Xresources = xrp.parse_file(XresPath, encoding="utf8")
 					#info("Opened .Xresources file {}".format(XresPath))
 					if '*TtkTheme' in Xresources.resources:
 						ttktheme = Xresources.resources['*TtkTheme']
