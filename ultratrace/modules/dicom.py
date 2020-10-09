@@ -185,9 +185,9 @@ class Dicom(Module):
         self.app.framesNextBtn.grid(  row=0, column=3 )
 
         #self.header.grid(row=0, column=0, columnspan=5)
-        self.zoomInBtn.grid( row=0, column=1)
+        self.zoomInBtn.grid( row=0, column=3)
         self.zoomResetBtn.grid( row=0, column=2 )
-        self.zoomOutBtn.grid( row=0, column=3)
+        self.zoomOutBtn.grid( row=0, column=1)
         self.app.Control.grid()
 
     def grid_remove(self):
