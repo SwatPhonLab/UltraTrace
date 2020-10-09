@@ -47,7 +47,7 @@ class Trace(Module):
         # listbox to contain all of our traces
         lbframe = Frame(self.frame)
         self.scrollbar = Scrollbar(lbframe)
-        self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12, exportselection=False, takefocus=0)
+        self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12, height=5, exportselection=False, takefocus=0)
         self.scrollbar.config(command=self.listbox.yview)
         for trace in self.available:
             self.listbox.insert('end', trace)

@@ -4,8 +4,8 @@ from ..util.logging import *
 from ..widgets import CanvasTooltip
 import copy
 
-from tkinter.ttk import Button, Frame, Label
-from tkinter import Canvas, Spinbox, StringVar, DoubleVar
+from tkinter.ttk import Button, Frame, Label, Spinbox
+from tkinter import Canvas, StringVar, DoubleVar
 import tempfile
 
 LIBS_INSTALLED = False
@@ -307,6 +307,7 @@ class TextGrid(Module):
         offset = self.app.Data.getFileLevel( 'offset' )
         if offset != None:
             self.frame_shift.set(offset)
+        # for audio alignment
         go_btn = Button(sbframe, text='Offset', command=self.shiftFrames, takefocus=0)
         # minmax = len(self.app.Audio.sfile)*1000
         txtbox = Spinbox(sbframe, textvariable=self.frame_shift, width=7, from_=-10000000, to=10000000)
