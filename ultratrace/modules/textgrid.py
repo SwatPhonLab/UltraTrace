@@ -4,8 +4,8 @@ from ..util.logging import *
 from ..widgets import CanvasTooltip
 import copy
 
-from tkinter.ttk import Button, Frame, Label, Spinbox
-from tkinter import Canvas, StringVar, DoubleVar
+from tkinter.ttk import Button, Frame, Label
+from tkinter import Canvas, StringVar, DoubleVar, Spinbox
 import tempfile
 
 LIBS_INSTALLED = False
@@ -317,6 +317,9 @@ class TextGrid(Module):
         txtbox.grid(row=0, column=1, sticky='e')
         # put subframe on canvas
         window = frames_label.create_window(self.label_width*.3,self.canvas_height/3, anchor='nw', window=sbframe)
+        # ensure position of subframe gets updated
+        frames_label.bind('<Configure>', lambda e: frames_label.itemconfig(window, width=e.width))
+        sbframe.bind('<Configure>', lambda e: frames_label.configure(scrollregion=frames_label.bbox("all")))
 
         self.TkWidgets.append({'name':self.frameTierName,'frames':self.frames_canvas,
                                'frames-label':frames_label})

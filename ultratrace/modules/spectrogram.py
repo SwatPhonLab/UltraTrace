@@ -4,8 +4,8 @@ from ..util.logging import *
 import math
 import PIL
 
-from tkinter.ttk import Button, Frame, Spinbox
-from tkinter import Canvas, DoubleVar
+from tkinter.ttk import Button, Frame
+from tkinter import Canvas, DoubleVar, Spinbox
 
 LIBS_INSTALLED = False
 
