@@ -7,7 +7,7 @@ import PIL
 import random
 
 from tkinter.ttk import Button, Entry, Frame, Scrollbar
-from tkinter import Listbox, PhotoImage, StringVar
+from tkinter import Listbox, StringVar
 
 class Trace(Module):
     '''
@@ -19,15 +19,6 @@ class Trace(Module):
         info( ' - initializing module: Trace' )
 
         self.app = app
-
-        # some images for the buttons
-        # Source for icons: https://material.io/tools/icons/?style=outline
-        # License: Apache Version 2.0 www.apache.org/licenses/LICENSE-2.0.txt
-        data_copy = '''R0lGODlhGAAYAPAAAAAAAAAAACH5BAEAAAEALAAAAAAYABgAAAJHjI+pCe3/1oHUSdOunmDvHFTWBYrjUnbMuWIqAqEqCMdt+HI25yrVTZMEcT3NMPXJEZckJdKorCWbU2H0JqvKTBErl+XZFAAAOw'''
-        data_paste = '''R0lGODlhGAAYAPAAAAAAAAAAACH5BAEAAAEALAAAAAAYABgAAAJBjI+pq+DAonlPToqza7rv9FlBeJCSOUJpd3EXm7piDKoi+nkqvnttPaMhUAzeiwJMapJDm8U44+kynCkmiM1qZwUAOw'''
-
-        self.img_copy = PhotoImage(data=data_copy)
-        self.img_paste = PhotoImage(data=data_paste)
 
         self.displayedColour = None
         #self.app.Data.getCurrentTraceColor()
@@ -75,24 +66,21 @@ class Trace(Module):
         # strategy for keeping track of everything that needs constistent grid() /
         # grid_remove() behavior
         self.TkWidgets = [
-            self.getWidget( Header(self.frame, text="Choose a trace"), row=5, column=0, columnspan=4 ),
+            self.getWidget( Header(self.frame, text="Landmarks"), row=5, column=0, columnspan=4 ),
             self.getWidget( lbframe, row=10, column=0, rowspan=50 ),
-            self.getWidget( Button(self.frame, text='Set as default', command=self.setDefaultTraceName, takefocus=0), row=10, column=2, columnspan=2 ),
-            self.getWidget( Button(self.frame, text='Select all', command=self.selectAll, takefocus=0), row=11, column=2, columnspan=2 ),
-            self.getWidget( Button(self.frame, image=self.img_copy, command=self.copy, takefocus=0), row=12, column=2 ), # FIXME: add tooltip for "Copy"
-            self.getWidget( Button(self.frame, image=self.img_paste, command=self.paste, takefocus=0), row=12, column=3 ), # FIXME: add tooltip for "Paste"
-            self.getWidget( Entry( self.frame, width=8, textvariable=self.displayedColour), row=13, column=1, columnspan=2, sticky='w'),
-            self.getWidget( Button(self.frame, text='Recolor', command=self.recolor, takefocus=0), row=13, column=3 ),
-            self.getWidget( Button(self.frame, text='Clear', command=self.clear, takefocus=0), row=15, column=2, columnspan=2 ),
-            self.getWidget( Entry( self.frame, width=12, textvariable=self.traceSV), row=100, column=0, sticky='w' ),
-            self.getWidget( Button(self.frame, text='New', command=self.newTrace, takefocus=0), row=100, column=2 ),
-            self.getWidget( Button(self.frame, text='Rename', command=self.renameTrace, takefocus=0), row=100, column=3 ) ]
+            self.getWidget( Button(self.frame, text='Set as default', command=self.setDefaultTraceName, takefocus=0), row=10, column=1, columnspan=3 ),
+            self.getWidget( Entry( self.frame, width=8, textvariable=self.displayedColour), row=13, column=1, columnspan=2, sticky='e'),
+            self.getWidget( Button(self.frame, text='⟳', command=self.recolor, takefocus=0, width="1.5", style="symbol.TButton"), row=13, column=3, sticky='w'),
+            self.getWidget( Button(self.frame, text='Clear', command=self.clear, takefocus=0), row=15, column=1, columnspan=3 ),
+            self.getWidget( Entry( self.frame, width=12, textvariable=self.traceSV), row=100, column=0, sticky='w,e' ),
+            self.getWidget( Button(self.frame, text='+', command=self.newTrace, takefocus=0, width=1.5), row=100, column=1, sticky='w' ),
+            self.getWidget( Button(self.frame, text='Rename', command=self.renameTrace, takefocus=0, width="7"), row=100, column=2, columnspan=2 ) ]
 
         # there's probably a better way to do this than indexing into self.TkWidgets
+        self.TkWidgets[3]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
+        self.TkWidgets[3]['widget'].bind('<Escape>', lambda ev: self.TkWidgets[0]['widget'].focus())
         self.TkWidgets[6]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
         self.TkWidgets[6]['widget'].bind('<Escape>', lambda ev: self.TkWidgets[0]['widget'].focus())
-        self.TkWidgets[9]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
-        self.TkWidgets[9]['widget'].bind('<Escape>', lambda ev: self.TkWidgets[0]['widget'].focus())
 
         if util.get_platform() == 'Linux':
             self.app.bind('<Control-r>', self.recolor )

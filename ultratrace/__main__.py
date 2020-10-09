@@ -10,7 +10,7 @@ import argparse
 import os
 import PIL
 
-from tkinter.ttk import Button, Entry, Frame, OptionMenu
+from tkinter.ttk import Button, Entry, Frame, OptionMenu, Style
 from tkinter import StringVar, Spinbox, Tk
 
 try:
@@ -122,6 +122,10 @@ class App(ThemedTk):
 		self.selectBoxX = False
 		self.selectBoxY = False
 
+		# some styling
+		self.fontStyle = Style()
+		self.fontStyle.configure('symbol.TButton', font=('DejaVu Serif', 20))
+
 		# declare string variables
 		self.currentFileSV = StringVar(self)
 		self.frameSV = StringVar(self)
@@ -183,23 +187,23 @@ class App(ThemedTk):
 
 		# navigate between all available filenames in this directory
 		self.filesFrame = Frame(self.LEFT)#, pady=7)
-		self.filesPrevBtn = Button(self.filesFrame, text='<', command=self.filesPrev, takefocus=0)
+		self.filesPrevBtn = Button(self.filesFrame, text='<', command=self.filesPrev, takefocus=0, width="1.5")
 		self.filesJumpToMenu = OptionMenu(self.filesFrame, self.currentFileSV, self.Data.files[0], *self.Data.files, command=self.filesJumpTo)
-		self.filesNextBtn= Button(self.filesFrame, text='>', command=self.filesNext, takefocus=0)
+		self.filesNextBtn= Button(self.filesFrame, text='>', command=self.filesNext, takefocus=0, width="1.5")
 		self.filesFrame.grid( row=1 )
 		self.filesPrevBtn.grid( row=1, column=0 )
 		self.filesJumpToMenu.grid( row=1, column=1 )
 		self.filesNextBtn.grid(row=1, column=2 )
-		Header(self.filesFrame, text="Choose a file:").grid( row=0, column=0, columnspan=3 )
+		Header(self.filesFrame, text="Recording").grid( row=0, column=0, columnspan=3 )
 
 		# navigate between frames
 		self.framesFrame = Frame(self.LEFT)#, pady=7)
 		self.framesSubframe = Frame(self.framesFrame)
-		self.framesPrevBtn = Button(self.framesSubframe, text='<', command=self.framesPrev, takefocus=0)
+		self.framesPrevBtn = Button(self.framesSubframe, text='<', command=self.framesPrev, takefocus=0, width="1.5")
 		self.framesEntryText = Entry(self.framesSubframe, width=5, textvariable=self.frameSV)
-		self.framesEntryBtn = Button(self.framesSubframe, text='Go', command=self.framesJumpTo, takefocus=0)
-		self.framesNextBtn= Button(self.framesSubframe, text='>', command=self.framesNext, takefocus=0)
-		self.framesHeader = Header(self.framesFrame, text="Choose a frame:")
+		self.framesEntryBtn = Button(self.framesSubframe, text='Go', command=self.framesJumpTo, takefocus=0, width="3")
+		self.framesNextBtn= Button(self.framesSubframe, text='>', command=self.framesNext, takefocus=0, width="1.5")
+		self.framesHeader = Header(self.framesFrame, text="Frame")
 		self.framesFrame.grid( row=3 )
 		self.framesSubframe.grid( row=1 )
 

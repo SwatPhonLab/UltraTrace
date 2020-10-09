@@ -127,19 +127,30 @@ class ZoomFrame(Frame):
 
             # Respond to Linux (event.num) or Windows (event.delta) wheel event
             if event.num == 5 or event.delta < 0 or event.keysym == 'minus':  # zoom out
-                if self.zoom < self.maxZoom:
-                    self.zoom += 1
-                    self.imgscale /= self.delta
+                self.zoomOut()
 
             elif event.num == 4 or event.delta > 0 or event.keysym == 'equal':  # zoom in
-                if self.zoom > self.maxZoom * -1:
-                    self.zoom -= 1
-                    self.imgscale *= self.delta
+                self.zoomIn()
 
-            bbox = self.canvas.coords(self.container)
-            self.panX = bbox[0]
-            self.panY = bbox[1]
-            self.showImage()
+    def zoomOut(self):
+        if self.zoom < self.maxZoom:
+            self.zoom += 1
+            self.imgscale /= self.delta
+
+        bbox = self.canvas.coords(self.container)
+        self.panX = bbox[0]
+        self.panY = bbox[1]
+        self.showImage()
+
+    def zoomIn(self):
+        if self.zoom > self.maxZoom * -1:
+            self.zoom -= 1
+            self.imgscale *= self.delta
+
+        bbox = self.canvas.coords(self.container)
+        self.panX = bbox[0]
+        self.panY = bbox[1]
+        self.showImage()
 
     def scrollY(self, *args, **kwargs):
         self.canvas.yview(*args, **kwargs)

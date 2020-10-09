@@ -1,6 +1,7 @@
 from .base import Module
 from .. import util
 from ..util.logging import *
+from ..widgets import Header
 
 import queue
 import threading
@@ -42,14 +43,18 @@ class Playback(Module):
             self.stoprequest = threading.Event()
 
             # widget management
-            self.frame = Frame(self.app.BOTTOM)
-            self.playBtn = Button(self.frame, text="Play/Pause", command=self.playpauseAV, state='disabled', takefocus=0) # NOTE: not currently appearing
+            #self.frame = Frame(self.app.BOTTOM)
+            self.frame = Frame(self.app.LEFT)#, pady=7)
+
+            self.header = Header(self.frame, text="Playback")
+            self.playBtn = Button(self.frame, text="⏯", command=self.playpauseAV, state='disabled', takefocus=0) # NOTE: not currently appearing
             self.app.bind('<space>', self.playpauseAV )
             self.app.bind('<Escape>', self.stopAV )
         if VIDEO_LIBS_INSTALLED:
             info( ' - initializing module: Video' )
             self.app.bind('<space>', self.playpauseAV )
             self.app.bind('<Escape>', self.stopAV )
+        self.grid()
         self.reset()
 
     def update(self):
@@ -307,11 +312,13 @@ class Playback(Module):
 
     def grid(self):
         ''' grid widgets '''
-        self.frame.grid( row=0 )
+        self.frame.grid( row=6 )
+        self.header.grid()
         self.playBtn.grid()
 
     def grid_remove(self):
         ''' remove widgets from grid '''
         self.frame.grid_remove()
+        self.header.grid_remove()
         self.playBtn.grid_remove()
 

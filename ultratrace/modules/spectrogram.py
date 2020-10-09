@@ -4,8 +4,8 @@ from ..util.logging import *
 import math
 import PIL
 
-from tkinter.ttk import Button, Frame
-from tkinter import Canvas, Spinbox, DoubleVar
+from tkinter.ttk import Button, Frame, Spinbox
+from tkinter import Canvas, DoubleVar
 
 LIBS_INSTALLED = False
 
@@ -53,7 +53,7 @@ class Spectrogram(Module):
         dyn_range_box.bind('<Escape>',lambda ev: self.spinwin.focus())
         #buttons
         default_btn = Button(self.spinwin, text='Standards', command=self.restoreDefaults, takefocus=0)
-        apply_btn = Button(self.spinwin, text='Apply', command=self.drawSpectrogram, takefocus=0)
+        apply_btn = Button(self.spinwin, text='Apply', command=self.drawSpectrogram, takefocus=0, width=6)
 
         # self.axis_frame.create_window(wwidth,self.canvas_height, window=self.spinwin, anchor='ne')
         #grid spinboxes & buttons on subframe

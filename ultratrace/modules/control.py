@@ -1,8 +1,10 @@
 from .base import Module
 from .. import util
 from ..util.logging import *
+from ..widgets import Header
 
 from tkinter.ttk import Button, Frame
+from tkinter import PhotoImage
 
 class Control(Module):
     '''
@@ -23,6 +25,16 @@ class Control(Module):
         self.app = app
         # initialize our stacks
         self.reset()
+
+        # some images for the buttons
+        # Source for icons: https://material.io/tools/icons/?style=outline
+        # License: Apache Version 2.0 www.apache.org/licenses/LICENSE-2.0.txt
+        data_copy = '''R0lGODlhGAAYAPAAAAAAAAAAACH5BAEAAAEALAAAAAAYABgAAAJHjI+pCe3/1oHUSdOunmDvHFTWBYrjUnbMuWIqAqEqCMdt+HI25yrVTZMEcT3NMPXJEZckJdKorCWbU2H0JqvKTBErl+XZFAAAOw'''
+        data_paste = '''R0lGODlhGAAYAPAAAAAAAAAAACH5BAEAAAEALAAAAAAYABgAAAJBjI+pq+DAonlPToqza7rv9FlBeJCSOUJpd3EXm7piDKoi+nkqvnttPaMhUAzeiwJMapJDm8U44+kynCkmiM1qZwUAOw'''
+
+        self.img_copy = PhotoImage(data=data_copy)
+        self.img_paste = PhotoImage(data=data_paste)
+
         # bind Ctrl+z to UNDO and Ctrl+Shift+Z to REDO
         if util.get_platform() == 'Linux':
             self.app.bind('<Control-z>', self.undo )
@@ -33,8 +45,12 @@ class Control(Module):
         # also make some buttons and bind them
         self.frame = Frame(self.app.LEFT)#, pady=7)
         self.frame.grid( row=5 )
-        self.undoBtn = Button(self.frame, text='Undo', command=self.undo, takefocus=0)
-        self.redoBtn = Button(self.frame, text='Redo', command=self.redo, takefocus=0)
+        self.header = Header(self.frame, text="Points")
+        self.selectAllBtn = Button(self.frame, text='⬚', command=self.selectAll, takefocus=0, style="symbol.TButton", width=1.5)
+        self.copyBtn = Button(self.frame, image=self.img_copy, command=self.copy, takefocus=0)  # FIXME: add tooltip for "Copy"
+        self.pasteBtn = Button(self.frame, image=self.img_paste, command=self.paste, takefocus=0) # FIXME: add tooltip for "Paste"
+        self.undoBtn = Button(self.frame, text='↶', command=self.undo, takefocus=0, width=1.5, style="symbol.TButton")
+        self.redoBtn = Button(self.frame, text='↷', command=self.redo, takefocus=0, width=1.5, style="symbol.TButton")
         self.updateButtons()
     def push(self, item):
         '''
@@ -51,6 +67,12 @@ class Control(Module):
     def update(self):
         ''' changing files and changing frames should have the same effect '''
         self.reset()
+    def selectAll(self):
+        self.app.Trace.selectAll()
+    def copy(self):
+        self.app.Trace.copy()
+    def paste(self):
+        self.app.Trace.paste()
     def undo(self, event=None):
         ''' perform the undo-ing '''
 
@@ -137,8 +159,13 @@ class Control(Module):
         '''
         Grid button widgets
         '''
-        self.undoBtn.grid(row=0, column=0)
-        self.redoBtn.grid(row=0, column=1)
+        self.header.grid(row=0,column=0, columnspan=5)
+        self.selectAllBtn.grid(row=1, column=0)
+        self.copyBtn.grid(row=1, column=1, ipady=3)
+        self.pasteBtn.grid(row=1, column=2, ipady=3)
+
+        self.undoBtn.grid(row=1, column=3)
+        self.redoBtn.grid(row=1, column=4)
     def grid_remove(self):
         '''
         Remove button widgets from grid

@@ -2,6 +2,7 @@ from .base import Module
 from .. import util
 from ..util.logging import *
 from ..util.framereader import ULTScanLineReader, DicomReader, DicomPNGReader, LABEL_TO_READER, READERS
+from ..widgets import Header
 
 import os
 import PIL
@@ -38,8 +39,10 @@ class Dicom(Module):
             # zoom frame (contains our tracing canvas)
             self.zframe = ZoomFrame(self.app.RIGHT, 1.3, app)
 
-            # reset zoom button
-            self.zoomResetBtn = Button(self.app.LEFT, text='Reset image', command=self.zoomReset, takefocus=0)#, pady=7 )
+            # zoom in, zoom out, reset zoom buttons
+            self.zoomResetBtn = Button(self.app.LEFT, text='⊜', command=self.zoomReset, width=1.5, style="symbol.TButton", takefocus=0)#, pady=7 )
+            self.zoomInBtn = Button(self.app.LEFT, text='⊕', command=self.zoomIn, width=1.5, style="symbol.TButton", takefocus=0)
+            self.zoomOutBtn = Button(self.app.LEFT, text='⊝', command=self.zoomOut, width=1.5, style="symbol.TButton", takefocus=0)
 
             # reset zoom keyboard shortcut
             if util.get_platform() == 'Linux':
@@ -61,6 +64,12 @@ class Dicom(Module):
 
             # we want to go here only after a button press
             if fromButton: self.app.framesUpdate()
+
+    def zoomIn(self):
+        self.zframe.zoomIn()
+
+    def zoomOut(self):
+        self.zframe.zoomOut()
 
     def update(self, _frame=None):
         '''
@@ -168,7 +177,12 @@ class Dicom(Module):
         self.app.framesEntryText.grid( row=0, column=1 )
         self.app.framesEntryBtn.grid(  row=0, column=2 )
         self.app.framesNextBtn.grid(  row=0, column=3 )
-        self.zoomResetBtn.grid( row=7 )
+
+        self.header = Header(self.frame, text="Zoom")
+        self.header.grid(row=9, column=0, columnspan=3)
+        self.zoomInBtn.grid( row=9, column=0)
+        self.zoomResetBtn.grid( row=9, column=1 )
+        self.zoomOutBtn.grid( row=9, column=2 )
         self.app.Control.grid()
 
     def grid_remove(self):
