@@ -179,7 +179,7 @@ class App(ThemedTk):
 		# navigate between all available filenames in this directory
 		self.filesFrame = Frame(self.LEFT)#, pady=7)
 		self.filesPrevBtn = Button(self.filesFrame, text='<', command=self.filesPrev, takefocus=0)
-		self.filesJumpToMenu = OptionMenu(self.filesFrame, self.currentFileSV, *self.Data.files, command=self.filesJumpTo)
+		self.filesJumpToMenu = OptionMenu(self.filesFrame, self.currentFileSV, self.Data.files[0], *self.Data.files, command=self.filesJumpTo)
 		self.filesNextBtn= Button(self.filesFrame, text='>', command=self.filesNext, takefocus=0)
 		self.filesFrame.grid( row=1 )
 		self.filesPrevBtn.grid( row=1, column=0 )
