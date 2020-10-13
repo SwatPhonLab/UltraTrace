@@ -6,6 +6,19 @@ This is a tool for [currently] manual annotation of UTI (Ultrasound Tongue Imagi
 
 ## Installation
 
+### macOS
+
+1. Install [Homebrew](https://brew.sh).
+2. Download the UltraTrace source code, e.g. using `git`.
+3. Use Homebrew to install python3:
+```bash
+$ brew install python3
+```
+4. Run setup in the UltraTrace directory:
+```bash
+$ python3 setup.py install
+```
+
 ## Use
 
 ```bash
