@@ -19,6 +19,13 @@ $ brew install python3
 $ python3 setup.py install
 ```
 
+## Windows
+
+1. Install python3
+2. Make sure you have pip
+3. Install ffmpeg and add to PATH
+4. Run `setup.py`
+
 ## Use
 
 ```bash
