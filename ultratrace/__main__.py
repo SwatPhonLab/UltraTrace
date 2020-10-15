@@ -127,7 +127,7 @@ class App(ThemedTk):
 		if util.get_platform() == 'Darwin':
 			self.fontStyle.configure('symbol.TButton', font=('DejaVu Serif', 26))
 		else:
-			self.fontStyle.configure('symbol.TButton', font=('DejaVu Serif', 26))
+			self.fontStyle.configure('symbol.TButton', font=('DejaVu Serif', 19))
 
 		# declare string variables
 		self.currentFileSV = StringVar(self)
