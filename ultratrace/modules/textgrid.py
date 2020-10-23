@@ -654,7 +654,7 @@ class TextGrid(Module):
                         if tier[i].mark in self.app.Data.getCurrentTraceTracedFrames():
                             fill = 'black'
                         else:
-                            fill = 'gray50'
+                            fill = 'gray70'
                         frame = frames.create_line(x_coord, 0, x_coord, self.canvas_height, tags="frame"+tier[i].mark, fill=fill)
                         if first_frame_found == False and i + 1 < len(tier):
                             self.firstFrame = int(tier[i].mark) + 1
@@ -744,7 +744,7 @@ class TextGrid(Module):
             if str(frame) in self.app.Data.getCurrentTraceTracedFrames():
                 fill = 'black'
             else:
-                fill = 'gray50'
+                fill = 'gray70'
             self.frames_canvas.itemconfig('frame'+str(frame), fill=fill)
         if self.selectedItem:
             wdg,itm = self.selectedItem

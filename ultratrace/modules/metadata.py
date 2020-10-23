@@ -98,7 +98,7 @@ class Metadata(Module):
                         extension = 'US.txt'
                     if extension == '.wav' and filename.endswith('_Track0'):
                         filename = filename[:-7]
-                    elif extension == '.wav' and filename.endswith('_Track1'):
+                    elif extension == '.wav' and (filename.endswith('_Track1') or filename.endswith('_Track2')):
                         continue
                     elif extension == '.dat' and filename == 'SPLINES':
                         splines = filepath

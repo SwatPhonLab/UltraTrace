@@ -319,7 +319,7 @@ class App(ThemedTk):
 			# if we didn't click near anything ...
 			if nearby == None:
 				self.Trace.unselectAll()
-				if event.state != 1:
+				if event.state != 17:
 					# unselect crosshairs
 					self.isClicked = True
 					ch = self.Trace.add( *self.click )
@@ -333,14 +333,16 @@ class App(ThemedTk):
 
 			# if holding option key, unselect the guy we clicked on
 			# if event.state == 16:
-			# if holding shift key, and ch is selected, unselect it
-			if event.state == 1 and nearby in self.Trace.selected:
+			# if holding shift key (event.state==17), and crosshair is selected, unselect it
+			#debug(event.state)
+			if event.state == 17 and nearby in self.Trace.selected:
 				nearby.unselect()
 				if nearby in self.Trace.selected:
 					self.Trace.selected.remove( nearby )
 
 			# otherwise, if not selected, add it to our selection
 			elif nearby not in self.Trace.selected:
+				#debug("event.state", event.state)
 				if event.state != 1: #and nearby.isSelected == False:
 					self.Trace.unselectAll()
 
