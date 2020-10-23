@@ -36,10 +36,15 @@ class FrameReader(ABC):
 class DicomReader(FrameReader):
 	def getFrameTimes(self):
 		dcm = dicom.read_file(self.filename, stop_before_pixels=True)
-		blob = dcm[0x200d,0x3cf4][0][0x200d,0x3cf1][0]
-		headers = blob[0x200d,0x3cfb].value
-		offset = float(int.from_bytes(headers[:4], byteorder='little')) / 1000000
-		return [float(int.from_bytes(headers[i:i+4], byteorder='little')) / 1000000 - offset for i in range(0, len(headers), 32)]
+		try:
+			blob = dcm[0x200d,0x3cf4][0][0x200d,0x3cf1][0]
+			headers = blob[0x200d,0x3cfb].value
+			offset = float(int.from_bytes(headers[:4], byteorder='little')) / 1000000
+			return [float(int.from_bytes(headers[i:i+4], byteorder='little')) / 1000000 - offset for i in range(0, len(headers), 32)]
+		except:
+			frametime = dcm.get('FrameTime')
+			numframes = dcm.get('NumberOfFrames')
+			return [float(i * frametime) / 1000 for i in range(numframes)]
 
 	def load(self):
 		pass
