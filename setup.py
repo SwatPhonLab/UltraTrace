@@ -37,6 +37,7 @@ setup(
             "pytest-mock",
             "boto3",
             "mypy-boto3-s3",
+            "typeshed",  # flask-stubs
         ]
     },
 )

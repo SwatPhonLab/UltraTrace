@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 try:
-    from .loaders import DICOMLoader
+    from .loaders.dicom import DICOMLoader
 
     __register(
         [".dicom", ".dcm"], ["application/dicom"], DICOMLoader,
@@ -16,7 +16,7 @@ except ImportError as e:
     logger.warning(e)
 
 try:
-    from .loaders import FLACLoader
+    from .loaders.flac import FLACLoader
 
     __register(
         [".flac"], ["audio/flac", "audio/x-flac"], FLACLoader,
@@ -25,7 +25,7 @@ except ImportError as e:
     logger.warning(e)
 
 try:
-    from .loaders import MeasurementLoader
+    from .loaders.measurement import MeasurementLoader
 
     __register(
         [], [], MeasurementLoader,
@@ -34,7 +34,7 @@ except ImportError as e:
     logger.warning(e)
 
 try:
-    from .loaders import MP3Loader
+    from .loaders.mp3 import MP3Loader
 
     __register(
         [".mp3"],
@@ -45,7 +45,7 @@ except ImportError as e:
     logger.warning(e)
 
 try:
-    from .loaders import OggLoader
+    from .loaders.ogg import OggLoader
 
     __register(
         [".ogg", ".oga", ".spx"], ["audio/ogg"], OggLoader,
@@ -54,7 +54,7 @@ except ImportError as e:
     logger.warning(e)
 
 try:
-    from .loaders import TextGridLoader
+    from .loaders.textgrid import TextGridLoader
 
     __register(
         [".textgrid"], ["text/plain"], TextGridLoader,
@@ -63,7 +63,7 @@ except ImportError as e:
     logger.warning(e)
 
 try:
-    from .loaders import WAVLoader
+    from .loaders.wav import WAVLoader
 
     __register(
         [".wav"], ["audio/x-wav", "audio/wav"], WAVLoader,

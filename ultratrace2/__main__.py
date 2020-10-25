@@ -6,7 +6,7 @@ from .app import initialize_app
 logging.basicConfig(level=logging.DEBUG)
 
 
-def main():
+def main() -> None:
 
     parser = argparse.ArgumentParser(prog="ultratrace")
 
@@ -64,7 +64,7 @@ def main():
 
     args = parser.parse_args()
 
-    app = initialize_app(headless=args.headless, path=args.path, theme=args.theme)
+    app = initialize_app(args.path, headless=args.headless, theme=args.theme)
 
     app.main()
 

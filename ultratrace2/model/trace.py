@@ -55,7 +55,7 @@ class Trace:
 
 
 class TraceList:
-    def __init__(self):
+    def __init__(self) -> None:
         self.traces: OrderedDict[UUID, Trace] = OrderedDict()
         default_trace = self.add_trace(
             Trace.DEFAULT_TRACE_NAME, Trace.DEFAULT_TRACE_COLOR,
