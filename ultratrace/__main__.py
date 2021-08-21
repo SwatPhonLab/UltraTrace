@@ -147,17 +147,32 @@ class Frame(wx.Frame):
 		text4 = wx.StaticText(panel, label="audio and textgrids here")
 
 		self.controlBox = wx.BoxSizer(wx.VERTICAL)
-		####
+		####  Buttons
+		####  FileSelectorBox
 		self.fileSelectorBox = wx.StaticBoxSizer(wx.VERTICAL, self, label="Files")
 		self.fileSelector = wx.ListCtrl(self, -1, style=wx.LC_REPORT)
-		self.fileSelector.InsertColumn(0, 'name', width=40)
-		self.fileSelector.InsertColumn(1, 'annotated', wx.LIST_FORMAT_RIGHT, width=10)
+		self.fileSelector.InsertColumn(0, 'name', width=50)
+		self.fileSelector.InsertColumn(1, 'annotated', wx.LIST_FORMAT_RIGHT, width=50)
 		self.fileSelector.InsertItem(0, 'test')
 
 		self.fileSelectorBox.Add(self.fileSelector, 1, wx.EXPAND)
-		####
+		####  FrameSelectorBox
+		self.frameSelectorBox = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Frames")
+		self.frameSelectorPrev = wx.Button(self, label="<")
+		self.frameSelectorText = wx.TextCtrl(self, style=wx.TE_RIGHT, value=self.frameSV)
+		size = self.frameSelectorText.GetSizeFromTextSize(self.frameSelectorText.GetTextExtent('99999'))
+		self.frameSelectorText.SetInitialSize(size)
+		#self.framesEntryText = Entry(self.framesSubframe, width=5, textvariable=self.frameSV)
+		self.frameSelectorNext = wx.Button(self, label=">")
+		self.frameSelectorBox.AddMany([(self.frameSelectorPrev),(self.frameSelectorText),(self.frameSelectorNext)])
+
+		####  AnnotationsBox
+
+		####  LayersBox
 		
-		self.controlBox.AddMany([(self.fileSelectorBox, 1, wx.EXPAND)])
+
+		## add all sections to the control box
+		self.controlBox.AddMany([(text1, 1, wx.EXPAND), (self.fileSelectorBox, 1, wx.EXPAND), (self.frameSelectorBox,1,wx.EXPAND)])
 
 		self.grid.AddMany([(self.controlBox, 1, wx.EXPAND), (text2, 1, wx.EXPAND), (text3), (text4)])
 
@@ -166,6 +181,7 @@ class Frame(wx.Frame):
 
 		hbox.Add(self.grid, proportion=1, flag=wx.ALL|wx.EXPAND, border=2)
 		panel.SetSizer(hbox)
+		panel.Fit()
 		## navigate between all available filenames in this directory
 		#self.filesFrame = Frame(self.LEFT)#, pady=7)
 		#self.filesPrevBtn = Button(self.filesFrame, text='<', command=self.filesPrev, takefocus=0, width="1.5")
