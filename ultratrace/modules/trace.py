@@ -6,8 +6,9 @@ from ..widgets import Crosshairs, Header
 import PIL
 import random
 
-from tkinter.ttk import Button, Entry, Frame, Scrollbar
-from tkinter import Listbox, StringVar
+#from tkinter.ttk import Button, Entry, Frame, Scrollbar
+#from tkinter import Listbox, StringVar
+import wx
 
 class Trace(Module):
     '''
@@ -37,60 +38,108 @@ class Trace(Module):
         self.copied = []
 
         # declare & init trace string variable
-        self.traceSV = StringVar()
-        self.traceSV.set( '' )
+        #self.traceSV = StringVar()
+        #self.traceSV.set( '' )
+        self.tracesSV = ''
 
         # frame for (most of) our widgets
-        self.frame = Frame(self.app.LEFT)#, pady=7, padx=7)
-        self.frame.grid( row=4 )
+        #self.frame = Frame(self.app.LEFT)#, pady=7, padx=7)
+        #self.frame.grid( row=4 )
+        self.app.layersBox = wx.StaticBoxSizer(wx.VERTICAL, self.app, label="Layers")
+        self.layers = wx.ListCtrl(self.app, -1, style=wx.LC_REPORT)
+        self.layers.InsertColumn(0, 'name', width=60)
+        self.layers.InsertColumn(1, 'default', wx.LIST_FORMAT_RIGHT, width=30)
+        self.layers.InsertColumn(2, 'visible', wx.LIST_FORMAT_RIGHT, width=30)
+        self.layers.InsertColumn(3, 'colour', wx.LIST_FORMAT_RIGHT, width=30)
+        self.layers.InsertColumn(4, 'delete', wx.LIST_FORMAT_RIGHT, width=30)
+	#	self.layers.InsertItem(0, "test")
+        self.il = wx.ImageList(16,16)
+        #il.Add(wx.ArtProvider.GetBitmap("gtk-emblem-default",wx.ART_MENU))
+        #hargle = self.il.Add(wx.ArtProvider.GetBitmap("gtk-zoom-in",wx.ART_MENU))
+        self.ICON_DEFAULT = self.il.Add(wx.ArtProvider.GetBitmap("emblem-default",wx.ART_MENU))
+        self.layers.AssignImageList(self.il, wx.IMAGE_LIST_SMALL)
+        #thisLayer = self.newLayer(self.layers, "text", "#008888", default=True)
 
         # listbox to contain all of our traces
-        lbframe = Frame(self.frame)
-        self.scrollbar = Scrollbar(lbframe)
-        self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12, height=5, exportselection=False, takefocus=0)
-        self.scrollbar.config(command=self.listbox.yview)
+        #lbframe = Frame(self.frame)
+        #self.scrollbar = Scrollbar(lbframe)
+        #self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12, height=5, exportselection=False, takefocus=0)
+        #self.scrollbar.config(command=self.listbox.yview)
+
+        # FIX -JNW
         for trace in self.available:
-            self.listbox.insert('end', trace)
-        for i, item in enumerate(self.listbox.get(0, 'end')):
-            # select our "default trace"
-            if item==self.app.Data.getTopLevel( 'defaultTraceName' ):
-                self.listbox.selection_clear(0, 'end')
-                self.listbox.select_set( i )
-                break
-        else:
-            self.listbox.select_set(0)
-            # select whatever is listed first
-            # TODO: this assumes that the list of traces is non-empty
+            thisLayer = self.newLayer(self.layers, trace, "#008888", default=True)
+        #for trace in self.available:
+        #    self.listbox.insert('end', trace)
+        #for i, item in enumerate(self.listbox.get(0, 'end')):
+        #    # select our "default trace"
+        #    if item==self.app.Data.getTopLevel( 'defaultTraceName' ):
+        #        self.listbox.selection_clear(0, 'end')
+        #        self.listbox.select_set( i )
+        #        break
+        #else:
+        #    self.listbox.select_set(0)
+        #    # select whatever is listed first
+        #    # TODO: this assumes that the list of traces is non-empty
 
-        # this module is responsible for so many widgets that we need a different
-        # strategy for keeping track of everything that needs constistent grid() /
-        # grid_remove() behavior
-        self.TkWidgets = [
-            self.getWidget( Header(self.frame, text="Landmarks"), row=5, column=0, columnspan=4 ),
-            self.getWidget( lbframe, row=10, column=0, rowspan=50 ),
-            self.getWidget( Button(self.frame, text='Set as default', command=self.setDefaultTraceName, takefocus=0), row=10, column=1, columnspan=3 ),
-            self.getWidget( Entry( self.frame, width=8, textvariable=self.displayedColour), row=13, column=1, columnspan=2, sticky='e'),
-            self.getWidget( Button(self.frame, text='⟳', command=self.recolor, takefocus=0, width="1.5", style="symbol.TButton"), row=13, column=3, sticky='w'),
-            self.getWidget( Button(self.frame, text='Clear', command=self.clear, takefocus=0), row=15, column=1, columnspan=3 ),
-            self.getWidget( Entry( self.frame, width=12, textvariable=self.traceSV), row=100, column=0, sticky='w,e' ),
-            self.getWidget( Button(self.frame, text='+', command=self.newTrace, takefocus=0, width=1.5), row=100, column=1, sticky='w' ),
-            self.getWidget( Button(self.frame, text='Rename', command=self.renameTrace, takefocus=0, width="7"), row=100, column=2, columnspan=2 ) ]
+        self.app.layersBox.Add(self.layers)
+        self.app.controlBox.Add(self.app.layersBox)
+        self.app.Update()
+        #self.app.SetSizerAndFit(self.app.controlBox)
+        self.app.SetSizerAndFit(self.app.hbox)
 
-        # there's probably a better way to do this than indexing into self.TkWidgets
-        self.TkWidgets[3]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
-        self.TkWidgets[3]['widget'].bind('<Escape>', lambda ev: self.TkWidgets[0]['widget'].focus())
-        self.TkWidgets[6]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
-        self.TkWidgets[6]['widget'].bind('<Escape>', lambda ev: self.TkWidgets[0]['widget'].focus())
 
-        if util.get_platform() == 'Linux':
-            self.app.bind('<Control-r>', self.recolor )
-            self.app.bind('<Control-c>', self.copy )
-            self.app.bind('<Control-v>', self.paste )
-        else:
-            self.app.bind('<Command-r>', self.recolor )
-            self.app.bind('<Command-c>', self.copy )
-            self.app.bind('<Command-v>', self.paste )
-        self.grid()
+
+        ## this module is responsible for so many widgets that we need a different
+        ## strategy for keeping track of everything that needs constistent grid() /
+        ## grid_remove() behavior
+        #self.TkWidgets = [
+        #    self.getWidget( Header(self.frame, text="Landmarks"), row=5, column=0, columnspan=4 ),
+        #    self.getWidget( lbframe, row=10, column=0, rowspan=50 ),
+        #    self.getWidget( Button(self.frame, text='Set as default', command=self.setDefaultTraceName, takefocus=0), row=10, column=1, columnspan=3 ),
+        #    self.getWidget( Entry( self.frame, width=8, textvariable=self.displayedColour), row=13, column=1, columnspan=2, sticky='e'),
+        #    self.getWidget( Button(self.frame, text='⟳', command=self.recolor, takefocus=0, width="1.5", style="symbol.TButton"), row=13, column=3, sticky='w'),
+        #    self.getWidget( Button(self.frame, text='Clear', command=self.clear, takefocus=0), row=15, column=1, columnspan=3 ),
+        #    self.getWidget( Entry( self.frame, width=12, textvariable=self.traceSV), row=100, column=0, sticky='w,e' ),
+        #    self.getWidget( Button(self.frame, text='+', command=self.newTrace, takefocus=0, width=1.5), row=100, column=1, sticky='w' ),
+        #    self.getWidget( Button(self.frame, text='Rename', command=self.renameTrace, takefocus=0, width="7"), row=100, column=2, columnspan=2 ) ]
+
+        ## there's probably a better way to do this than indexing into self.TkWidgets
+        #self.TkWidgets[3]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
+        #self.TkWidgets[3]['widget'].bind('<Escape>', lambda ev: self.TkWidgets[0]['widget'].focus())
+        #self.TkWidgets[6]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
+        #self.TkWidgets[6]['widget'].bind('<Escape>', lambda ev: self.TkWidgets[0]['widget'].focus())
+
+        #if util.get_platform() == 'Linux':
+        #    self.app.bind('<Control-r>', self.recolor )
+        #    self.app.bind('<Control-c>', self.copy )
+        #    self.app.bind('<Control-v>', self.paste )
+        #else:
+        #    self.app.bind('<Command-r>', self.recolor )
+        #    self.app.bind('<Command-c>', self.copy )
+        #    self.app.bind('<Command-v>', self.paste )
+        #self.grid()
+
+    def newColourSquare(self, w, h, colour):
+        clr = PIL.ImageColor.getcolor(colour, "RGBA")
+        return wx.Bitmap.FromRGBA(w, h, clr[0], clr[1], clr[2], clr[3])
+
+    def newLayer(self, layers, name, colour, default=False):
+        item = layers.InsertItem(layers.GetItemCount(), name)
+        #layers.SetItemBackgroundColour(item, wx.Colour(colour))
+        if default:
+            layers.SetItem(item, 1, "", self.ICON_DEFAULT)
+        layers.SetItem(item, 2, "👁")
+        colourSquare = self.newColourSquare(16, 16, colour)
+        ###bmp = wx.EmptyBitmap(w, h)
+        ###dc = wx.MemoryDC(bmp)
+        ###dc.SetPen(wx.Pen(wx.RED,1))
+        ###dc.DrawPolygon([(0,0),(0,10),(10,10),(10,0)], fill_style=wx.WINDING_RULE)
+        ###box = dc.GetAsBitmap()
+        ###dc.SelectObject(wx.NullBitmap)
+        boxIdx = self.il.Add(colourSquare)
+        layers.SetItem(item, 3, "", boxIdx)
+        return item
 
     def update(self):
         ''' on change frames '''

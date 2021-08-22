@@ -38,7 +38,7 @@ class Frame(wx.Frame):
 
 		# initialize other modules
 		#self.Control = modules.Control(self)
-		#self.Trace = modules.Trace(self)
+		self.Trace = modules.Trace(self)
 		#self.Dicom = modules.Dicom(self)
 		#self.Audio = modules.Playback(self)
 		#self.TextGrid = modules.TextGrid(self)
@@ -113,7 +113,7 @@ class Frame(wx.Frame):
 		'''
 		# main Frame skeleton
 		panel = wx.Panel(self)
-		hbox = wx.BoxSizer(wx.HORIZONTAL)
+		self.hbox = wx.BoxSizer(wx.HORIZONTAL)
 		self.grid = wx.FlexGridSizer(2, 2, 2, 2)
 		
 		#self.TOP = wx.Panel(self)
@@ -157,9 +157,11 @@ class Frame(wx.Frame):
 		self.fileSelectorBox = wx.StaticBoxSizer(wx.VERTICAL, self, label="Files")
 		self.fileSelectorBox.Add(self.fileControlBox)
 		self.fileSelector = wx.ListCtrl(self, -1, style=wx.LC_REPORT)
-		self.fileSelector.InsertColumn(0, 'name', width=50)
+		self.fileSelector.InsertColumn(0, 'name', width=200)
 		self.fileSelector.InsertColumn(1, 'annotated', wx.LIST_FORMAT_RIGHT, width=50)
-		self.fileSelector.InsertItem(0, 'test')
+		#self.fileSelector.InsertItem(0, 'test')
+		for filedata in self.Data.files:
+			self.fileSelector.InsertItem(self.fileSelector.GetItemCount(), filedata)
 
 		self.fileSelectorBox.Add(self.fileSelector, 1, wx.EXPAND)
 
@@ -209,35 +211,18 @@ class Frame(wx.Frame):
 		self.viewBox.Add(self.buttonZoomFit, flag=wx.RIGHT, border=10)
 
 		####  LayersBox
-		self.layersBox = wx.StaticBoxSizer(wx.VERTICAL, self, label="Labels")
-		#self.layersBox = 
-		self.layersBox = wx.StaticBoxSizer(wx.VERTICAL, self, label="")
-		self.layers = wx.ListCtrl(self, -1, style=wx.LC_REPORT)
-		self.layers.InsertColumn(0, 'name', width=60)
-		self.layers.InsertColumn(1, 'default', wx.LIST_FORMAT_RIGHT, width=30)
-		self.layers.InsertColumn(2, 'visible', wx.LIST_FORMAT_RIGHT, width=30)
-		self.layers.InsertColumn(3, 'colour', wx.LIST_FORMAT_RIGHT, width=30)
-		self.layers.InsertColumn(4, 'delete', wx.LIST_FORMAT_RIGHT, width=30)
-	#	self.layers.InsertItem(0, "test")
-		self.il = wx.ImageList(16,16)
-		#il.Add(wx.ArtProvider.GetBitmap("gtk-emblem-default",wx.ART_MENU))
-		#hargle = self.il.Add(wx.ArtProvider.GetBitmap("gtk-zoom-in",wx.ART_MENU))
-		self.ICON_DEFAULT = self.il.Add(wx.ArtProvider.GetBitmap("emblem-default",wx.ART_MENU))
-		self.layers.AssignImageList(self.il, wx.IMAGE_LIST_SMALL)
-		thisLayer = self.newLayer(self.layers, "text", "#008888", default=True)
-		self.layersBox.Add(self.layers)
-
+		#self.layersBox = wx.StaticBoxSizer(wx.VERTICAL, self, label="Layers")
 
 		## add all sections to the control box
-		self.controlBox.AddMany([(self.fileSelectorBox, 1, wx.EXPAND), ((0,10)), (self.frameSelectorBox,0,wx.EXPAND), ((0,10)), (self.annotationsBox, 0, wx.EXPAND), ((0,10)), (self.viewBox,0,wx.EXPAND), ((0,10)), (self.layersBox,0,wx.EXPAND)])
+		self.controlBox.AddMany([(self.fileSelectorBox, 1, wx.EXPAND), ((0,10)), (self.frameSelectorBox,0,wx.EXPAND), ((0,10)), (self.annotationsBox, 0, wx.EXPAND), ((0,10)), (self.viewBox,0,wx.EXPAND), ((0,10)) ])#(self.layersBox,0,wx.EXPAND)])
 
 		self.grid.AddMany([(self.controlBox, 1, wx.EXPAND), (text2, 1, wx.EXPAND), (text3), (text4)])
 
 		self.grid.AddGrowableRow(0,1)
 		self.grid.AddGrowableCol(0,1)
 
-		hbox.Add(self.grid, proportion=1, flag=wx.ALL|wx.EXPAND, border=2)
-		panel.SetSizer(hbox)
+		self.hbox.Add(self.grid, proportion=1, flag=wx.ALL|wx.EXPAND, border=2)
+		panel.SetSizer(self.hbox)
 		panel.Fit()
 		## navigate between all available filenames in this directory
 		#self.filesFrame = Frame(self.LEFT)#, pady=7)
@@ -292,25 +277,6 @@ class Frame(wx.Frame):
 		button = wx.Button(self, id=wxId, style=wx.BU_NOTEXT | wx.BU_EXACTFIT)
 		button.SetBitmapLabel(wx.ArtProvider.GetBitmap(wxBmp,wx.ART_MENU))
 		return button
-
-	def newLayer(self, layers, name, colour, default=False):
-		item = layers.InsertItem(layers.GetItemCount(), name)
-		#layers.SetItemBackgroundColour(item, wx.Colour(colour))
-		if default:
-			layers.SetItem(item, 1, "", self.ICON_DEFAULT)
-		layers.SetItem(item, 2, "👁")
-		(w, h) = (16, 16)
-		clr = PIL.ImageColor.getcolor(colour, "RGBA")
-		bmp2 = wx.Bitmap.FromRGBA(w, h, clr[0], clr[1], clr[2], clr[3])
-		###bmp = wx.EmptyBitmap(w, h)
-		###dc = wx.MemoryDC(bmp)
-		###dc.SetPen(wx.Pen(wx.RED,1))
-		###dc.DrawPolygon([(0,0),(0,10),(10,10),(10,0)], fill_style=wx.WINDING_RULE)
-		###box = dc.GetAsBitmap()
-		###dc.SelectObject(wx.NullBitmap)
-		boxIdx = self.il.Add(bmp2)
-		layers.SetItem(item, 3, "", boxIdx)
-		return item
 
 	def lift(self):
 		'''
