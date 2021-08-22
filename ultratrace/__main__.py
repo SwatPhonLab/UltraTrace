@@ -223,21 +223,8 @@ class Frame(wx.Frame):
 		#il.Add(wx.ArtProvider.GetBitmap("gtk-emblem-default",wx.ART_MENU))
 		#hargle = self.il.Add(wx.ArtProvider.GetBitmap("gtk-zoom-in",wx.ART_MENU))
 		self.ICON_DEFAULT = self.il.Add(wx.ArtProvider.GetBitmap("emblem-default",wx.ART_MENU))
-		#self.layers.AssignImageList(self.il, wx.IMAGE_LIST_NORMAL)
 		self.layers.AssignImageList(self.il, wx.IMAGE_LIST_SMALL)
-		#self.layers.InsertItem(0, self.newLayer("text", "#008888"))
 		thisLayer = self.newLayer(self.layers, "text", "#008888", default=True)
-		#self.layers.InsertItem(0, thisLayer)
-		#self.layers.InsertItem(0, self.hargle)
-		#self.layers.InsertItem(1, "test")
-		#index = self.layers.InsertItem(2, "hargle", self.hargle)
-		#self.layers.SetItem(index, 1, "bargle")
-		#self.layers.SetItem(index, 2, "foobar")
-		#self.layers.SetItem(index, 3, "", self.bargle)
-		#self.layers.SetItemData(index, 2)
-		#self.layers.SetItemBackgroundColour(0, wx.Colour("#008888"))
-		#self.layers.SetImageList(il, hargle)
-		#self.layers.SetItemImage(hargle, hargle)
 		self.layersBox.Add(self.layers)
 
 
@@ -307,40 +294,22 @@ class Frame(wx.Frame):
 		return button
 
 	def newLayer(self, layers, name, colour, default=False):
-		#item = wx.ListItem()
 		item = layers.InsertItem(layers.GetItemCount(), name)
-		#item.SetBackgroundColour(colour)
 		#layers.SetItemBackgroundColour(item, wx.Colour(colour))
 		if default:
 			layers.SetItem(item, 1, "", self.ICON_DEFAULT)
 		layers.SetItem(item, 2, "👁")
 		(w, h) = (16, 16)
-		###bmp = wx.EmptyBitmap(w, h)
 		clr = PIL.ImageColor.getcolor(colour, "RGBA")
 		bmp2 = wx.Bitmap.FromRGBA(w, h, clr[0], clr[1], clr[2], clr[3])
+		###bmp = wx.EmptyBitmap(w, h)
 		###dc = wx.MemoryDC(bmp)
 		###dc.SetPen(wx.Pen(wx.RED,1))
-		#dc.DrawRectangle(0,0,10,10)
 		###dc.DrawPolygon([(0,0),(0,10),(10,10),(10,0)], fill_style=wx.WINDING_RULE)
-		#dc.SelectObject(bmp)
-		#dc.Clear()
-		#text = "whatever"
-		#tw, th = dc.GetTextExtent(text)
-		#dc.DrawText(text, (w-tw)/2,  (h-th)/2)
 		###box = dc.GetAsBitmap()
 		###dc.SelectObject(wx.NullBitmap)
-		#box = wx.StaticBitmap(self, -1, bmp).GetBitmap()
-		#boxIdx = self.il.Add(box)
 		boxIdx = self.il.Add(bmp2)
 		layers.SetItem(item, 3, "", boxIdx)
-		#item.SetColumn(0)
-		#item.SetText(name)
-		#item.SetColumn(1)
-		#item.SetItemImage(self.hargle, self.hargle)
-		#item.InsertItem(1,1, self.hargle)
-		#self.layers.InsertItem(0, self.newLayer("text", "#008888"))
-		#item.SetImage(wx.Image(wx.ArtProvider.GetBitmap("gtk-emblem-default",wx.ART_MENU)))
-		#item.SetImage(self.hargle)
 		return item
 
 	def lift(self):
