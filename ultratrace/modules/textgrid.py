@@ -298,7 +298,7 @@ class TextGrid(Module):
             error('Not a float!')
 
     def makeTimeWidget(self):
-        self.time_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height/3, highlightthickness=0)
+        self.time_canvas = Canvas(self.canvas_frame, wx.glcanvas.GLAttributes.Defaults(), width=self.canvas_width, height=self.canvas_height/3, highlightthickness=0)
         s = self.time_canvas.create_text(3,0, anchor='nw', text=self.start)
         e = self.time_canvas.create_text(self.canvas_width,0, anchor='ne', text=self.end)
         c = self.time_canvas.create_text(self.canvas_width/2,0, anchor='n', text=self.current)
@@ -309,10 +309,14 @@ class TextGrid(Module):
         makes frame widget
         '''
         #make regular frame stuff -- label and tier
-        self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
-        frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0, background='gray')
-        frames_label.create_text(self.label_width,0, anchor='ne', justify='center',
-                                 text='frames: ', width=self.label_width, activefill='blue')
+        #self.frames_canvas = Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)
+		  ## JNW working on it ....
+        self.frames_canvas = wx.glcanvas.GLCanvas.Canvas(self.canvas_frame, size=(self.canvas_width, self.canvas_height))
+		  #background='gray', highlightthickness=0)
+        ## JNW FIXME:
+        #frames_label = Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0, background='gray')
+        #frames_label.create_text(self.label_width,0, anchor='ne', justify='center',
+        #                         text='frames: ', width=self.label_width, activefill='blue')
 
         # make subframe to go on top of label canvas
         sbframe = Frame(frames_label)
@@ -376,9 +380,11 @@ class TextGrid(Module):
         tier_obj = self.TextGrid.getFirst(tier)
         widgets = { 'name':tier,
                          #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify='left'),
-                         'canvas-label':Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0),
+                         ## JNW: FIXME:
+                         'canvas-label': None, #Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0),
                          # 'text' :Label(self.frame, text='', wraplength=550, justify='left'),
-                         'canvas':Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)}
+                         ## JNW: FIXME:
+                         'canvas': None} #Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)}
 
         canvas = widgets['canvas']
         label = widgets['canvas-label']
