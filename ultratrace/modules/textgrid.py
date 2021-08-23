@@ -4,13 +4,13 @@ from ..util.logging import *
 from ..widgets import CanvasTooltip
 import copy
 
-from tkinter.ttk import Button, Frame, Label
-from tkinter import Canvas, StringVar, DoubleVar
-try:
-    # ttk.Spinbox was added in Python 3.7
-    from tkinter.ttk import Spinbox
-except ImportError:
-    from tkinter import Spinbox
+#from tkinter.ttk import Button, Frame, Label
+#from tkinter import Canvas, StringVar, DoubleVar
+#try:
+#    # ttk.Spinbox was added in Python 3.7
+#    from tkinter.ttk import Spinbox
+#except ImportError:
+#    from tkinter import Spinbox
 import tempfile
 
 LIBS_INSTALLED = False
@@ -35,13 +35,16 @@ class TextGrid(Module):
         '''
         info( ' - initializing module: TextGrid' )
         self.app = app
-        self.frame = Frame(self.app.BOTTOM)
+        #self.frame = Frame(self.app.BOTTOM)
+        self.frame = self.app.audioTGBox
         self.label_padx = 0
-        self.canvas_frame = Frame(self.app.BOTTOM)#, padx=self.label_padx)
-        self.frame.grid( row=1, column=0, sticky='ne')
-        self.canvas_frame.grid(row=1, column=1 )
+        #self.canvas_frame = Frame(self.app.BOTTOM)#, padx=self.label_padx)
+        self.canvas_frame = self.app.audioTGBox
+        ## JNW FIXME:
+        #self.frame.grid( row=1, column=0, sticky='ne')
+        #self.canvas_frame.grid(row=1, column=1 )
         self.TextGrid = None
-        self.selectedTier = StringVar()
+        self.selectedTier = "" # StringVar()
         self.tg_zoom_factor = 1.5
         self.canvas_width=800
         self.canvas_height=60
@@ -51,23 +54,25 @@ class TextGrid(Module):
         self.start = 0
         self.end = 0
         self.current = 0
-        self.frame_shift = DoubleVar()
+        self.frame_shift = 0.00 # DoubleVar()
 
         self.startup()
 
         platform = util.get_platform()
         #bindings
         if platform == 'Linux':
-            self.app.bind("<Control-n>", self.getBounds)
-            self.app.bind("<Control-a>", self.getBounds)
-            self.app.bind("<Control-i>", self.getBounds)
-            self.app.bind("<Control-o>", self.getBounds)
-            self.app.bind("<Control-f>", self.openSearch)
-            # Command is Alt in Linux, apparently
-            self.app.bind("<Command-Up>", self.changeTiers)
-            self.app.bind("<Command-Down>", self.changeTiers)
-            self.app.bind("<Command-Left>", self.changeIntervals)
-            self.app.bind("<Command-Right>", self.changeIntervals)
+            ## JNW FIXME:
+            #self.app.bind("<Control-n>", self.getBounds)
+            #self.app.bind("<Control-a>", self.getBounds)
+            #self.app.bind("<Control-i>", self.getBounds)
+            #self.app.bind("<Control-o>", self.getBounds)
+            #self.app.bind("<Control-f>", self.openSearch)
+            ## Command is Alt in Linux, apparently
+            #self.app.bind("<Command-Up>", self.changeTiers)
+            #self.app.bind("<Command-Down>", self.changeTiers)
+            #self.app.bind("<Command-Left>", self.changeIntervals)
+            #self.app.bind("<Command-Right>", self.changeIntervals)
+            pass
         elif platform == 'Darwin':
             self.app.bind("<Command-n>", self.getBounds)
             self.app.bind("<Command-a>", self.getBounds)
@@ -90,9 +95,10 @@ class TextGrid(Module):
             self.app.bind("<Command-Left>", self.changeIntervals)
             self.app.bind("<Command-Right>", self.changeIntervals)
 
-        # these aren't Praat-like
-        self.app.bind("<Shift-Left>", self.getBounds)
-        self.app.bind("<Shift-Right>", self.getBounds)
+        ## JNW FIXME:
+        ## these aren't Praat-like
+        #self.app.bind("<Shift-Left>", self.getBounds)
+        #self.app.bind("<Shift-Right>", self.getBounds)
 
 
     def setup(self):
@@ -108,14 +114,16 @@ class TextGrid(Module):
                         tiers.append(tier)
                 if set(tiers) != self.tierNames:
                     self.tierNames = set(tiers)
-                    self.TkWidgets = []
-                    for label in self.frame.winfo_children():
-                        label.destroy()
-                    for canvas in self.canvas_frame.winfo_children():
-                        canvas.destroy()
+                    #self.TkWidgets = []
+                    self.Widgets = []
+                    ## JNW FIXME:
+                    #for label in self.frame.winfo_children():
+                    #    label.destroy()
+                    #for canvas in self.canvas_frame.winfo_children():
+                    #    canvas.destroy()
                     for tier in self.TextGrid.getNames():
                         if tier != self.frameTierName and tier != self.frameTierName + '.original':
-                            self.TkWidgets.append(self.makeTierWidgets(tier))
+                            self.Widgets.append(self.makeTierWidgets(tier))
                     self.makeFrameWidget()
                     self.makeTimeWidget()
                 self.fillCanvases()
@@ -379,15 +387,16 @@ class TextGrid(Module):
         label_text = label.create_text(self.label_width, self.canvas_height/2, anchor='e', justify='center',
                                         text='temp', width=self.label_width/2, activefill='blue')
 
-        canvas.bind("<Button-1>", self.genFrameList)
-        label.bind("<Button-1>", self.genFrameList)
-        label.bind("<Double-Button-1>", self.collapse)
-        label.bind("<Button-4>", self.collapse)
-        label.bind("<Button-5>", self.collapse)
-        label.bind("<MouseWheel>", self.collapse)
-        canvas.bind("<Button-4>", self.collapse)
-        canvas.bind("<Button-5>", self.collapse)
-        canvas.bind("<MouseWheel>", self.collapse)
+        ## JNW FIXME:
+        #canvas.bind("<Button-1>", self.genFrameList)
+        #label.bind("<Button-1>", self.genFrameList)
+        #label.bind("<Double-Button-1>", self.collapse)
+        #label.bind("<Button-4>", self.collapse)
+        #label.bind("<Button-5>", self.collapse)
+        #label.bind("<MouseWheel>", self.collapse)
+        #canvas.bind("<Button-4>", self.collapse)
+        #canvas.bind("<Button-5>", self.collapse)
+        #canvas.bind("<MouseWheel>", self.collapse)
 
         return widgets
 

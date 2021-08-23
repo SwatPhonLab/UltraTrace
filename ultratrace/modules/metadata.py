@@ -40,7 +40,7 @@ class Metadata(Module):
             severe( "   - ERROR: `%s` could not be located" % path )
             exit(1)
 
-        self.frame = frame
+        self.app = frame
         self.path = path
 
         self.mdfile = os.path.join( self.path, 'metadata.json' )
@@ -159,7 +159,7 @@ class Metadata(Module):
         #self.app.geometry( self.getTopLevel('geometry') )
         dimensions = re.split('[\+x]', self.getTopLevel('geometry'))
         dimensions = [int(i) for i in dimensions]
-        self.frame.SetSize( dimensions[2], dimensions[3], dimensions[0], dimensions[1] )
+        self.app.SetSize( dimensions[2], dimensions[3], dimensions[0], dimensions[1] )
         self.files = self.getFilenames()
 
     def importOldMeasurement(self, filepath, filename):

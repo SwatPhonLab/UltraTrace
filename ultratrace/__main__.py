@@ -40,8 +40,8 @@ class Frame(wx.Frame):
 		#self.Control = modules.Control(self)
 		self.Trace = modules.Trace(self)
 		#self.Dicom = modules.Dicom(self)
-		#self.Audio = modules.Playback(self)
-		#self.TextGrid = modules.TextGrid(self)
+		self.Audio = modules.Playback(self)
+		self.TextGrid = modules.TextGrid(self)
 		#self.Spectrogram = modules.Spectrogram(self)
 		#self.Search = modules.Search(self)
 
@@ -146,6 +146,9 @@ class Frame(wx.Frame):
 		text3 = wx.StaticText(panel, label="labels here")
 		text4 = wx.StaticText(panel, label="audio and textgrids here")
 
+		self.audioTGBox = wx.BoxSizer(wx.VERTICAL)
+		self.audioTGBox.Add(text4)
+
 		self.controlBox = wx.BoxSizer(wx.VERTICAL)
 		####  Buttons
 		####  FileSelectorBox
@@ -216,7 +219,7 @@ class Frame(wx.Frame):
 		## add all sections to the control box
 		self.controlBox.AddMany([(self.fileSelectorBox, 1, wx.EXPAND), ((0,10)), (self.frameSelectorBox,0,wx.EXPAND), ((0,10)), (self.annotationsBox, 0, wx.EXPAND), ((0,10)), (self.viewBox,0,wx.EXPAND), ((0,10)) ])#(self.layersBox,0,wx.EXPAND)])
 
-		self.grid.AddMany([(self.controlBox, 1, wx.EXPAND), (text2, 1, wx.EXPAND), (text3), (text4)])
+		self.grid.AddMany([(self.controlBox, 1, wx.EXPAND), (text2, 1, wx.EXPAND), (text3), (self.audioTGBox)])
 
 		self.grid.AddGrowableRow(0,1)
 		self.grid.AddGrowableCol(0,1)
