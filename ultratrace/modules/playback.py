@@ -1,5 +1,6 @@
 from .base import Module
 #from .. import util
+from . import CROSSHAIR_SELECT_RADIUS
 from .logging import *
 from .header import Header
 
@@ -91,7 +92,7 @@ class Playback(Module):
                 error('Unable to load audio file: `%s`' % audiofile, e)
                 return False
 
-    def playpauseAV(self, event):
+    def playpauseAV(self, event=None):
         '''
 
         '''
@@ -186,7 +187,7 @@ class Playback(Module):
         self.pngs = []
         traces = self.app.Data.getTopLevel('traces')
         file = self.app.Data.getCurrentFilename()
-        l = util.CROSSHAIR_SELECT_RADIUS
+        l = CROSSHAIR_SELECT_RADIUS
         for frame, img in zip(framenums, imgs):
             img = img.resize(dim)
             draw = ImageDraw.Draw(img)
