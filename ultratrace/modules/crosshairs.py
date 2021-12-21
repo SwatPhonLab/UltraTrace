@@ -1,4 +1,4 @@
-#from .crosshairs import CROSSHAIR_SELECT_RADIUS
+from . import CROSSHAIR_SELECT_RADIUS
 from .logging import *
 
 import math
