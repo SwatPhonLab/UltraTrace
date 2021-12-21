@@ -1,8 +1,10 @@
 from .base import Module
-from .. import util
-from ..util.logging import *
-from ..util.framereader import ULTScanLineReader, DicomReader, DicomPNGReader, LABEL_TO_READER, READERS
-from ..widgets import Header
+#from . import util
+from . import get_platform
+from .logging import *
+from .framereader import ULTScanLineReader, DicomReader, DicomPNGReader, LABEL_TO_READER, READERS
+#from .widgets import Header
+from .header import Header
 
 import os
 import PIL
@@ -13,7 +15,8 @@ from tkinter import StringVar
 LIBS_INSTALLED = False
 
 try:
-    from ..widgets import ZoomFrame
+    #from ..widgets import ZoomFrame
+    from .zoom_frame import ZoomFrame
     import numpy as np
     import pydicom # pydicom
     LIBS_INSTALLED = True
@@ -51,7 +54,7 @@ class Dicom(Module):
             self.zoomOutBtn = Button(self.zbframe, text='⊝', command=self.zoomOut, width=1.5, style="symbol.TButton", takefocus=0)
 
             # reset zoom keyboard shortcut
-            if util.get_platform() == 'Linux':
+            if get_platform() == 'Linux':
                 self.app.bind('<Control-0>', self.zoomReset )
             else: self.app.bind('<Command-0>', self.zoomReset )
             self.reset()

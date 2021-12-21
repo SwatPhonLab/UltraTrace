@@ -1,7 +1,8 @@
 from .base import Module
-from .. import util
-from ..util.logging import *
-from ..widgets import Header
+#from .. import util
+from . import get_platform
+from .logging import *
+from .header import Header
 
 from tkinter.ttk import Button, Frame
 from tkinter import PhotoImage
@@ -36,7 +37,7 @@ class Control(Module):
         self.img_paste = PhotoImage(data=data_paste)
 
         # bind Ctrl+z to UNDO and Ctrl+Shift+Z to REDO
-        if util.get_platform() == 'Linux':
+        if get_platform() == 'Linux':
             self.app.bind('<Control-z>', self.undo )
             self.app.bind('<Control-Z>', self.redo )
         else:

@@ -1,7 +1,10 @@
 from .base import Module
-from .. import util
-from ..util.logging import *
-from ..widgets import Crosshairs, Header
+#from .. import util
+from .logging import *
+from .header import Header
+from .crosshairs import Crosshairs
+from . import CROSSHAIR_SELECT_RADIUS
+from . import get_platform
 
 import PIL
 import random
@@ -82,7 +85,7 @@ class Trace(Module):
         self.TkWidgets[6]['widget'].bind('<Return>', lambda ev: self.TkWidgets[0]['widget'].focus())
         self.TkWidgets[6]['widget'].bind('<Escape>', lambda ev: self.TkWidgets[0]['widget'].focus())
 
-        if util.get_platform() == 'Linux':
+        if get_platform() == 'Linux':
             self.app.bind('<Control-r>', self.recolor )
             self.app.bind('<Control-c>', self.copy )
             self.app.bind('<Control-v>', self.paste )
@@ -259,7 +262,7 @@ class Trace(Module):
         if trace in self.crosshairs:
             for ch in self.crosshairs[ trace ]:
                 d = ch.getDistance(click)
-                if d < util.CROSSHAIR_SELECT_RADIUS:
+                if d < CROSSHAIR_SELECT_RADIUS:
                     if d in possibleSelections:
                         possibleSelections[d].append( ch )
                     else:

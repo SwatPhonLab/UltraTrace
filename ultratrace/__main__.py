@@ -2,9 +2,11 @@
 
 #import modules
 from . import modules
-from . import util
-from .util.logging import *
-from .widgets import Header
+from .modules import get_platform
+#from . import util
+from .modules import CROSSHAIR_DRAG_BUFFER
+from .modules.logging import *
+from .modules import Header
 
 import argparse
 import os
@@ -39,7 +41,7 @@ class App(ThemedTk):
 		
 		default_ttktheme = "clam"  # alt, clam, classic, default
 		# do the normal Tk init stuff
-		if util.get_platform()=='Linux':
+		if get_platform()=='Linux':
 			try:
 				info(' - loading platform-specific enhancements for Linux')
 				import xrp  # pip3 install xparser
@@ -124,7 +126,7 @@ class App(ThemedTk):
 
 		# some styling
 		self.fontStyle = Style()
-		if util.get_platform() == 'Darwin':
+		if get_platform() == 'Darwin':
 			self.fontStyle.configure('symbol.TButton', font=('DejaVu Serif', 26))
 		else:
 			self.fontStyle.configure('symbol.TButton', font=('DejaVu Serif', 19))
@@ -211,7 +213,7 @@ class App(ThemedTk):
 		self.framesSubframe.grid( row=1 )
 
 		# non-module-specific bindings
-		if util.get_platform() == 'Linux':
+		if get_platform() == 'Linux':
 			self.bind('<Control-Left>', self.filesPrev )
 			self.bind('<Control-Right>', self.filesNext )
 		else:
@@ -483,7 +485,7 @@ class App(ThemedTk):
 				# enforce minimum distance b/w new crosshairs
 				dx = abs(thisClick[0] - lastClick[0]) / self.Dicom.zframe.imgscale
 				dy = abs(thisClick[1] - lastClick[1]) / self.Dicom.zframe.imgscale
-				if dx > util.CROSSHAIR_DRAG_BUFFER or dy > util.CROSSHAIR_DRAG_BUFFER:
+				if dx > CROSSHAIR_DRAG_BUFFER or dy > CROSSHAIR_DRAG_BUFFER:
 					self.click = thisClick
 					ch = self.Trace.add( *self.click )
 					self.Control.push({ 'type':'add', 'chs':[ch] })

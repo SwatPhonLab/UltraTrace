@@ -1,6 +1,6 @@
 from .textgrid import TextGrid
 from .base import Module
-from ..util.logging import *
+from .logging import *
 
 import re
 

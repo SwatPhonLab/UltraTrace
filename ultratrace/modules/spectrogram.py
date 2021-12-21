@@ -1,5 +1,5 @@
 from .base import Module
-from ..util.logging import *
+from .logging import *
 
 import math
 import PIL

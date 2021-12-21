@@ -1,6 +1,6 @@
 from .base import Module
-from ..util.logging import *
-from .. import util
+from .logging import *
+#from .. import util
 
 import json
 import os
@@ -179,9 +179,9 @@ class Metadata(Module):
         list_of_files[filenum][framenum] = new_array
 
     def importULTMeasurement(self, filepath):
-        from ..util.framereader import ULTScanLineReader
+        from framereader import ULTScanLineReader
         f = open(self.unrelativize(filepath), 'rb')
-        contents = util.decode_bytes(f.read())
+        contents = decode_bytes(f.read())
         f.close()
         data = [x.split('\t') for x in contents.splitlines()]
         lines = []

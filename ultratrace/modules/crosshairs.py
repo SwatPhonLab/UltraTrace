@@ -1,5 +1,5 @@
-from ..util import CROSSHAIR_SELECT_RADIUS
-from ..util.logging import *
+#from .crosshairs import CROSSHAIR_SELECT_RADIUS
+from .logging import *
 
 import math
 

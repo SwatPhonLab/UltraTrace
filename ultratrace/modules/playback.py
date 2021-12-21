@@ -1,7 +1,7 @@
 from .base import Module
-from .. import util
-from ..util.logging import *
-from ..widgets import Header
+#from .. import util
+from .logging import *
+from .header import Header
 
 import queue
 import threading

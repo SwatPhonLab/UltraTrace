@@ -1,8 +1,9 @@
 from .base import Module
-from .. import util
-from ..util.logging import *
-from ..widgets import CanvasTooltip
+#from .. import util
+from logging import *
+from .canvas_tooltip import CanvasTooltip
 import copy
+from . import get_platform
 
 from tkinter.ttk import Button, Frame, Label
 from tkinter import Canvas, StringVar, DoubleVar
@@ -55,7 +56,7 @@ class TextGrid(Module):
 
         self.startup()
 
-        platform = util.get_platform()
+        platform = get_platform()
         #bindings
         if platform == 'Linux':
             self.app.bind("<Control-n>", self.getBounds)
@@ -152,7 +153,7 @@ class TextGrid(Module):
                 return TextGridFile.fromFile(filename)
             except (TextGridError, UnicodeDecodeError) as e:
                 f = open(filename, 'rb')
-                contents = util.decode_bytes(f.read())
+                contents = decode_bytes(f.read())
                 f.close()
                 if contents:
                     tmp = tempfile.NamedTemporaryFile()
@@ -221,7 +222,7 @@ class TextGrid(Module):
         if '.ult' in keys and '.txt' in keys:
             fname = self.app.Data.unrelativize(self.app.Data.getFileLevel('.txt'))
             f = open(fname, 'rb')
-            s = util.decode_bytes(f.read())
+            s = decode_bytes(f.read())
             f.close()
             if s:
                 line = s.splitlines()[0]
