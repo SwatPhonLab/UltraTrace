@@ -3,6 +3,7 @@ from .. import util
 from ..util.logging import *
 from ..widgets import CanvasTooltip
 import copy
+import wx
 
 #from tkinter.ttk import Button, Frame, Label
 #from tkinter import Canvas, StringVar, DoubleVar
@@ -380,16 +381,23 @@ class TextGrid(Module):
         tier_obj = self.TextGrid.getFirst(tier)
         widgets = { 'name':tier,
                          #'label':Label(self.frame, text=('- '+tier+':'), wraplength=200, justify='left'),
+                         'label': wx.StaticText(self.app.mainSizer, label='- '+tier+':', flags=wx.ALIGN_RIGHT),
                          ## JNW: FIXME:
                          'canvas-label': None, #Canvas(self.frame, width=self.label_width, height=self.canvas_height, highlightthickness=0),
                          # 'text' :Label(self.frame, text='', wraplength=550, justify='left'),
+                         'text': ex.StaticText(self.app.mainSizer, text='', flags=wx.ALIGN_LEFT),
                          ## JNW: FIXME:
-                         'canvas': None} #Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)}
+                         #'canvas': None} #Canvas(self.canvas_frame, width=self.canvas_width, height=self.canvas_height, background='gray', highlightthickness=0)}
+                         'canvas': wx.Panel(self.canvas_frame, )}
 
         canvas = widgets['canvas']
         label = widgets['canvas-label']
 
+        #print("TESTING")
         #builds tier label functionality
+        self.frame.Add(wx.StaticText(self.app, label="HARGLE BARGLE"))
+        self.app.mainSizer.Fit()
+
         label_text = label.create_text(self.label_width, self.canvas_height/2, anchor='e', justify='center',
                                         text='temp', width=self.label_width/2, activefill='blue')
 
