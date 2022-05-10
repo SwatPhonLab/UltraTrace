@@ -56,7 +56,10 @@ class Trace(Module):
         self.il = wx.ImageList(16,16)
         #il.Add(wx.ArtProvider.GetBitmap("gtk-emblem-default",wx.ART_MENU))
         #hargle = self.il.Add(wx.ArtProvider.GetBitmap("gtk-zoom-in",wx.ART_MENU))
-        self.ICON_DEFAULT = self.il.Add(wx.ArtProvider.GetBitmap("emblem-default",wx.ART_MENU))
+
+        #self.ICON_DEFAULT = self.il.Add(wx.ArtProvider.GetBitmap("emblem-default",wx.ART_MENU))
+        self.ICON_DEFAULT = self.il.Add(wx.EmptyBitmap(16,16))
+
         self.layers.AssignImageList(self.il, wx.IMAGE_LIST_SMALL)
         #thisLayer = self.newLayer(self.layers, "text", "#008888", default=True)
 
