@@ -7,8 +7,10 @@ from ..widgets import Header
 import os
 import PIL
 
-from tkinter.ttk import Button, Frame, OptionMenu
-from tkinter import StringVar
+#from tkinter.ttk import Button, Frame, OptionMenu
+#from tkinter import StringVar
+
+import wx
 
 LIBS_INSTALLED = False
 
@@ -28,34 +30,40 @@ class Dicom(Module):
 
         if LIBS_INSTALLED:
             # grid load button
-            self.frame_holder = Frame(self.app.LEFT)#, pady=7)
-            self.frame_holder.grid( row=2 )
-            self.frame = Frame(self.frame_holder)
-            self.frame.pack(expand=True)
+            #self.frame_holder = Frame(self.app.LEFT)#, pady=7)
+            #self.frame_holder.grid( row=2 )
+            #self.frame = Frame(self.frame_holder)
+            #self.frame.pack(expand=True)
 
-            self.method = StringVar(self.app)
-            self.mode = None
-            self.reader = None
+            #self.method = StringVar(self.app)
+            #self.mode = None
+            #self.reader = None
 
             # zoom buttons
-            self.zbframe = Frame(self.app.LEFT)
-            self.zbframe.grid( row=6, column=0)
+            #self.zbframe = Frame(self.app.LEFT)
+            #self.zbframe.grid( row=6, column=0)
 
             # zoom frame (contains our tracing canvas)
-            self.zframe = ZoomFrame(self.app.RIGHT, 1.3, app)
+            #self.zframe = ZoomFrame(self.app.RIGHT, 1.3, app)
 
             # zoom in, zoom out, reset zoom buttons
             #self.header = Header(self.zbframe, text="Zoom")
-            self.zoomResetBtn = Button(self.zbframe, text='⊜', command=self.zoomReset, width=1.5, style="symbol.TButton", takefocus=0)#, pady=7 )
-            self.zoomInBtn = Button(self.zbframe, text='⊕', command=self.zoomIn, width=1.5, style="symbol.TButton", takefocus=0)
-            self.zoomOutBtn = Button(self.zbframe, text='⊝', command=self.zoomOut, width=1.5, style="symbol.TButton", takefocus=0)
+            #self.zoomResetBtn = Button(self.zbframe, text='⊜', command=self.zoomReset, width=1.5, style="symbol.TButton", takefocus=0)#, pady=7 )
+            #self.zoomInBtn = Button(self.zbframe, text='⊕', command=self.zoomIn, width=1.5, style="symbol.TButton", takefocus=0)
+            #self.zoomOutBtn = Button(self.zbframe, text='⊝', command=self.zoomOut, width=1.5, style="symbol.TButton", takefocus=0)
 
             # reset zoom keyboard shortcut
-            if util.get_platform() == 'Linux':
-                self.app.bind('<Control-0>', self.zoomReset )
-            else: self.app.bind('<Command-0>', self.zoomReset )
-            self.reset()
-            self.grid()
+            #if util.get_platform() == 'Linux':
+            #    self.app.bind('<Control-0>', self.zoomReset )
+            #else: self.app.bind('<Command-0>', self.zoomReset )
+            #self.reset()
+            #self.grid()
+
+            # FIXME: replace this button with the ultrasound frames
+            self.buttonRedo = wx.BitmapButton(self.app, id=wx.ID_REDO, bitmap=wx.ArtProvider.GetBitmap(wx.ART_REDO), size=(32,32))
+            self.app.ultrasoundBox.Add(self.buttonRedo, flag=wx.BOTTOM, border=10)
+
+            
 
     def zoomReset(self, fromButton=False):
         '''

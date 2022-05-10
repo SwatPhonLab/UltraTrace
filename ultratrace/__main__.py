@@ -39,7 +39,7 @@ class Frame(wx.Frame):
 		# initialize other modules
 		#self.Control = modules.Control(self)
 		self.Trace = modules.Trace(self)
-		#self.Dicom = modules.Dicom(self)
+		self.Dicom = modules.Dicom(self)
 		self.Audio = modules.Playback(self)
 		self.TextGrid = modules.TextGrid(self)
 		#self.Spectrogram = modules.Spectrogram(self)
@@ -112,7 +112,7 @@ class Frame(wx.Frame):
 		\________________________________________/
 		'''
 		# main Frame skeleton
-		panel = wx.Panel(self)
+		self.panel = wx.Panel(self)
 		self.hbox = wx.BoxSizer(wx.HORIZONTAL)
 		self.grid = wx.FlexGridSizer(2, 2, 2, 2)
 		
@@ -142,12 +142,15 @@ class Frame(wx.Frame):
 		#self.columnconfigure(0,weight=1)
 		#self.rowconfigure(0,weight=1)
 		#text1 = wx.StaticText(panel, label="controls here")
-		text2 = wx.StaticText(panel, label="US here")
-		text3 = wx.StaticText(panel, label="labels here")
-		text4 = wx.StaticText(panel, label="audio and textgrids here")
+		text2 = wx.StaticText(self.panel, label="US here")
+		text3 = wx.StaticText(self.panel, label="labels here")
+		text4 = wx.StaticText(self.panel, label="audio and textgrids here")
 
 		self.audioTGBox = wx.BoxSizer(wx.VERTICAL)
 		self.audioTGBox.Add(text4)
+
+		self.ultrasoundBox = wx.BoxSizer(wx.VERTICAL)
+		self.ultrasoundBox.Add(text2)
 
 		self.controlBox = wx.BoxSizer(wx.VERTICAL)
 		####  Buttons
@@ -222,14 +225,14 @@ class Frame(wx.Frame):
 		## add all sections to the control box
 		self.controlBox.AddMany([(self.fileSelectorBox, 1, wx.EXPAND), ((0,10)), (self.frameSelectorBox,0,wx.EXPAND), ((0,10)), (self.annotationsBox, 0, wx.EXPAND), ((0,10)), (self.viewBox,0,wx.EXPAND), ((0,10)) ])#(self.layersBox,0,wx.EXPAND)])
 
-		self.grid.AddMany([(self.controlBox, 1, wx.EXPAND), (text2, 1, wx.EXPAND), (text3), (self.audioTGBox)])
+		self.grid.AddMany([(self.controlBox, 1, wx.EXPAND), (self.ultrasoundBox, 1, wx.EXPAND), (text3), (self.audioTGBox)])
 
 		self.grid.AddGrowableRow(0,1)
 		self.grid.AddGrowableCol(0,1)
 
 		self.hbox.Add(self.grid, proportion=1, flag=wx.ALL|wx.EXPAND, border=2)
-		panel.SetSizer(self.hbox)
-		panel.Fit()
+		self.panel.SetSizer(self.hbox)
+		self.panel.Fit()
 		## navigate between all available filenames in this directory
 		#self.filesFrame = Frame(self.LEFT)#, pady=7)
 		#self.filesPrevBtn = Button(self.filesFrame, text='<', command=self.filesPrev, takefocus=0, width="1.5")
