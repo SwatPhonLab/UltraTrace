@@ -188,8 +188,11 @@ class Frame(wx.Frame):
 		####  AnnotationsBox
 		self.annotationsBox = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Annotations")
 		self.buttonSelectAll = self.newIconButton(wx.ID_SELECTALL, "gtk-select-all")
-		self.buttonCopy = self.newIconButton(wx.ID_COPY, wx.ART_COPY)
-		self.buttonPaste = self.newIconButton(wx.ID_PASTE, wx.ART_PASTE) #wx.Button(self, id=wx.ID_PASTE, style=wx.BU_NOTEXT | wx.BU_EXACTFIT)
+		#self.buttonCopy = self.newIconButton(wx.ID_COPY, wx.ART_COPY)
+		#self.buttonCopy = wx.Button(self, id=wx.ID_COPY, style=wx.BU_NOTEXT | wx.BU_EXACTFIT)
+		self.buttonCopy = wx.BitmapButton(self, id=wx.ID_COPY, bitmap=wx.ArtProvider.GetBitmap(wx.ART_COPY), size=(32,32))
+		#self.buttonPaste = self.newIconButton(wx.ID_PASTE, wx.ART_PASTE) #wx.Button(self, id=wx.ID_PASTE, style=wx.BU_NOTEXT | wx.BU_EXACTFIT)
+		self.buttonPaste = wx.BitmapButton(self, id=wx.ID_PASTE, bitmap=wx.ArtProvider.GetBitmap(wx.ART_PASTE), size=(32,32))
 		self.buttonDelete = self.newIconButton(wx.ID_DELETE, wx.ART_DELETE) #wx.Button(self, id=wx.ID_DELETE, style=wx.BU_NOTEXT | wx.BU_EXACTFIT)
 		self.buttonZoomIn = self.newIconButton(wx.ID_ZOOM_IN, "gtk-zoom-in") #wx.Button(self, id=wx.ID_ZOOM_IN, style=wx.BU_NOTEXT | wx.BU_EXACTFIT)
 		self.buttonZoomOut = self.newIconButton(wx.ID_ZOOM_OUT, "gtk-zoom-out") #wx.Button(self, id=wx.ID_ZOOM_OUT, style=wx.BU_NOTEXT | wx.BU_EXACTFIT)
