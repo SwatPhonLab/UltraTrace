@@ -75,15 +75,16 @@ class TextGrid(Module):
             #self.app.bind("<Command-Right>", self.changeIntervals)
             pass
         elif platform == 'Darwin':
-            self.app.bind("<Command-n>", self.getBounds)
-            self.app.bind("<Command-a>", self.getBounds)
-            self.app.bind("<Command-i>", self.getBounds)
-            self.app.bind("<Command-o>", self.getBounds)
-            self.app.bind("<Command-f>", self.openSearch)
-            self.app.bind("<Option-Up>", self.changeTiers)
-            self.app.bind("<Option-Down>", self.changeTiers)
-            self.app.bind("<Option-Left>", self.changeIntervals)
-            self.app.bind("<Option-Right>", self.changeIntervals)
+            # self.app.bind("<Command-n>", self.getBounds)
+            # self.app.bind("<Command-a>", self.getBounds)
+            # self.app.bind("<Command-i>", self.getBounds)
+            # self.app.bind("<Command-o>", self.getBounds)
+            # self.app.bind("<Command-f>", self.openSearch)
+            # self.app.bind("<Option-Up>", self.changeTiers)
+            # self.app.bind("<Option-Down>", self.changeTiers)
+            # self.app.bind("<Option-Left>", self.changeIntervals)
+            # self.app.bind("<Option-Right>", self.changeIntervals)
+            pass
         #defaults (Command/Alt everything)
         else:
             self.app.bind("<Command-n>", self.getBounds)
