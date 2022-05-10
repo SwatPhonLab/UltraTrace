@@ -57,6 +57,7 @@ class Trace(Module):
         #il.Add(wx.ArtProvider.GetBitmap("gtk-emblem-default",wx.ART_MENU))
         #hargle = self.il.Add(wx.ArtProvider.GetBitmap("gtk-zoom-in",wx.ART_MENU))
 
+        # FIXME: Find a way to set a default emblem
         #self.ICON_DEFAULT = self.il.Add(wx.ArtProvider.GetBitmap("emblem-default",wx.ART_MENU))
         self.ICON_DEFAULT = self.il.Add(wx.EmptyBitmap(16,16))
 
@@ -69,7 +70,7 @@ class Trace(Module):
         #self.listbox = Listbox(lbframe, yscrollcommand=self.scrollbar.set, width=12, height=5, exportselection=False, takefocus=0)
         #self.scrollbar.config(command=self.listbox.yview)
 
-        # FIX -JNW
+        # FIXME -JNW
         for trace in self.available:
             thisLayer = self.newLayer(self.layers, trace, "#008888", default=True)
         #for trace in self.available:
