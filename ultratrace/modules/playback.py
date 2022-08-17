@@ -91,7 +91,7 @@ class Playback(Module):
                 error('Unable to load audio file: `%s`' % audiofile, e)
                 return False
 
-    def playpauseAV(self, event):
+    def playpauseAV(self, event=None):
         '''
 
         '''

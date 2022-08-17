@@ -15,15 +15,16 @@ setup(
     name="ultratrace",
     author="Jonathan Washington",
     author_email="jwashin1@swarthmore.edu",
-    version="0.0.1",
+    version="0.9.1",
     packages=find_namespace_packages(
-        include=["ultratrace2.*"], exclude=["ultratrace.*"]
+        #include=["ultratrace2.*"], exclude=["ultratrace.*"]
+        include=["ultratrace.*"], exclude=["ultratrace2.*"]
     ),
     description="A tool for manually annotating ultrasound tongue imaging (UTI) data",
     install_requires=get_requirements("requirements.txt"),
     entry_points={
         "console_scripts": [
-            "ultratrace2 = ultratrace2.__main__:main"
+            "ultratrace = ultratrace.__main__:main"
         ]
     },
     extras_require={
