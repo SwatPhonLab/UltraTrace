@@ -8,6 +8,15 @@ You can have a look at our [UltraFest IX presentation](https://swatphonlab.githu
 
 ## Installation
 
+### Linux (apt or dnf)
+
+1. Download the UltraTrace source code, e.g. using `git`.
+2. Run setup in the UltraTrace directory:
+```bash
+$ ./install.sh
+$ python3 setup.py install
+```
+
 ### macOS
 
 1. Install [Homebrew](https://brew.sh).
@@ -21,7 +30,7 @@ $ brew install python3
 $ python3 setup.py install
 ```
 
-## Windows
+### Windows
 
 1. Install python3
 2. Make sure you have pip
