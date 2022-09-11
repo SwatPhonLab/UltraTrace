@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 if which brew &> /dev/null; then
-    brew install portaudio ffmpeg libav
-elif which apt-get &> /dev/null; then
-    sudo apt-get update
-    sudo apt-get install python3 \
-        portaudio19-dev libportaudio2 \
-        ffmpeg \
-        libav-tools
+    brew update
+    brew upgrade
+    brew install python3 portaudio ffmpeg libav
+elif which apt &> /dev/null; then
+    sudo apt update
+    sudo apt upgrade
+    sudo apt install python3 portaudio19-dev libportaudio2 ffmpeg libav-tools
 elif which dnf &> /dev/null; then
     sudo dnf up
     sudo dnf in python3 portaudio ffmpeg
