@@ -15,5 +15,6 @@ tqdm==4.40.2
 ttkthemes==2.4.0
 xparser==0.0.4
 python-magic>=0.4.13
+python-magic-bin>=0.4.13
 scikit-build>=0.15.0
 opencv-python>=4.6.0
