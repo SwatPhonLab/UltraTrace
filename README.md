@@ -14,7 +14,6 @@ You can have a look at our [UltraFest IX presentation](https://swatphonlab.githu
 2. Run setup in the UltraTrace directory:
 ```bash
 $ ./install.sh
-$ python3 setup.py install
 ```
 
 ### macOS
@@ -24,13 +23,12 @@ $ python3 setup.py install
 3. Run setup in the UltraTrace directory:
 ```bash
 $ ./install.sh
-$ python3 setup.py install
 ```
 
 ### Windows
 
 1. Install python3
-2. Install pip
+2. Make sure you have pip
 3. Install ffmpeg and add to PATH
 4. Run `setup.py`
 
