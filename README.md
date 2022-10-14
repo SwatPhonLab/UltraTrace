@@ -1,5 +1,5 @@
 # UltraTrace
-![Logo](logo.jpg)
+![Logo](logo1.jpg)
 
 This is a tool for [currently] manual annotation of 2D UTI (Ultrasound Tongue Imaging) data.
 
