@@ -1,4 +1,5 @@
 # UltraTrace
+
 This is a tool for [currently] manual annotation of 2D UTI (Ultrasound Tongue Imaging) data.
 
 You can have a look at our [UltraFest IX presentation](https://swatphonlab.github.io/2020-UltraTrace-presentation/presentation.html) for some details on featureset and functionality as of October, 2020.
@@ -8,38 +9,81 @@ You can have a look at our [UltraFest IX presentation](https://swatphonlab.githu
 
 ## Installation
 
-### Linux (apt or dnf)
+This tool requires the following system packages to be installed:
 
-1. Download the UltraTrace source code, e.g. using `git`.
-2. Run setup in the UltraTrace directory:
-```bash
-$ ./install.sh
-$ python3 setup.py install
+* [`ffmpeg`](https://ffmpeg.org/)
+* [`portaudio`](http://www.portaudio.com/)
+* [`python3`](https://www.python.org/) (3.7 or later)
+
+Additionally, you'll need the following Python components (which are sometimes distributed separately):
+
+* [`pip`](https://pypi.org/project/pip/)
+* [`tkinter`](https://docs.python.org/3/library/tkinter.html)
+* [`venv`](https://docs.python.org/3/library/venv.html)
+
+See below for platform-specific installation instructions:
+* [Ubuntu](#ubuntu)
+* [Fedora](#fedora)
+* [macOS](#macos)
+* [Windows](#windows)
+
+Once these libraries are installed, you can just `pip install` the package with
+
+```sh
+$ python3 -m pip install -r ./requirements.txt
+```
+
+NOTE: You probably want to install into a [virtual environment](https://docs.python.org/3/tutorial/venv.html) to avoid conflicts with system packages.  Alternatively, you can do a [`--user` installation](https://pip.pypa.io/en/latest/user_guide/#user-installs).
+
+### Ubuntu
+
+Supported versions: 18.04, 20.04
+
+```sh
+$ apt-get update
+$ apt-get install --yes \
+    ffmpeg \
+    portaudio19-dev \
+    python3.8 \
+    python3.8-venv \
+    python3-pip \
+    python3-tk
+```
+
+### Fedora
+
+Supported versions: TODO
+
+```sh
+$ dnf upgrade
+$ dnf install \
+    ffmpeg \
+    python3 \
+    portaudio
 ```
 
 ### macOS
 
-1. Install [Homebrew](https://brew.sh).
-2. Download the UltraTrace source code, e.g. using `git`.
-3. Use Homebrew to install python3:
-```bash
-$ brew install python3
-```
-4. Run setup in the UltraTrace directory:
-```bash
-$ python3 setup.py install
+Supported versions: TODO
+
+These instructions use the [Homebrew](https://brew.sh) package manager.
+
+```sh
+$ brew update
+$ brew install \
+    ffmpeg \
+    portaudio
 ```
 
 ### Windows
 
-1. Install python3
-2. Make sure you have pip
-3. Install ffmpeg and add to PATH
-4. Run `setup.py`
+TODO
 
-## Use
+## Usage
 
-```bash
+Once [installed](#installation), you can just run
+
+```sh
 $ python3 -m ultratrace /path/to/data
 ```
 
@@ -72,10 +116,12 @@ The theme should just look right on Mac.
 
 #### Setting the theme on linux
 
-Use pip3 to install ttkthemes.
+We use [`ttkthemes`](https://ttkthemes.readthedocs.io/en/latest/), which can be installed with `pip`, e.g.,
+```sh
+$ python3 -m pip install --user ttkthemes
+```
 
 Add the following line to your `~/.Xresources` file:
-
 ```
 *TtkTheme: arc
 ```
