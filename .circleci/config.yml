@@ -20,6 +20,14 @@ jobs:
                 python3-tk
 
       - run:
+          name: upgrade pip and friends
+          command: |
+            python3.8 -m pip install \
+                pip==22.3 \
+                setuptools==65.5.0 \
+                wheel==0.38.0
+
+      - run:
           name: install nox
           command: |
             python3.8 -m pip install \
