@@ -19,6 +19,10 @@ jobs:
                 python3-pip \
                 python3-tk
 
-      - run: sudo pip install boto3 mypy_boto3_s3 nox
-      - run: ./scripts/download-test-data
+      - run:
+          name: install nox
+          command: |
+            python3.8 -m pip install \
+                nox==2022.8.7
+
       - run: nox
