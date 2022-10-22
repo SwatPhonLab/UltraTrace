@@ -17,6 +17,7 @@ This tool requires the following system packages to be installed:
 
 Additionally, you'll need the following Python components (which are sometimes distributed separately):
 
+* [Python development headers](https://devguide.python.org/getting-started/setup-building/#install-dependencies)
 * [`pip`](https://pypi.org/project/pip/)
 * [`tkinter`](https://docs.python.org/3/library/tkinter.html)
 * [`venv`](https://docs.python.org/3/library/venv.html)
@@ -47,6 +48,7 @@ $ apt-get install --yes \
     ffmpeg \
     portaudio19-dev \
     python3.8 \
+    python3.8-dev \
     python3.8-venv \
     python3-pip \
     python3-tk
