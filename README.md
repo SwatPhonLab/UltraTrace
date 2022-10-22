@@ -84,7 +84,7 @@ TODO
 Once [installed](#installation), you can just run
 
 ```sh
-$ python3 -m ultratrace /path/to/data
+$ ultratrace path/to/data
 ```
 
 ### Data format
