@@ -33,6 +33,8 @@ Once these libraries are installed, you can just `pip install` the package with
 $ python3 -m pip install -r ./requirements.txt
 ```
 
+NOTE: For hacking on `ultratrace` itself, see [Development](#development) below.
+
 NOTE: You probably want to install into a [virtual environment](https://docs.python.org/3/tutorial/venv.html) to avoid conflicts with system packages.  Alternatively, you can do a [`--user` installation](https://pip.pypa.io/en/latest/user_guide/#user-installs).
 
 ### Ubuntu
@@ -129,3 +131,21 @@ Add the following line to your `~/.Xresources` file:
 You may select something other than clam for your theme.  Currently, the main options are something like this: `arc`, `plastik`, `clearlooks`, `elegance`, `radiance`, `equilux`, `black`, `smog`, `scidblue`, etc.  See the [ttkthemes documentation](https://ttkthemes.readthedocs.io/) for more information.
 
 Otherwise it'll fall back to `*TtkTheme`, and if that's not specified in `~/.Xresources`, it'll fall back to `clam`.
+
+## Development
+
+To hack on `ultratrace`, you should first [install all required system libraries](#installation).  Then, you can set up a development environment by running
+
+```sh
+$ source dev/env.sh
+```
+
+To lint/test `ultratrace`, use [`nox`](https://nox.thea.codes/en/stable/):
+```sh
+$ nox --help
+```
+
+To exit the development environment, just run
+```sh
+$ deactivate
+```

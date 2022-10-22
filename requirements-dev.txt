@@ -1,0 +1,7 @@
+# We want to pull in all of the "runtime" dependencies/versions...
+--requirement ./requirements.txt
+
+# ... but also install our package in "editable" mode, which means
+# that our changes will be visible immediately (without needing to
+# reinstall).
+--editable .[dev]

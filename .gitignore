@@ -9,6 +9,7 @@ data
 
 # or virtualenv/pipenv files
 Pipfile*
+venv
 
 # python caches
 __pycache__
