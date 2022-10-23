@@ -127,10 +127,7 @@ The theme should just look right on Mac.
 
 #### Setting the theme on linux
 
-We use [`ttkthemes`](https://ttkthemes.readthedocs.io/en/latest/), which can be installed with `pip`, e.g.,
-```sh
-$ python3 -m pip install --user ttkthemes
-```
+We use [`ttkthemes`](https://ttkthemes.readthedocs.io/en/latest/).
 
 Add the following line to your `~/.Xresources` file:
 ```
