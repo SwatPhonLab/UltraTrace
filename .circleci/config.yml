@@ -1,11 +1,96 @@
-version: 2
+version: 2.1
+
+commands:
+  install-and-check:
+    parameters:
+      python:
+        type: string
+
+    steps:
+      - run:
+          name: upgrade pip and friends
+          command: |
+            << parameters.python >> -m pip install \
+                pip==22.3 \
+                setuptools==65.5.0 \
+                wheel==0.38.0
+
+      - run:
+          name: install ultratrace
+          command: |
+            << parameters.python >> -m pip install \
+                --requirement ./requirements-dev.txt
+
+      - run: nox
+
 jobs:
-  build:
+  ubuntu:
     docker:
-      - image: circleci/python:3.7.2
+      - image: ubuntu:18.04
     steps:
       - checkout
-      - run: ./install.sh
-      - run: sudo pip install boto3 mypy_boto3_s3 nox
-      - run: ./scripts/download-test-data
-      - run: nox
+
+      - run:
+          name: install system packages
+          command: |
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install --yes \
+                portaudio19-dev \
+                python3.8 \
+                python3.8-dev \
+                python3.8-venv \
+                python3-pip \
+                python3-tk
+
+      - install-and-check:
+          python: python3.8
+
+  fedora:
+    docker:
+      - image: fedora:35
+    steps:
+      - checkout
+
+      - run:
+          name: install system packages
+          command: |
+            dnf --assumeyes install \
+                https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
+                https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+            dnf --assumeyes update
+            dnf --assumeyes install \
+                gcc \
+                portaudio-devel \
+                python3-devel \
+                python3-tkinter \
+                python3-pip
+
+      - install-and-check:
+          python: python3.10
+
+  macos:
+    macos:
+      xcode: 13.2.1  # latest for Big Sur
+    environment:
+      # https://circleci.com/docs/using-macos/#optimizing-homebrew
+      HOMEBREW_NO_AUTO_UPDATE: 1
+    steps:
+      - checkout
+
+      - run:
+          name: install system packages
+          command: |
+            brew install \
+                portaudio \
+                python-tk@3.9
+
+      - install-and-check:
+          python: python3.9
+
+workflows:
+  main:
+    jobs:
+      - ubuntu
+      - fedora
+      - macos

@@ -1,4 +1,5 @@
 # UltraTrace
+
 This is a tool for [currently] manual annotation of 2D UTI (Ultrasound Tongue Imaging) data.
 
 You can have a look at our [UltraFest IX presentation](https://swatphonlab.github.io/2020-UltraTrace-presentation/presentation.html) for some details on featureset and functionality as of October, 2020.
@@ -8,39 +9,89 @@ You can have a look at our [UltraFest IX presentation](https://swatphonlab.githu
 
 ## Installation
 
-### Linux (apt or dnf)
+This tool requires the following system packages to be installed:
 
-1. Download the UltraTrace source code, e.g. using `git`.
-2. Run setup in the UltraTrace directory:
-```bash
-$ ./install.sh
-$ python3 setup.py install
+* [`portaudio`](http://www.portaudio.com/)
+* [`python3`](https://www.python.org/) (3.7 or later)
+
+Additionally, you'll need the following Python components (which are sometimes distributed separately):
+
+* [Python development headers](https://devguide.python.org/getting-started/setup-building/#install-dependencies)
+* [`pip`](https://pypi.org/project/pip/)
+* [`tkinter`](https://docs.python.org/3/library/tkinter.html)
+* [`venv`](https://docs.python.org/3/library/venv.html)
+
+See below for platform-specific installation instructions:
+* [Ubuntu](#ubuntu)
+* [Fedora](#fedora)
+* [macOS](#macos)
+* [Windows](#windows)
+
+Once these libraries are installed, you can just `pip install` the package with
+
+```sh
+$ python3 -m pip install -r ./requirements.txt
+```
+
+NOTE: For hacking on `ultratrace` itself, see [Development](#development) below.
+
+NOTE: You probably want to install into a [virtual environment](https://docs.python.org/3/tutorial/venv.html) to avoid conflicts with system packages.  Alternatively, you can do a [`--user` installation](https://pip.pypa.io/en/latest/user_guide/#user-installs).
+
+### Ubuntu
+
+Supported versions: 18.04, 20.04
+
+```sh
+$ apt-get update
+$ apt-get install --yes \
+    portaudio19-dev \
+    python3.8 \
+    python3.8-dev \
+    python3.8-venv \
+    python3-pip \
+    python3-tk
+```
+
+### Fedora
+
+Supported versions: 35, 36, 37
+
+```sh
+$ dnf --assumeyes install \
+    https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
+    https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+$ dnf --assumeyes update
+$ dnf --assumeyes install \
+    gcc \
+    portaudio-devel \
+    python3-devel \
+    python3-tkinter \
+    python3-pip
 ```
 
 ### macOS
 
-1. Install [Homebrew](https://brew.sh).
-2. Download the UltraTrace source code, e.g. using `git`.
-3. Use Homebrew to install python3:
-```bash
-$ brew install python3
-```
-4. Run setup in the UltraTrace directory:
-```bash
-$ python3 setup.py install
+Supported versions: Big Sur, Monterey
+
+These instructions use the [Homebrew](https://brew.sh) package manager.
+
+```sh
+$ brew update
+$ brew install \
+    portaudio \
+    python-tk@3.9
 ```
 
 ### Windows
 
-1. Install python3
-2. Make sure you have pip
-3. Install ffmpeg and add to PATH
-4. Run `setup.py`
+TODO
 
-## Use
+## Usage
 
-```bash
-$ python3 -m ultratrace /path/to/data
+Once [installed](#installation), you can just run
+
+```sh
+$ ultratrace path/to/data
 ```
 
 ### Data format
@@ -72,10 +123,9 @@ The theme should just look right on Mac.
 
 #### Setting the theme on linux
 
-Use pip3 to install ttkthemes.
+We use [`ttkthemes`](https://ttkthemes.readthedocs.io/en/latest/).
 
 Add the following line to your `~/.Xresources` file:
-
 ```
 *TtkTheme: arc
 ```
@@ -83,3 +133,21 @@ Add the following line to your `~/.Xresources` file:
 You may select something other than clam for your theme.  Currently, the main options are something like this: `arc`, `plastik`, `clearlooks`, `elegance`, `radiance`, `equilux`, `black`, `smog`, `scidblue`, etc.  See the [ttkthemes documentation](https://ttkthemes.readthedocs.io/) for more information.
 
 Otherwise it'll fall back to `*TtkTheme`, and if that's not specified in `~/.Xresources`, it'll fall back to `clam`.
+
+## Development
+
+To hack on `ultratrace`, you should first [install all required system libraries](#installation).  Then, you can set up a development environment by running
+
+```sh
+$ source dev/env.sh
+```
+
+To lint/test `ultratrace`, use [`nox`](https://nox.thea.codes/en/stable/):
+```sh
+$ nox --help
+```
+
+To exit the development environment, just run
+```sh
+$ deactivate
+```

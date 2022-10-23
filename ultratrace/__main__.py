@@ -626,7 +626,7 @@ class App(ThemedTk):
 		except ValueError:
 			error( 'Please enter an integer!' )
 
-if __name__=='__main__':
+def main() -> None:
 	app = App()
 	# app.mainloop()
 	while True:
@@ -635,3 +635,6 @@ if __name__=='__main__':
 			break
 		except UnicodeDecodeError as e:
 			error(e)
+
+if __name__=='__main__':
+	main()
