@@ -74,7 +74,7 @@ $ dnf --assumeyes install \
 
 ### macOS
 
-Supported versions: TODO
+Supported versions: Big Sur, Monterey
 
 These instructions use the [Homebrew](https://brew.sh) package manager.
 
@@ -82,7 +82,8 @@ These instructions use the [Homebrew](https://brew.sh) package manager.
 $ brew update
 $ brew install \
     ffmpeg \
-    portaudio
+    portaudio \
+    python-tk@3.9
 ```
 
 ### Windows

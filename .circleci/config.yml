@@ -71,8 +71,29 @@ jobs:
       - install-and-check:
           python: python3.10
 
+  macos:
+    macos:
+      xcode: 13.2.1  # latest for Big Sur
+    environment:
+      # https://circleci.com/docs/using-macos/#optimizing-homebrew
+      HOMEBREW_NO_AUTO_UPDATE: 1
+    steps:
+      - checkout
+
+      - run:
+          name: install system packages
+          command: |
+            brew install \
+                ffmpeg \
+                portaudio \
+                python-tk@3.9
+
+      - install-and-check:
+          python: python3.9
+
 workflows:
   main:
     jobs:
       - ubuntu
       - fedora
+      - macos
