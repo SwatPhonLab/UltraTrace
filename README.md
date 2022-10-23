@@ -11,7 +11,6 @@ You can have a look at our [UltraFest IX presentation](https://swatphonlab.githu
 
 This tool requires the following system packages to be installed:
 
-* [`ffmpeg`](https://ffmpeg.org/)
 * [`portaudio`](http://www.portaudio.com/)
 * [`python3`](https://www.python.org/) (3.7 or later)
 
@@ -45,7 +44,6 @@ Supported versions: 18.04, 20.04
 ```sh
 $ apt-get update
 $ apt-get install --yes \
-    ffmpeg \
     portaudio19-dev \
     python3.8 \
     python3.8-dev \
@@ -64,7 +62,6 @@ $ dnf --assumeyes install \
     https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 $ dnf --assumeyes update
 $ dnf --assumeyes install \
-    ffmpeg \
     gcc \
     portaudio-devel \
     python3-devel \
@@ -81,7 +78,6 @@ These instructions use the [Homebrew](https://brew.sh) package manager.
 ```sh
 $ brew update
 $ brew install \
-    ffmpeg \
     portaudio \
     python-tk@3.9
 ```
