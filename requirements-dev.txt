@@ -1,5 +1,11 @@
-# We want to pull in all of the "runtime" dependencies/versions...
+# We want to pull in all of the "runtime" dependencies/versions ...
 --requirement ./requirements.txt
+
+# ... and also our "development" dependencies/versions ...
+flake8==5.0.4
+black==22.10.0
+mypy==0.982
+pytest==7.1.3
 
 # ... but also install our package in "editable" mode, which means
 # that our changes will be visible immediately (without needing to
