@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-class Module(ABC):
 
+class Module(ABC):
     @abstractmethod
     def update(*args, **kwargs):
         pass
@@ -17,4 +17,3 @@ class Module(ABC):
     @abstractmethod
     def grid_remove(*args, **kwargs):
         pass
-
