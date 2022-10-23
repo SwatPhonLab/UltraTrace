@@ -18,5 +18,9 @@ __pycache__
 .nox
 .coverage
 
+# build artifacts
+build/
+*.egg-info
+
 # local environment setup
 .env
