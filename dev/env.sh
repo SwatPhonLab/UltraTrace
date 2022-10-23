@@ -27,7 +27,4 @@ pip install --upgrade \
     wheel==0.38.0
 
 pip install \
-    nox==2022.8.7
-
-pip install \
     --requirement "$ULTRATRACE_ROOT/requirements-dev.txt"

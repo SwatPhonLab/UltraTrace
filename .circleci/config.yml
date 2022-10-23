@@ -29,9 +29,9 @@ jobs:
                 wheel==0.38.0
 
       - run:
-          name: install nox
+          name: install ultratrace
           command: |
             python3.8 -m pip install \
-                nox==2022.8.7
+                --requirement ./requirements-dev.txt
 
       - run: nox
