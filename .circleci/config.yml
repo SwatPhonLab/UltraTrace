@@ -1,6 +1,30 @@
-version: 2
+version: 2.1
+
+commands:
+  install-and-check:
+    parameters:
+      python:
+        type: string
+
+    steps:
+      - run:
+          name: upgrade pip and friends
+          command: |
+            << parameters.python >> -m pip install \
+                pip==22.3 \
+                setuptools==65.5.0 \
+                wheel==0.38.0
+
+      - run:
+          name: install ultratrace
+          command: |
+            << parameters.python >> -m pip install \
+                --requirement ./requirements-dev.txt
+
+      - run: nox
+
 jobs:
-  build:
+  ubuntu:
     docker:
       - image: ubuntu:18.04
     steps:
@@ -20,18 +44,10 @@ jobs:
                 python3-pip \
                 python3-tk
 
-      - run:
-          name: upgrade pip and friends
-          command: |
-            python3.8 -m pip install \
-                pip==22.3 \
-                setuptools==65.5.0 \
-                wheel==0.38.0
+      - install-and-check:
+          python: python3.8
 
-      - run:
-          name: install ultratrace
-          command: |
-            python3.8 -m pip install \
-                --requirement ./requirements-dev.txt
-
-      - run: nox
+workflows:
+  main:
+    jobs:
+      - ubuntu
