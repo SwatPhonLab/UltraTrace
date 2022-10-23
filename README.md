@@ -56,14 +56,20 @@ $ apt-get install --yes \
 
 ### Fedora
 
-Supported versions: TODO
+Supported versions: 35, 36, 37
 
 ```sh
-$ dnf upgrade
-$ dnf install \
+$ dnf --assumeyes install \
+    https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
+    https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+$ dnf --assumeyes update
+$ dnf --assumeyes install \
     ffmpeg \
-    python3 \
-    portaudio
+    gcc \
+    portaudio-devel \
+    python3-devel \
+    python3-tkinter \
+    python3-pip
 ```
 
 ### macOS
