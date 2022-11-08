@@ -1,4 +1,7 @@
 # UltraTrace
+
+![Logo](logo1.jpg)
+
 This is a tool for [currently] manual annotation of 2D UTI (Ultrasound Tongue Imaging) data.
 
 You can have a look at our [UltraFest IX presentation](https://swatphonlab.github.io/2020-UltraTrace-presentation/presentation.html) for some details on featureset and functionality as of October, 2020.
@@ -14,20 +17,15 @@ You can have a look at our [UltraFest IX presentation](https://swatphonlab.githu
 2. Run setup in the UltraTrace directory:
 ```bash
 $ ./install.sh
-$ python3 setup.py install
 ```
 
 ### macOS
 
 1. Install [Homebrew](https://brew.sh).
 2. Download the UltraTrace source code, e.g. using `git`.
-3. Use Homebrew to install python3:
+3. Run setup in the UltraTrace directory:
 ```bash
-$ brew install python3
-```
-4. Run setup in the UltraTrace directory:
-```bash
-$ python3 setup.py install
+$ ./install.sh
 ```
 
 ### Windows
