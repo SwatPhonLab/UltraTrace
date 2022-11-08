@@ -1,5 +1,7 @@
 # UltraTrace
 
+![Logo](logo1.jpg)
+
 This is a tool for [currently] manual annotation of 2D UTI (Ultrasound Tongue Imaging) data.
 
 You can have a look at our [UltraFest IX presentation](https://swatphonlab.github.io/2020-UltraTrace-presentation/presentation.html) for some details on featureset and functionality as of October, 2020.
