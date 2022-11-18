@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if which brew &> /dev/null; then
-    brew install portaudio ffmpeg libav
+    brew install python3 portaudio ffmpeg libav
 elif which apt-get &> /dev/null; then
     sudo apt-get update
     sudo apt-get install python3 \
