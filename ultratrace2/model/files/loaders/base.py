@@ -115,3 +115,22 @@ class SoundFileLoader(FileLoaderBase):
     @abstractmethod
     def __len__(self) -> int:
         """Length of file in ms"""
+
+
+class SpectrogramFileLoader(FileLoaderBase):
+    @classmethod
+    @abstractmethod
+    def from_sound_file(cls: Type[Self], sound_file: SoundFileLoader) -> Self:
+        ...
+
+    @abstractmethod
+    def get_image(
+        self,
+        start_time_ms: int,
+        stop_time_ms: int,
+        window_length: float,
+        max_frequency: float,
+        dynamic_range: float,
+        n_slices: int,
+    ) -> Image.Image:
+        ...

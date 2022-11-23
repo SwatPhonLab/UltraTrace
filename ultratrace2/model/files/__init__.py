@@ -70,3 +70,12 @@ try:
     )
 except ImportError as e:
     logger.warning(e)
+
+try:
+    from .loaders import ParselmouthLoader
+
+    __register(
+        [".pmpkl"], ["application/octet-stream"], ParselmouthLoader,
+    )
+except ImportError as e:
+    logger.warning(e)
