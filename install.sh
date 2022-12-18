@@ -10,7 +10,7 @@ elif which apt-get &> /dev/null; then
         libav-tools
 elif which dnf &> /dev/null; then
     sudo dnf up
-    sudo dnf in python3 portaudio ffmpeg
+    sudo dnf in python3-devel portaudio-devel ffmpeg
 else
     echo "Your package manager is not currently supported."
     echo "Currently supported managers are: brew, apt, dnf."
