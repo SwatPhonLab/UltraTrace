@@ -2,6 +2,7 @@
 
 if which brew &> /dev/null; then
     brew install python3 portaudio ffmpeg libav
+    sudo python3 get_font.py
 elif which apt-get &> /dev/null; then
     sudo apt-get update
     sudo apt-get install python3 \
