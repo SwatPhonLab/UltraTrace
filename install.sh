@@ -6,12 +6,11 @@ if which brew &> /dev/null; then
 elif which apt-get &> /dev/null; then
     sudo apt-get update
     sudo apt-get install python3 \
-        portaudio19-dev libportaudio2 \
-        ffmpeg \
-        libav-tools
+        portaudio19-dev libportaudio2 ffmpeg
 elif which dnf &> /dev/null; then
     sudo dnf up
-    sudo dnf in python3-devel python3-pillow-tk portaudio-devel ffmpeg
+    sudo dnf in python3-devel python3-pillow-tk \
+        portaudio-devel ffmpeg-devel
 else
     echo "Your package manager is not currently supported."
     echo "Currently supported managers are: brew, apt, dnf."

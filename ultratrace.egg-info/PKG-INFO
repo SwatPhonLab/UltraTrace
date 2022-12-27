@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: ultratrace
+Version: 0.0.1
+Summary: A tool for manually annotating ultrasound tongue imaging (UTI) data
+Author: Jonathan Washington
+Author-email: jwashin1@swarthmore.edu
+Provides-Extra: dev
+License-File: LICENSE
+License-File: AUTHORS
