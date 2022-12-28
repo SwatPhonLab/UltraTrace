@@ -1,2 +1,0 @@
-[console_scripts]
-ultratrace2 = ultratrace2.__main__:main
