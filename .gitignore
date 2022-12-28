@@ -16,6 +16,7 @@ __pycache__
 .mypy_cache
 .nox
 .coverage
+.egg-info
 
 # local environment setup
 .env
