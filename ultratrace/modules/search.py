@@ -7,6 +7,7 @@ import re
 from tkinter import Toplevel, StringVar, Grid
 from tkinter.ttk import Treeview, Button, Entry, Label, Scrollbar
 
+
 class Search(Module):
     def __init__(self, app):
         self.app = app
@@ -20,9 +21,11 @@ class Search(Module):
         # it should call SearchModule.loadIntervals()
         self.intervals = []
         self.loadIntervals()
+
     def handleClose(self, event=None):
         self.window.destroy()
         self.window = None
+
     def createWindow(self):
         self.window = Toplevel(self.app)
         self.window.title('Search')
@@ -46,11 +49,13 @@ class Search(Module):
         Grid.rowconfigure(self.window, 2, weight=1)
         Grid.columnconfigure(self.window, 0, weight=1)
         self.scroll.grid(row=2, column=3, sticky='ns')
+
     def openSearch(self):
         if self.window == None:
             self.createWindow()
         self.window.lift()
         self.input.focus()
+
     def loadIntervals(self):
         filecount = len(self.app.Data.getTopLevel('files'))
         self.intervals = []
@@ -64,6 +69,7 @@ class Search(Module):
                         for el in tier:
                             if el.mark:
                                 self.intervals.append((el, tier.name, filename))
+
     def search(self, event=None):
         if self.regex.get() == '':
             self.results = []
@@ -74,17 +80,19 @@ class Search(Module):
                 s = pat.search(i[0].mark)
                 if s:
                     disp = i[0].mark
-                    a = max(0, s.start()-self.context_size)
-                    b = min(s.end()+self.context_size, len(disp))
-                    self.results.append(i + (('...' if a > 0 else '')+disp[a:b]+('...' if b < len(disp) else ''),))
+                    a = max(0, s.start() - self.context_size)
+                    b = min(s.end() + self.context_size, len(disp))
+                    self.results.append(i + (('...' if a > 0 else '') + disp[a:b] + ('...' if b < len(disp) else ''),))
         self.resultCount.configure(text='%s results' % len(self.results))
         for kid in self.resultList.get_children():
             self.resultList.delete(kid)
         for row, res in enumerate(self.results):
             ls = (res[2], res[1], '%s-%s' % (res[0].minTime, res[0].maxTime), res[3])
             self.resultList.insert('', 'end', iid=str(row), values=ls)
+
     def onClick(self, event=None):
         self.jumpTo(int(self.resultList.selection()[0]))
+
     def jumpTo(self, index):
         self.app.filesJumpTo(self.results[index][2])
         self.app.TextGrid.selectedTier.set(self.results[index][1])

@@ -1,14 +1,14 @@
 from .base import Module
-from .. import util
+# from .. import util
 from ..util.logging import *
 from ..util.framereader import ULTScanLineReader, DicomReader, DicomPNGReader, LABEL_TO_READER, READERS
-from ..widgets import Header
+# from ..widgets import Header
 
-import os
-import PIL
+# import os
+# import PIL
 
-#from tkinter.ttk import Button, Frame, OptionMenu
-#from tkinter import StringVar
+# from tkinter.ttk import Button, Frame, OptionMenu
+# from tkinter import StringVar
 
 import wx
 
@@ -17,53 +17,52 @@ LIBS_INSTALLED = False
 try:
     from ..widgets import ZoomFrame
     import numpy as np
-    import pydicom # pydicom
+    import pydicom  # pydicom
     LIBS_INSTALLED = True
 except ImportError as e:
     warn(e)
 
+
 class Dicom(Module):
     def __init__(self, app):
-        info( ' - initializing module: Dicom')
+        info(' - initializing module: Dicom')
 
         self.app = app
 
         if LIBS_INSTALLED:
             # grid load button
-            #self.frame_holder = Frame(self.app.LEFT)#, pady=7)
-            #self.frame_holder.grid( row=2 )
-            #self.frame = Frame(self.frame_holder)
-            #self.frame.pack(expand=True)
+            # self.frame_holder = Frame(self.app.LEFT)#, pady=7)
+            # self.frame_holder.grid( row=2 )
+            # self.frame = Frame(self.frame_holder)
+            # self.frame.pack(expand=True)
 
-            #self.method = StringVar(self.app)
-            #self.mode = None
-            #self.reader = None
+            # self.method = StringVar(self.app)
+            # self.mode = None
+            # self.reader = None
 
             # zoom buttons
-            #self.zbframe = Frame(self.app.LEFT)
-            #self.zbframe.grid( row=6, column=0)
+            # self.zbframe = Frame(self.app.LEFT)
+            # self.zbframe.grid( row=6, column=0)
 
             # zoom frame (contains our tracing canvas)
-            #self.zframe = ZoomFrame(self.app.RIGHT, 1.3, app)
+            # self.zframe = ZoomFrame(self.app.RIGHT, 1.3, app)
 
             # zoom in, zoom out, reset zoom buttons
-            #self.header = Header(self.zbframe, text="Zoom")
-            #self.zoomResetBtn = Button(self.zbframe, text='⊜', command=self.zoomReset, width=1.5, style="symbol.TButton", takefocus=0)#, pady=7 )
-            #self.zoomInBtn = Button(self.zbframe, text='⊕', command=self.zoomIn, width=1.5, style="symbol.TButton", takefocus=0)
-            #self.zoomOutBtn = Button(self.zbframe, text='⊝', command=self.zoomOut, width=1.5, style="symbol.TButton", takefocus=0)
+            # self.header = Header(self.zbframe, text="Zoom")
+            # self.zoomResetBtn = Button(self.zbframe, text='⊜', command=self.zoomReset, width=1.5, style="symbol.TButton", takefocus=0)#, pady=7 )
+            # self.zoomInBtn = Button(self.zbframe, text='⊕', command=self.zoomIn, width=1.5, style="symbol.TButton", takefocus=0)
+            # self.zoomOutBtn = Button(self.zbframe, text='⊝', command=self.zoomOut, width=1.5, style="symbol.TButton", takefocus=0)
 
             # reset zoom keyboard shortcut
-            #if util.get_platform() == 'Linux':
+            # if util.get_platform() == 'Linux':
             #    self.app.bind('<Control-0>', self.zoomReset )
-            #else: self.app.bind('<Command-0>', self.zoomReset )
-            #self.reset()
-            #self.grid()
+            # else: self.app.bind('<Command-0>', self.zoomReset )
+            # self.reset()
+            # self.grid()
 
             # FIXME: replace this button with the ultrasound frames
-            self.buttonRedo = wx.BitmapButton(self.app, id=wx.ID_REDO, bitmap=wx.ArtProvider.GetBitmap(wx.ART_REDO), size=(32,32))
+            self.buttonRedo = wx.BitmapButton(self.app, id=wx.ID_REDO, bitmap=wx.ArtProvider.GetBitmap(wx.ART_REDO), size=(32, 32))
             self.app.ultrasoundBox.Add(self.buttonRedo, flag=wx.BOTTOM, border=10)
-
-            
 
     def zoomReset(self, fromButton=False):
         '''
@@ -77,7 +76,8 @@ class Dicom(Module):
             # self.zframe.canvas.bind('<Motion>', self.app.onMotion )
 
             # we want to go here only after a button press
-            if fromButton: self.app.framesUpdate()
+            if fromButton:
+                self.app.framesUpdate()
 
     def zoomIn(self):
         self.zframe.zoomIn()
@@ -109,12 +109,12 @@ class Dicom(Module):
             if self.mode == 'dicom':
                 dcm = self.app.Data.checkFileLevel('.dicom')
                 if dcm:
-                  if cls == DicomPNGReader and self.app.Data.getFileLevel('processed'):
-                    self.reader = cls(dcm, self.app.Data.path)
-                  else:
-                    self.reader = cls(dcm)
+                    if cls == DicomPNGReader and self.app.Data.getFileLevel('processed'):
+                        self.reader = cls(dcm, self.app.Data.path)
+                    else:
+                        self.reader = cls(dcm)
                 else:
-                  self.reader = None
+                    self.reader = None
             elif self.mode == 'ult':
                 ult = self.app.Data.checkFileLevel('.ult')
                 meta = self.app.Data.checkFileLevel('US.txt')
@@ -145,8 +145,8 @@ class Dicom(Module):
             return rd.getFrameTimes()
         elif self.mode == 'ult':
             rd = ULTScanLineReader(
-              self.app.Data.unrelativize(self.app.Data.getFileLevel('.ult')),
-              self.app.Data.unrelativize(self.app.Data.getFileLevel('US.txt')))
+                self.app.Data.unrelativize(self.app.Data.getFileLevel('.ult')),
+                self.app.Data.unrelativize(self.app.Data.getFileLevel('US.txt')))
             return rd.getFrameTimes()
         else:
             return [0]
@@ -186,16 +186,16 @@ class Dicom(Module):
         '''
         Grid frame navigation, zoom reset, and Control (Undo/Redo) widgets
         '''
-        self.app.framesHeader.grid(   row=0 )
-        self.app.framesPrevBtn.grid(      row=0, column=0 )
-        self.app.framesEntryText.grid( row=0, column=1 )
-        self.app.framesEntryBtn.grid(  row=0, column=2 )
-        self.app.framesNextBtn.grid(  row=0, column=3 )
+        self.app.framesHeader.grid(row=0)
+        self.app.framesPrevBtn.grid(row=0, column=0)
+        self.app.framesEntryText.grid(row=0, column=1)
+        self.app.framesEntryBtn.grid(row=0, column=2)
+        self.app.framesNextBtn.grid(row=0, column=3)
 
-        #self.header.grid(row=0, column=0, columnspan=5)
-        self.zoomInBtn.grid( row=0, column=3)
-        self.zoomResetBtn.grid( row=0, column=2 )
-        self.zoomOutBtn.grid( row=0, column=1)
+        # self.header.grid(row=0, column=0, columnspan=5)
+        self.zoomInBtn.grid(row=0, column=3)
+        self.zoomResetBtn.grid(row=0, column=2)
+        self.zoomOutBtn.grid(row=0, column=1)
         self.app.Control.grid()
 
     def grid_remove(self):
