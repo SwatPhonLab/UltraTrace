@@ -1,8 +1,9 @@
 from tkinter.ttk import Frame, Label
 from tkinter import Toplevel
 
+
 class CanvasTooltip:
-    '''
+    """
     It creates a tooltip for a given canvas tag or id as the mouse is
     above it.
 
@@ -14,15 +15,19 @@ class CanvasTooltip:
            41079350#41079350
 
     Alberto Vassena on 2016.12.10.
-    '''
+    """
 
-    def __init__(self, canvas, tag_or_id,
-                 *,
-                 bg='#FFFFEA',
-                 pad=(5, 3, 5, 3),
-                 text='canvas info',
-                 waittime=400,
-                 wraplength=250):
+    def __init__(
+        self,
+        canvas,
+        tag_or_id,
+        *,
+        bg="#FFFFEA",
+        pad=(5, 3, 5, 3),
+        text="canvas info",
+        waittime=400,
+        wraplength=250
+    ):
         self.waittime = waittime  # in miliseconds, originally 500
         self.wraplength = wraplength  # in pixels, originally 180
         self.canvas = canvas
@@ -53,16 +58,16 @@ class CanvasTooltip:
             self.canvas.after_cancel(id_)
 
     def show(self, event=None):
-        def tip_pos_calculator(canvas, label,
-                               *,
-                               tip_delta=(10, 5), pad=(5, 3, 5, 3)):
+        def tip_pos_calculator(canvas, label, *, tip_delta=(10, 5), pad=(5, 3, 5, 3)):
 
             c = canvas
 
             s_width, s_height = c.winfo_screenwidth(), c.winfo_screenheight()
 
-            width, height = (pad[0] + label.winfo_reqwidth() + pad[2],
-                             pad[1] + label.winfo_reqheight() + pad[3])
+            width, height = (
+                pad[0] + label.winfo_reqwidth() + pad[2],
+                pad[1] + label.winfo_reqheight() + pad[3],
+            )
 
             mouse_x, mouse_y = c.winfo_pointerxy()
 
@@ -109,20 +114,22 @@ class CanvasTooltip:
         # Leaves only the label and removes the app window
         self.tw.wm_overrideredirect(True)
 
-        win = Frame(self.tw,
-                       # background=bg,
-                       borderwidth=0)
-        label = Label(win,
-                          text=self.text,
-                          justify='left',
-                          background=bg,
-                          relief="solid",
-                          borderwidth=0,
-                          wraplength=self.wraplength)
+        win = Frame(
+            self.tw,
+            # background=bg,
+            borderwidth=0,
+        )
+        label = Label(
+            win,
+            text=self.text,
+            justify="left",
+            background=bg,
+            relief="solid",
+            borderwidth=0,
+            wraplength=self.wraplength,
+        )
 
-        label.grid(padx=(pad[0], pad[2]),
-                   pady=(pad[1], pad[3]),
-                   sticky='nsew')
+        label.grid(padx=(pad[0], pad[2]), pady=(pad[1], pad[3]), sticky="nsew")
         win.grid()
 
         x, y = tip_pos_calculator(canvas, label)
