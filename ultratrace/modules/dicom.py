@@ -61,7 +61,8 @@ class Dicom(Module):
 
             # FIXME: replace this button with the ultrasound frames
             self.buttonRedo = wx.BitmapButton(self.app, id=wx.ID_REDO, bitmap=wx.ArtProvider.GetBitmap(wx.ART_REDO), size=(32,32))
-            self.app.ultrasoundBox.Add(self.buttonRedo, flag=wx.BOTTOM, border=10)
+            #JNW removed in restructuring 2023-03-25
+            #self.app.ultrasoundBox.Add(self.buttonRedo, flag=wx.BOTTOM, border=10)
 
             
 

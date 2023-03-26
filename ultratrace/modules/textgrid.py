@@ -37,10 +37,10 @@ class TextGrid(Module):
         info( ' - initializing module: TextGrid' )
         self.app = app
         #self.frame = Frame(self.app.BOTTOM)
-        self.frame = self.app.audioTGBox
+        self.frame = self.app.audioTGPanel
         self.label_padx = 0
         #self.canvas_frame = Frame(self.app.BOTTOM)#, padx=self.label_padx)
-        self.canvas_frame = self.app.audioTGBox
+        self.canvas_frame = self.app.audioTGPanel
         ## JNW FIXME:
         #self.frame.grid( row=1, column=0, sticky='ne')
         #self.canvas_frame.grid(row=1, column=1 )

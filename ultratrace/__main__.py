@@ -14,14 +14,23 @@ import wx
 
 class Frame(wx.Frame):
 	
-	def __init__(self, parent, title):
-		super(Frame, self).__init__(parent, title=title)
+	#def __init__(self, parent, title):
+	#	super(Frame, self).__init__(parent, title=title)
+	def __init__(self, *a, **k):
+		wx.Frame.__init__(self, *a, **k)
 
-		info( 'initializing UltraTrace' )
+		info( 'initialising UltraTrace' )
+		self.preinitialise()
 
-		self.initialise()
+		info( ' - initialising interface' )
+		self.setWidgetDefaults()
+		modules.panels.Panel_root(self)
+		#self.buildWidgetSkeleton()
+		
+		info( ' - initialising modules' )
+		self.initialiserest()
 
-	def initialise(self):
+	def preinitialise(self):
 
 		# check if we were passed a command line argument
 		parser = argparse.ArgumentParser(prog='UltraTrace')
@@ -33,9 +42,10 @@ class Frame(wx.Frame):
 		self.Data = modules.Metadata( self, args.path )
 
 		# initialize the main app widgets
-		self.setWidgetDefaults()
-		self.buildWidgetSkeleton()
+		#self.setWidgetDefaults()
+		#self.buildWidgetSkeleton()
 
+	def initialiserest(self):
 		# initialize other modules
 		#self.Control = modules.Control(self)
 		self.Trace = modules.Trace(self)

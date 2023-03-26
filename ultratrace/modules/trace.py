@@ -87,10 +87,12 @@ class Trace(Module):
         #    # TODO: this assumes that the list of traces is non-empty
 
         self.app.layersBox.Add(self.layers)
-        self.app.controlBox.Add(self.app.layersBox)
+		  #JNW removed in restructuring 2023-03-25
+        #self.app.controlBox.Add(self.app.layersBox)
         self.app.Update()
         #self.app.SetSizerAndFit(self.app.controlBox)
-        self.app.SetSizerAndFit(self.app.hbox)
+		  #JNW removed in restructuring 2023-03-25
+        #self.app.SetSizerAndFit(self.app.hbox)
 
 
 
