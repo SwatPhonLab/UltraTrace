@@ -5,12 +5,14 @@ from .. import util
 import json
 import os
 import math
+import re
+import wx
 
-from tkinter import filedialog
+#from tkinter import filedialog
 from magic import Magic # python-magic
 
 class Metadata(Module):
-    def __init__(self, app, path):
+    def __init__(self, frame, path):
         '''
         opens a metadata file (or creates one if it doesn't exist), recursively searches a directory
             for acceptable files, writes metadata back into memory, and returns the metadata object
@@ -21,11 +23,16 @@ class Metadata(Module):
         '''
         info( ' - initializing module: Data')
         if path == None:
-            app.update()
-            path = filedialog.askdirectory(initialdir=os.getcwd(), title="Choose a directory")
-            if not path:
-                error("No directory chosen - exiting")
-                exit(1)
+            frame.update()
+            #path = filedialog.askdirectory(initialdir=os.getcwd(), title="Choose a directory")
+            with wx.DirDialog(frame, "Choose a directory", os.getcwd(), wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST) as dirDialogue:
+                if dirDialogue.ShowModal() == wx.ID_CANCEL:
+                    return  # nevermind
+                path = dirDialogue.GetPath()
+
+                if not path:
+                    error("No directory chosen - exiting")
+                    exit(1)
 
         debug( '   - parsing directory: `%s`' % path )
 
@@ -33,7 +40,7 @@ class Metadata(Module):
             severe( "   - ERROR: `%s` could not be located" % path )
             exit(1)
 
-        self.app = app
+        self.app = frame
         self.path = path
 
         self.mdfile = os.path.join( self.path, 'metadata.json' )
@@ -149,7 +156,10 @@ class Metadata(Module):
 
             self.write()
 
-        self.app.geometry( self.getTopLevel('geometry') )
+        #self.app.geometry( self.getTopLevel('geometry') )
+        dimensions = re.split('[\+x]', self.getTopLevel('geometry'))
+        dimensions = [int(i) for i in dimensions]
+        self.app.SetSize( dimensions[2], dimensions[3], dimensions[0], dimensions[1] )
         self.files = self.getFilenames()
 
     def importOldMeasurement(self, filepath, filename):

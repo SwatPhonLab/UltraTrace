@@ -1,3 +1,4 @@
+from .panels import Panel_root #, control_panel, ultrasound_panel, textgrid_panel
 from .control import Control
 from .dicom import Dicom
 from .metadata import Metadata
