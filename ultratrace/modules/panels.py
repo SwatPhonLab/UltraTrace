@@ -4,24 +4,33 @@ from ..util.logging import *
 # based on https://discuss.wxpython.org/t/within-frame-should-i-use-panels-or-not-to-contain-items/34818/2
 
 class Panel_root(wx.Panel):
-	def __init__(self, parent):
-		info( ' - initialising layout' )
-		self.Data = parent.Data
-		self.frameSV = parent.frameSV
-		self.app = parent
+    def __init__(self, parent):
+        info(' - initialising layout')
+        self.Data = parent.Data
+        self.frameSV = parent.frameSV
+        self.app = parent
 
-		wx.Panel.__init__(self, parent)
-		self.app.controlPanel = control_panel(self)
-		self.app.ultrasoundPanel = ultrasound_panel(self)
-		self.app.audioTGPanel = textgrid_panel(self)
+        wx.Panel.__init__(self, parent)
+        self.app.controlPanel = control_panel(self)
+        self.app.ultrasoundPanel = ultrasound_panel(self)
+        self.app.audioTGPanel = textgrid_panel(self)
+		
+		
+        controls_and_us = wx.BoxSizer(wx.HORIZONTAL)  
+        # spacer = wx.BoxSizer(wx.HORIZONTAL)  # add a horizontal spacer before controlPanel
+        # spacer.Add((0, 1), proportion=1, flag=wx.EXPAND)
+        # controls_and_us.Add(spacer, 1, wx.EXPAND)
+        controls_and_us.Add(self.app.controlPanel, 1, wx.EXPAND)
+	
+        # controls_and_us.Add(self.app.ultrasoundPanel, 1, wx.EXPAND) #yellow area
 
-		controls_and_us = wx.BoxSizer(wx.HORIZONTAL)
-		controls_and_us.Add(self.app.controlPanel, 1, wx.EXPAND)
-		controls_and_us.Add(self.app.ultrasoundPanel, 1, wx.EXPAND)
+        root_sizer = wx.BoxSizer(wx.VERTICAL)
+        root_sizer.Add(controls_and_us, 3, wx.EXPAND, border=100)
+        # root_sizer.Add(self.app.audioTGPanel,7, wx.EXPAND, 10) #green area
 
-		root_sizer = wx.BoxSizer(wx.VERTICAL)
-		root_sizer.Add(controls_and_us, 3, wx.EXPAND)
-		root_sizer.Add(self.app.audioTGPanel, 1, wx.EXPAND)
+        self.SetSizer(root_sizer)
+        self.Fit()
+        self.Layout()
 
 class control_panel(wx.Panel):
 	def __init__(self, parent):
@@ -52,7 +61,7 @@ class control_panel(wx.Panel):
 		####  FrameSelectorBox
 		self.frameSelectorBox = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Frames")
 		self.frameSelectorPrev = wx.Button(self, label="<", style=wx.BU_EXACTFIT)
-		self.frameSelectorText = wx.TextCtrl(self, style=wx.TE_RIGHT, value=self.frameSV)
+		self.frameSelectorText = wx.TextCtrl(self, style=wx.TE_CENTER, value=self.frameSV)
 		self.frameSelectorNext = wx.Button(self, label=">", style=wx.BU_EXACTFIT)
 		self.buttonPlayPause = wx.Button(self, label="⏯")# style=wx.BU_EXACTFIT)
 		self.setCharSize(self.frameSelectorNext, 1)
@@ -68,7 +77,7 @@ class control_panel(wx.Panel):
 
 		####  AnnotationsBox
 		self.annotationsBox = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Annotations")
-		self.buttonSelectAll = self.newIconButton(wx.ID_SELECTALL, "gtk-select-all")
+		self.buttonSelectAll = self.newIconButton(wx.ID_SELECTALL, wx.ART_OTHER)
 		self.buttonCopy = self.newIconButton(wx.ID_COPY, wx.ART_COPY)
 		#self.buttonCopy = wx.Button(self, id=wx.ID_COPY, style=wx.BU_NOTEXT | wx.BU_EXACTFIT)
 		#self.buttonCopy = wx.BitmapButton(self, id=wx.ID_COPY, bitmap=wx.ArtProvider.GetBitmap(wx.ART_COPY), size=(32,32))
@@ -98,14 +107,15 @@ class control_panel(wx.Panel):
 		self.viewBox.Add(self.buttonZoomFit, flag=wx.RIGHT, border=10)
 
 		####  LayersBox
-		#self.layersBox = wx.StaticBoxSizer(wx.VERTICAL, self, label="Layers")
+		self.layersBox = wx.StaticBoxSizer(wx.VERTICAL, self, label="Layers")
 
 		## add all sections to the control box
 		self.controlBox.AddMany([
-			(self.fileSelectorBox, 1, wx.EXPAND), ((0,10)),
+			((0,30)),(self.fileSelectorBox, 1, wx.EXPAND), ((0,10)),
 			(self.frameSelectorBox, 0, wx.EXPAND), ((0,10)),
 			(self.annotationsBox, 0, wx.EXPAND), ((0,10)),
-			(self.viewBox, 0, wx.EXPAND), ((0,10))
+			(self.viewBox, 0, wx.EXPAND), ((0,10)),
+			(self.layersBox, 0, wx.EXPAND), ((0,10))
 		])#(self.layersBox,0,wx.EXPAND)])
 
 		#self.grid.AddMany([(self.controlBox, 1, wx.EXPAND), (self.ultrasoundBox, 1, wx.EXPAND), (text3), (self.audioTGBox)])
@@ -127,7 +137,7 @@ class control_panel(wx.Panel):
 	def newIconButton(self, wxId, wxBmp):
 		#button = wx.Button(self, id=wxId, style=wx.BU_NOTEXT | wx.BU_EXACTFIT)
 		#button.SetBitmapLabel(wx.ArtProvider.GetBitmap(wxBmp,wx.ART_MENU))
-		button = wx.BitmapButton(self, id=wxId, bitmap=wx.ArtProvider.GetBitmap(wxBmp), size=(32,32))
+		button = wx.BitmapButton(self, id=wxId, bitmap=wx.ArtProvider.GetBitmapBundle(wxBmp), size=(32,32))
 		return button
 
 class ultrasound_panel(wx.Panel):

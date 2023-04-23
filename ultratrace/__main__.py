@@ -19,13 +19,16 @@ class Frame(wx.Frame):
 	def __init__(self, *a, **k):
 		wx.Frame.__init__(self, *a, **k)
 
+
+		self.SetPosition((200, 100))  # Replace x and y with the desired coordinates
+
 		info( 'initialising UltraTrace' )
 		self.preinitialise()
 
 		info( ' - initialising interface' )
 		self.setWidgetDefaults()
 		modules.panels.Panel_root(self)
-		#self.buildWidgetSkeleton()
+		# self.buildWidgetSkeleton()
 		
 		info( ' - initialising modules' )
 		self.initialiserest()
@@ -42,18 +45,18 @@ class Frame(wx.Frame):
 		self.Data = modules.Metadata( self, args.path )
 
 		# initialize the main app widgets
-		#self.setWidgetDefaults()
-		#self.buildWidgetSkeleton()
+		# self.setWidgetDefaults()
+		# self.buildWidgetSkeleton()
 
 	def initialiserest(self):
 		# initialize other modules
-		#self.Control = modules.Control(self)
+		# self.Control = modules.Control(self)
 		self.Trace = modules.Trace(self)
-		self.Dicom = modules.Dicom(self)
+		# self.Dicom = modules.Dicom(self)
 		self.Audio = modules.Playback(self)
 		self.TextGrid = modules.TextGrid(self)
-		#self.Spectrogram = modules.Spectrogram(self)
-		#self.Search = modules.Search(self)
+		# self.Spectrogram = modules.Spectrogram(self)
+		# self.Search = modules.Search(self)
 
 		info( ' - loading widgets' )
 
