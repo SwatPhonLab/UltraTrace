@@ -84,10 +84,52 @@ class Spectrogram(wx.Panel):
         # Bind event handlers or configure the canvas as needed
         self.canvas.Bind(wx.EVT_LEFT_DOWN, self.jumpToFrame)
 
+    # def drawSpectrogram(self, event=None):
+    #     x = np.arange(0, 3, 0.01)
+    #     y = np.sin(np.pi * x)
+    #     self.axes.plot(x, y)
+    #     self.canvas.draw()
     def drawSpectrogram(self, event=None):
-        x = np.arange(0, 3, 0.01)
-        y = np.sin(np.pi * x)
-        self.axes.plot(x, y)
+        if not LIBS_INSTALLED:
+            return
+
+        if self.app.Audio.current:
+            sound = parselmouth.Sound(self.app.Audio.current)
+            self.axes.clear()  # Clear the previous plot
+
+            ts_fac = 10000.0
+            wl = self.wl_box.GetValue()
+            screen_start = self.app.TextGrid.start
+            screen_end = self.app.TextGrid.end
+            screen_duration = screen_end - screen_start
+            audio_start = 0
+            audio_end = sound.get_total_duration()
+            real_start = max(screen_start, audio_start)
+            real_end = min(screen_end, audio_end)
+            duration = real_end - real_start
+
+        if duration <= 0:
+            return
+
+        self.ts = duration / ts_fac
+        extra = self.ts * math.floor(wl / self.ts)
+        start_time = max(0, real_start - extra)
+        end_time = min(real_end + extra, sound.get_total_duration())
+        sound_clip = sound.extract_part(from_time=start_time, to_time=end_time)
+
+        spec = sound_clip.to_spectrogram(window_length=wl, time_step=self.ts, maximum_frequency=self.spec_freq_max.GetValue())
+        self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
+
+        mx = self.spectrogram.max()
+        dyn = self.dyn_range_box.GetValue()
+        self.spectrogram = self.spectrogram.clip(mx - dyn, mx) - mx
+        self.spectrogram *= (-255.0 / dyn)
+
+        self.axes.imshow(self.spectrogram, cmap='gray', origin='lower', extent=(0, duration, 0, self.canvas_height))
+        self.axes.set_xlabel('Time')
+        self.axes.set_ylabel('A/D Counts')
+        self.axes.set_title('Spectrogram')
+
         self.canvas.draw()
 
 
