@@ -8,8 +8,12 @@ from PIL import Image
 import math
 
 import matplotlib
+import matplotlib.pyplot as plt
+
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.patches import Rectangle
+
 
 LIBS_INSTALLED = False
 
@@ -30,10 +34,13 @@ class Spectrogram(wx.Panel):
 
         self.app = parent
 
-        self.figure = Figure()
-        self.axes = self.figure.add_subplot(111)
+        self.figure = Figure([7, 1])
+        self.figure.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+
+        self.axes = self.figure.add_subplot(111, frameon=False, facecolor="red")
+        self.axes.set_xlabel('X-axis')
+
         self.canvas = FigureCanvas(self, -1, self.figure)
-        self.canvas.SetBackgroundColour('blue')
 
         self.spectrogram = None
 
@@ -84,54 +91,37 @@ class Spectrogram(wx.Panel):
         # Bind event handlers or configure the canvas as needed
         self.canvas.Bind(wx.EVT_LEFT_DOWN, self.jumpToFrame)
 
-    # def drawSpectrogram(self, event=None):
-    #     x = np.arange(0, 3, 0.01)
-    #     y = np.sin(np.pi * x)
-    #     self.axes.plot(x, y)
-    #     self.canvas.draw()
+        self.snd = parselmouth.Sound("/Users/jeremiah/Documents/ultrasound-data-example/20150629171639.flac")
+        
+        # Compute the spectrogram and intensity once in the constructor
+        self.intensity = self.snd.to_intensity()
+        self.spectrogram = self.snd.to_spectrogram()
+
+    def draw_spectrogram(self, dynamic_range=70):
+        X, Y = self.spectrogram.x_grid(), self.spectrogram.y_grid()
+        sg_db = 10 * np.log10(self.spectrogram.values)
+        self.axes.pcolormesh(X, Y, sg_db, vmin=sg_db.max() - dynamic_range, cmap='afmhot')
+        self.axes.set_ylim([self.spectrogram.ymin, self.spectrogram.ymax])
+        # self.axes.set_xlim(self.spectrogram.xmin, self.spectrogram.xmax)
+        # self.axes.set_ylim(self.spectrogram.ymin, self.spectrogram.ymax)
+
+
+    # def draw_intensity(self):
+    #     self.axes.plot(self.intensity.xs(), self.intensity.values.T, linewidth=3, color='w')
+    #     self.axes.plot(self.intensity.xs(), self.intensity.values.T, linewidth=1)
+    #     self.axes.grid(False)
+    #     self.axes.set_ylim(0)
+
+
     def drawSpectrogram(self, event=None):
-        if not LIBS_INSTALLED:
-            return
-
-        if self.app.Audio.current:
-            sound = parselmouth.Sound(self.app.Audio.current)
-            self.axes.clear()  # Clear the previous plot
-
-            ts_fac = 10000.0
-            wl = self.wl_box.GetValue()
-            screen_start = self.app.TextGrid.start
-            screen_end = self.app.TextGrid.end
-            screen_duration = screen_end - screen_start
-            audio_start = 0
-            audio_end = sound.get_total_duration()
-            real_start = max(screen_start, audio_start)
-            real_end = min(screen_end, audio_end)
-            duration = real_end - real_start
-
-        if duration <= 0:
-            return
-
-        self.ts = duration / ts_fac
-        extra = self.ts * math.floor(wl / self.ts)
-        start_time = max(0, real_start - extra)
-        end_time = min(real_end + extra, sound.get_total_duration())
-        sound_clip = sound.extract_part(from_time=start_time, to_time=end_time)
-
-        spec = sound_clip.to_spectrogram(window_length=wl, time_step=self.ts, maximum_frequency=self.spec_freq_max.GetValue())
-        self.spectrogram = 10 * np.log10(np.flip(spec.values, 0))
-
-        mx = self.spectrogram.max()
-        dyn = self.dyn_range_box.GetValue()
-        self.spectrogram = self.spectrogram.clip(mx - dyn, mx) - mx
-        self.spectrogram *= (-255.0 / dyn)
-
-        self.axes.imshow(self.spectrogram, cmap='gray', origin='lower', extent=(0, duration, 0, self.canvas_height))
-        self.axes.set_xlabel('Time')
-        self.axes.set_ylabel('A/D Counts')
-        self.axes.set_title('Spectrogram')
-
+        self.axes.clear()
+        self.draw_spectrogram()
+        plt.twinx()
+        # self.draw_intensity()
+        self.axes.set_xlim([self.snd.xmin, self.snd.xmax])
+        self.axes.xaxis.set_visible(False)
+        self.axes.yaxis.set_visible(False)
         self.canvas.draw()
-
 
 
 
@@ -142,6 +132,7 @@ class Spectrogram(wx.Panel):
 
     def restoreDefaults(self, event):
         self.doDefaults()
+        self.axes.cla()
         self.drawSpectrogram()
 
     def update(self):

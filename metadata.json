@@ -1,0 +1,56 @@
+{
+   "firstrun_path": "/Users/jeremiah/Documents/UltraTrace",
+   "defaultTraceName": "tongue",
+   "traces": {
+      "tongue": {
+         "color": "red",
+         "files": {}
+      }
+   },
+   "offset": 0,
+   "files": [
+      {
+         "processed": null,
+         "offset": null,
+         "_next": "entry_points",
+         "_prev": null,
+         ".txt": "ultratrace.egg-info/SOURCES.txt",
+         "name": "SOURCES",
+         ".TextGrid": "/Users/jeremiah/Documents/UltraTrace/SOURCES.TextGrid",
+         "NumberOfFrames": 1
+      },
+      {
+         "processed": null,
+         "offset": null,
+         "_next": "requirements",
+         "_prev": "SOURCES",
+         ".txt": "ultratrace.egg-info/entry_points.txt",
+         "name": "entry_points"
+      },
+      {
+         "processed": null,
+         "offset": null,
+         "_next": "requires",
+         "_prev": "entry_points",
+         ".txt": "requirements.txt",
+         "name": "requirements"
+      },
+      {
+         "processed": null,
+         "offset": null,
+         "_next": "top_level",
+         "_prev": "requirements",
+         ".txt": "ultratrace.egg-info/requires.txt",
+         "name": "requires"
+      },
+      {
+         "processed": null,
+         "offset": null,
+         "_next": null,
+         "_prev": "requires",
+         ".txt": "ultratrace.egg-info/top_level.txt",
+         "name": "top_level"
+      }
+   ],
+   "geometry": "1150x800+1400+480"
+}
