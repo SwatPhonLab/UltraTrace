@@ -50,6 +50,7 @@ class Spectrogram(wx.Panel):
 
         # Create a vertical sizer to manage the layout of child widgets
         vertical_sizer = wx.BoxSizer(wx.VERTICAL)
+        root_vertical_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Create a horizontal sizer to contain the vertical sizer and the canvas
         horizontal_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -60,9 +61,10 @@ class Spectrogram(wx.Panel):
         self.dyn_range_box = FS.FloatSpin(self, -1, min_val=0, max_val=10000, increment=10, value=0, agwStyle=FS.FS_LEFT)
 
         self.doDefaults()
-        self.axis_ceil_box.Bind(wx.EVT_SPINCTRL, self.drawSpectrogram)
-        self.wl_box.Bind(wx.EVT_SPINCTRL, self.drawSpectrogram)
-        self.dyn_range_box.Bind(wx.EVT_SPINCTRL, self.drawSpectrogram)
+        ### automatic actions on change
+        # self.axis_ceil_box.Bind(wx.EVT_SPINCTRL, self.drawSpectrogram)
+        # self.wl_box.Bind(wx.EVT_SPINCTRL, self.drawSpectrogram)
+        # self.dyn_range_box.Bind(wx.EVT_SPINCTRL, self.drawSpectrogram)
 
         # Create buttons
         self.default_btn = wx.Button(self, label='Standards')
@@ -79,17 +81,19 @@ class Spectrogram(wx.Panel):
         vertical_sizer.Add(self.apply_btn, 0, wx.EXPAND | wx.ALL, 5)
 
         # Add the vertical sizer and the canvas to the horizontal sizer
-        horizontal_sizer.Add((400,0))
+        horizontal_sizer.Add((300,0))
         horizontal_sizer.Add(vertical_sizer, 0, wx.EXPAND | wx.ALL, 5)
         horizontal_sizer.Add(self.canvas, 1, wx.EXPAND | wx.ALL, 5)
+        root_vertical_sizer.Add((0,400))
+        root_vertical_sizer.Add(horizontal_sizer)
 
         # Set the horizontal sizer as the main sizer for the panel
-        self.SetSizer(horizontal_sizer)
+        self.SetSizer(root_vertical_sizer)
         self.Fit()
 
 
         # Bind event handlers or configure the canvas as needed
-        self.canvas.Bind(wx.EVT_LEFT_DOWN, self.jumpToFrame)
+        # self.canvas.Bind(wx.EVT_LEFT_DOWN, self.jumpToFrame)
 
         self.snd = parselmouth.Sound("/Users/jeremiah/Documents/ultrasound-data-example/20150629171639.flac")
         
@@ -97,32 +101,71 @@ class Spectrogram(wx.Panel):
         self.intensity = self.snd.to_intensity()
         self.spectrogram = self.snd.to_spectrogram()
 
+    # def draw_spectrogram(self, dynamic_range=70):
+    #     X, Y = self.spectrogram.x_grid(), self.spectrogram.y_grid()
+    #     sg_db = 10 * np.log10(self.spectrogram.values)
+    #     self.axes.pcolormesh(X, Y, sg_db, vmin=sg_db.max() - dynamic_range, cmap='afmhot')
+    #     self.axes.set_ylim([self.spectrogram.ymin, self.spectrogram.ymax])
+    #     # self.axes.set_xlim(self.spectrogram.xmin, self.spectrogram.xmax)
+    #     # self.axes.set_ylim(self.spectrogram.ymin, self.spectrogram.ymax)
+
+
+########code that works
+    # def draw_spectrogram(self, dynamic_range=70, frequency_max=5000.0, wl=0.005):
+    #     X, Y = self.spectrogram.x_grid(), self.spectrogram.y_grid()
+    #     sg_db = 10 * np.log10(self.spectrogram.values)
+        
+    #     self.axes.pcolormesh(X, Y, sg_db, vmin=sg_db.max() - dynamic_range, cmap='afmhot')
+    #     self.axes.set_ylim([self.spectrogram.ymin, self.spectrogram.ymax])
+
+    # def drawSpectrogram(self, event=None):
+    #     # Get values from the FloatSpin controls
+    #     frequency_max = self.axis_ceil_box.GetValue()
+    #     wl = self.wl_box.GetValue()
+    #     dynamic_range = self.dyn_range_box.GetValue()
+
+    #     self.axes.clear()
+    #     self.draw_spectrogram(dynamic_range=dynamic_range, frequency_max=frequency_max, wl=wl)
+    #     plt.twinx()
+    #     self.axes.set_xlim([self.snd.xmin, self.snd.xmax])
+    #     self.axes.xaxis.set_visible(False)
+    #     self.axes.yaxis.set_visible(False)
+    #     self.canvas.draw()
+    def compute_spectrogram(self, frequency_max=5000.0, wl=0.005):
+        # Recompute the spectrogram with the new parameters
+        self.spectrogram = self.snd.to_spectrogram(window_length=wl, maximum_frequency=frequency_max)
+
     def draw_spectrogram(self, dynamic_range=70):
         X, Y = self.spectrogram.x_grid(), self.spectrogram.y_grid()
         sg_db = 10 * np.log10(self.spectrogram.values)
+        
         self.axes.pcolormesh(X, Y, sg_db, vmin=sg_db.max() - dynamic_range, cmap='afmhot')
         self.axes.set_ylim([self.spectrogram.ymin, self.spectrogram.ymax])
-        # self.axes.set_xlim(self.spectrogram.xmin, self.spectrogram.xmax)
-        # self.axes.set_ylim(self.spectrogram.ymin, self.spectrogram.ymax)
-
-
-    # def draw_intensity(self):
-    #     self.axes.plot(self.intensity.xs(), self.intensity.values.T, linewidth=3, color='w')
-    #     self.axes.plot(self.intensity.xs(), self.intensity.values.T, linewidth=1)
-    #     self.axes.grid(False)
-    #     self.axes.set_ylim(0)
-
 
     def drawSpectrogram(self, event=None):
+        # Get values from the FloatSpin controls
+        frequency_max = self.axis_ceil_box.GetValue()
+        wl = self.wl_box.GetValue()
+        dynamic_range = self.dyn_range_box.GetValue()
+
+        # Recompute the spectrogram with the new parameters
+        self.compute_spectrogram(frequency_max=frequency_max, wl=wl)
+
         self.axes.clear()
-        self.draw_spectrogram()
+        self.draw_spectrogram(dynamic_range=dynamic_range)
         plt.twinx()
-        # self.draw_intensity()
         self.axes.set_xlim([self.snd.xmin, self.snd.xmax])
         self.axes.xaxis.set_visible(False)
         self.axes.yaxis.set_visible(False)
         self.canvas.draw()
-
+        # Update the FloatSpin controls to reflect the current values
+        self.axis_ceil_box.SetValue(frequency_max)
+        self.wl_box.SetValue(wl)
+        self.dyn_range_box.SetValue(dynamic_range)
+        #Force Refresh
+        self.axis_ceil_box.Refresh()
+        self.wl_box.Refresh()
+        self.dyn_range_box.Refresh()
 
 
     def doDefaults(self):
@@ -215,87 +258,87 @@ class Spectrogram(wx.Panel):
 
 
 
-    def drawInterval(self):
-        '''
-        Adapted with permission from
-        https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
-        by Mark Hasegawa-Johnson
-        '''
-        if self.app.TextGrid.selectedItem:
-            widg = self.app.TextGrid.selectedItem[0]
-            itm = self.app.TextGrid.selectedItem[1]
+    # def drawInterval(self):
+    #     '''
+    #     Adapted with permission from
+    #     https://courses.engr.illinois.edu/ece590sip/sp2018/spectrograms1_wideband_narrowband.html
+    #     by Mark Hasegawa-Johnson
+    #     '''
+    #     if self.app.TextGrid.selectedItem:
+    #         widg = self.app.TextGrid.selectedItem[0]
+    #         itm = self.app.TextGrid.selectedItem[1]
 
-        if widg in self.app.TextGrid.tier_pairs:  # if widg is label
-            itvl_canvas = self.app.TextGrid.tier_pairs[widg]
-            for i in itvl_canvas.find_withtag('line'):
-                loc = itvl_canvas.coords(i)[0]
-                self.canvas.DrawLine(loc, 0, loc, self.canvas_height)
-        elif widg in self.app.TextGrid.tier_pairs.values():  # if widg is textgrid canvas
-            if itm - 1 in widg.FindObjects():
-                l_loc = widg.GetPosition(itm - 1)[0]
-                self.canvas.DrawLine(l_loc, 0, l_loc, self.canvas_height)
-            if itm + 1 in widg.FindObjects():
-                r_loc = widg.GetPosition(itm + 1)[0]
-                self.canvas.DrawLine(r_loc, 0, r_loc, self.canvas_height)
-        elif widg == self.canvas:
-            l_time, r_time = self.app.TextGrid.getMinMaxTime()
-            l_loc = self.timeToX(float(l_time))
-            r_loc = self.timeToX(float(r_time))
-            self.canvas.DrawLine(l_loc, 0, l_loc, self.canvas_height)
-            self.canvas.DrawLine(r_loc, 0, r_loc, self.canvas_height)
+    #     if widg in self.app.TextGrid.tier_pairs:  # if widg is label
+    #         itvl_canvas = self.app.TextGrid.tier_pairs[widg]
+    #         for i in itvl_canvas.find_withtag('line'):
+    #             loc = itvl_canvas.coords(i)[0]
+    #             self.canvas.DrawLine(loc, 0, loc, self.canvas_height)
+    #     elif widg in self.app.TextGrid.tier_pairs.values():  # if widg is textgrid canvas
+    #         if itm - 1 in widg.FindObjects():
+    #             l_loc = widg.GetPosition(itm - 1)[0]
+    #             self.canvas.DrawLine(l_loc, 0, l_loc, self.canvas_height)
+    #         if itm + 1 in widg.FindObjects():
+    #             r_loc = widg.GetPosition(itm + 1)[0]
+    #             self.canvas.DrawLine(r_loc, 0, r_loc, self.canvas_height)
+    #     elif widg == self.canvas:
+    #         l_time, r_time = self.app.TextGrid.getMinMaxTime()
+    #         l_loc = self.timeToX(float(l_time))
+    #         r_loc = self.timeToX(float(r_time))
+    #         self.canvas.DrawLine(l_loc, 0, l_loc, self.canvas_height)
+    #         self.canvas.DrawLine(r_loc, 0, r_loc, self.canvas_height)
 
-        # draw selected frame
-        if self.app.TextGrid.firstFrame <= self.app.frame <= self.app.TextGrid.lastFrame:
-            xcoord = self.app.TextGrid.frames_canvas.GetPosition(self.app.TextGrid.highlighted_frame)[0]
-            self.canvas.DrawLine(xcoord, 0, xcoord, self.canvas_height)
-        # draw line where user last clicked on spectrogram
-        if self.clicktime != -1 and self.specClick == False:
-            x = self.timeToX(self.clicktime)
-            self.canvas.DrawLine(x, 0, x, self.canvas_height)
+    #     # draw selected frame
+    #     if self.app.TextGrid.firstFrame <= self.app.frame <= self.app.TextGrid.lastFrame:
+    #         xcoord = self.app.TextGrid.frames_canvas.GetPosition(self.app.TextGrid.highlighted_frame)[0]
+    #         self.canvas.DrawLine(xcoord, 0, xcoord, self.canvas_height)
+    #     # draw line where user last clicked on spectrogram
+    #     if self.clicktime != -1 and self.specClick == False:
+    #         x = self.timeToX(self.clicktime)
+    #         self.canvas.DrawLine(x, 0, x, self.canvas_height)
 
 
-    def jumpToFrame(self, event):
-        '''  '''
-        #restore textgrid selected interval between clicks
-        if not self.app.TextGrid.selectedItem:
-            key = next(iter(self.app.TextGrid.tier_pairs))
-            wdg = self.app.TextGrid.tier_pairs[key]
-            self.app.TextGrid.selectedItem = (wdg,wdg.find_all()[0])
-            self.app.TextGrid.setSelectedIntvlFrames(self.app.TextGrid.selectedItem)
-        if self.app.TextGrid.selectedItem[0] == self.canvas:
-            self.app.TextGrid.selectedItem = self.oldSelected
-            self.app.TextGrid.setSelectedIntvlFrames(self.app.TextGrid.selectedItem)
-        #prevents wiping of canvases because of mouse click
-        # self.app.resized = False
-        # draw line at click location
-        x = self.canvas.canvasx(event.x)
-        self.clicktime = self.xToTime(x)
-        #jump to new frame
-        frame = self.app.TextGrid.my_find_closest(self.app.TextGrid.frames_canvas, self.canvas.canvasx(event.x))
-        framenum = self.app.TextGrid.frames_canvas.gettags(frame)[0][5:]
-        self.app.frame=int(framenum)
-        self.app.framesUpdate()
-        #remember which interval was selected before specgram click
-        if event.state==1:
-            self.oldSelected = self.app.TextGrid.selectedItem
-        #for selecting & zooming interval (w/ shift)
-            self.specClick = True
+    # def jumpToFrame(self, event):
+    #     '''  '''
+    #     #restore textgrid selected interval between clicks
+    #     if not self.app.TextGrid.selectedItem:
+    #         key = next(iter(self.app.TextGrid.tier_pairs))
+    #         wdg = self.app.TextGrid.tier_pairs[key]
+    #         self.app.TextGrid.selectedItem = (wdg,wdg.find_all()[0])
+    #         self.app.TextGrid.setSelectedIntvlFrames(self.app.TextGrid.selectedItem)
+    #     if self.app.TextGrid.selectedItem[0] == self.canvas:
+    #         self.app.TextGrid.selectedItem = self.oldSelected
+    #         self.app.TextGrid.setSelectedIntvlFrames(self.app.TextGrid.selectedItem)
+    #     #prevents wiping of canvases because of mouse click
+    #     # self.app.resized = False
+    #     # draw line at click location
+    #     x = self.canvas.canvasx(event.x)
+    #     self.clicktime = self.xToTime(x)
+    #     #jump to new frame
+    #     frame = self.app.TextGrid.my_find_closest(self.app.TextGrid.frames_canvas, self.canvas.canvasx(event.x))
+    #     framenum = self.app.TextGrid.frames_canvas.gettags(frame)[0][5:]
+    #     self.app.frame=int(framenum)
+    #     self.app.framesUpdate()
+    #     #remember which interval was selected before specgram click
+    #     if event.state==1:
+    #         self.oldSelected = self.app.TextGrid.selectedItem
+    #     #for selecting & zooming interval (w/ shift)
+    #         self.specClick = True
 
-    def xToTime(self, x):
-        ''' converts from a x coordinate (relative to the canvas) to the timestamp at that coordinate'''
-        return (x*float(self.app.TextGrid.end - self.app.TextGrid.start)/self.canvas_width) + float(self.app.TextGrid.start)
-    def timeToX(self,time):
-        ''' converts from a time to the x coordinate on a canvas representing that time'''
-        return self.canvas_width*(time - float(self.app.TextGrid.start))/float(self.app.TextGrid.end - self.app.TextGrid.start)
+    # def xToTime(self, x):
+    #     ''' converts from a x coordinate (relative to the canvas) to the timestamp at that coordinate'''
+    #     return (x*float(self.app.TextGrid.end - self.app.TextGrid.start)/self.canvas_width) + float(self.app.TextGrid.start)
+    # def timeToX(self,time):
+    #     ''' converts from a time to the x coordinate on a canvas representing that time'''
+    #     return self.canvas_width*(time - float(self.app.TextGrid.start))/float(self.app.TextGrid.end - self.app.TextGrid.start)
 
-    def grid(self):
-        '''
-        Put tkinter items on app
-        '''
-        self.canvas.grid(row=0, column=0, sticky='news')
-        self.spinwin.grid(row=0,column=0,sticky='ne')
-        # self.axis_canvas.grid(row=0,column=0,sticky='se')
+    # def grid(self):
+    #     '''
+    #     Put tkinter items on app
+    #     '''
+    #     self.canvas.grid(row=0, column=0, sticky='news')
+    #     self.spinwin.grid(row=0,column=0,sticky='ne')
+    #     # self.axis_canvas.grid(row=0,column=0,sticky='se')
 
-    def grid_remove(self):
-        self.canvas.grid_remove()
-        self.spinwin.grid_remove()
+    # def grid_remove(self):
+    #     self.canvas.grid_remove()
+    #     self.spinwin.grid_remove()
