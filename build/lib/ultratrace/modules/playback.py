@@ -8,7 +8,7 @@ import threading
 import time
 import math
 
-#from tkinter.ttk import Button, Frame
+from tkinter.ttk import Button, Frame
 
 AUDIO_LIBS_INSTALLED = False
 try:
@@ -44,24 +44,18 @@ class Playback(Module):
 
             # widget management
             #self.frame = Frame(self.app.BOTTOM)
-            ## JNW FIXME:
-				#self.frame = Frame(self.app.LEFT)#, pady=7)
+            self.frame = Frame(self.app.LEFT)#, pady=7)
 
-            ## JNW FIXME:
-            #self.header = Header(self.frame, text="Playback")
-            #self.playBtn = Button(self.frame, text="⏯", command=self.playpauseAV, state='disabled', takefocus=0) # NOTE: not currently appearing
-            #self.app.bind('<space>', self.playpauseAV )
-            #self.app.bind('<Escape>', self.stopAV )
+            self.header = Header(self.frame, text="Playback")
+            self.playBtn = Button(self.frame, text="⏯", command=self.playpauseAV, state='disabled', takefocus=0) # NOTE: not currently appearing
+            self.app.bind('<space>', self.playpauseAV )
+            self.app.bind('<Escape>', self.stopAV )
         if VIDEO_LIBS_INSTALLED:
             info( ' - initializing module: Video' )
-            ## JNW FIXME:
-            #self.app.bind('<space>', self.playpauseAV )
-            #self.app.bind('<Escape>', self.stopAV )
-        
-        ## JNW FIXME:
-        #self.grid()
-        #self.reset()
-        self.app.Update()
+            self.app.bind('<space>', self.playpauseAV )
+            self.app.bind('<Escape>', self.stopAV )
+        self.grid()
+        self.reset()
 
     def update(self):
         '''
@@ -318,15 +312,13 @@ class Playback(Module):
 
     def grid(self):
         ''' grid widgets '''
-        ## JNW: FIXME:
-        #self.frame.grid( row=8 )
-        #self.header.grid()
-        #self.playBtn.grid()
+        self.frame.grid( row=8 )
+        self.header.grid()
+        self.playBtn.grid()
 
     def grid_remove(self):
         ''' remove widgets from grid '''
-        ## JNW: FIXME:
-        #self.frame.grid_remove()
-        #self.header.grid_remove()
-        #self.playBtn.grid_remove()
+        self.frame.grid_remove()
+        self.header.grid_remove()
+        self.playBtn.grid_remove()
 

@@ -1,0 +1,26 @@
+import wx
+
+class TextGrid(wx.Panel):
+    def __init__(self, parent, num_tiers, num_intervals):
+        super().__init__(parent)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        for _ in range(num_tiers):
+            tier_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            for _ in range(num_intervals):
+                text = wx.TextCtrl(self, value="")
+                tier_sizer.Add(text, 1, wx.EXPAND)
+            sizer.Add(tier_sizer, 1, wx.EXPAND)
+        self.SetSizer(sizer)
+
+class MainFrame(wx.Frame):
+    def __init__(self):
+        super().__init__(None, title="TextGrid Widget")
+
+        textgrid = TextGrid(self, num_tiers=2, num_intervals=3)
+        self.Show()
+
+if __name__ == "__main__":
+    app = wx.App()
+    MainFrame()
+    app.MainLoop()

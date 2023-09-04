@@ -42,13 +42,29 @@ class Trace(Module):
         #self.traceSV.set( '' )
         self.tracesSV = ''
 
-        # frame for (most of) our widgets
+        # frame for (most of) our widgetss
         #self.frame = Frame(self.app.LEFT)#, pady=7, padx=7)
         #self.frame.grid( row=4 )
-        self.app.layersBox = wx.StaticBoxSizer(wx.VERTICAL, self.app, label="Layers")
-        self.layers = wx.ListCtrl(self.app, -1, style=wx.LC_REPORT)
+        self.app.layersBox = wx.StaticBoxSizer(wx.HORIZONTAL, self.app, label="Layers")
+        self.app.layersBox.SetDimension(0, 0, 500, 500)
+        current_position = self.app.layersBox.GetPosition()
+        new_position = (current_position[0]+300, current_position[1] + 90)
+        self.app.layersBox.SetDimension(new_position, self.app.layersBox.GetSize())
+
+
+        # self.app.layersBox.SetMinSize((800, 600))
+
+
+        self.layers = wx.ListCtrl(self.app, size=(300, 200), style=wx.LC_REPORT)
+        # self.layers.SetPosition((self.layers.GetPosition()[0] + 50, self.layers.GetPosition()[1] + 100))
+        app_size = self.app.GetSize()
+        layers_size = self.layers.GetSize()
+        x = 15  # adjust as needed
+        self.layers.SetPosition((x, app_size[1] - layers_size[1] - 10))
+
+
         self.layers.InsertColumn(0, 'name', width=60)
-        self.layers.InsertColumn(1, 'default', wx.LIST_FORMAT_RIGHT, width=30)
+        self.layers.InsertColumn(1, 'default', wx.LIST_FORMAT_RIGHT, width=90)
         self.layers.InsertColumn(2, 'visible', wx.LIST_FORMAT_RIGHT, width=30)
         self.layers.InsertColumn(3, 'colour', wx.LIST_FORMAT_RIGHT, width=30)
         self.layers.InsertColumn(4, 'delete', wx.LIST_FORMAT_RIGHT, width=30)
