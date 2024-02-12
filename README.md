@@ -4,7 +4,7 @@ This is a tool for [currently] manual annotation of 2D UTI (Ultrasound Tongue Im
 You can have a look at our [UltraFest IX presentation](https://swatphonlab.github.io/2020-UltraTrace-presentation/presentation.html) for some details on featureset and functionality as of October, 2020.
 
 If you use UltraTrace in your work, you may cite the UltraFest IX presentation:
-- Murphy, Kevin, Nathaniel Ziv Stern, Daniel Swanson, Caleb Ho, and Jonathan Washington (2020).  _UltraTrace: A free/open-source cross-platform tool for manual annotation of ultrasound tongue imaging data._  Presentation at UltraFest IX.
+- Murphy, Kevin, Nathaniel Ziv Stern, Daniel Swanson, Caleb Ho, and Jonathan Washington (2020).  _UltraTrace: A free/open-source cross-platform tool for manual annotation of ultrasound tongue imaging data._  Presentation at UltraFest IX.  Software available online at https://github.com/SwatPhonLab/UltraTrace .
 
 ## Screenshot
 ![Screenshot](screenshot.png)
