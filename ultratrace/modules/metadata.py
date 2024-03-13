@@ -37,12 +37,20 @@ class Metadata(Module):
         self.path = path
 
         self.mdfile = os.path.join( self.path, 'metadata.json' )
+        self.tracefile = os.path.join( self.path, 'tracedata.json' )
 
         # either load up existing metadata
         if os.path.exists( self.mdfile ):
             debug( "   - found metadata file: `%s`" % self.mdfile )
             with open( self.mdfile, 'r' ) as f:
                 self.data = json.load( f )
+            
+            if 'traces' not in self.data:
+            
+                with open(self.tracefile, 'r') as tracedata_file:
+                    tracedata = json.load(tracedata_file)
+            
+                    self.data['traces'] = tracedata.get('traces', {})
 
         # or create new stuff
         else:
@@ -60,6 +68,7 @@ class Metadata(Module):
                         'files': {} } },
                 'offset':0,
                 'files': {} }
+
 
             # we want each object to have entries for everything here
             fileKeys = { '_prev', '_next', 'processed', 'offset' } # and `processed`
@@ -258,14 +267,26 @@ class Metadata(Module):
             else:
                 warn('Unable to import line %s of %s (could not match date %s)' % (linenum, filepath, date))
 
-    def write(self, _mdfile=None):
+    def write(self, _mdfile=None, _tracefile=None):
         '''
-        Write metadata out to file
+        Write metadata and tracedata out to separate files
         '''
+
+        traces_data = {
+            'traces': self.data['traces']
+        }
         # debug(self.data, 'write')
+
+        dumpMD = self.data.copy()
+        del dumpMD['traces']
+
         mdfile = self.mdfile if _mdfile==None else _mdfile
         with open( mdfile, 'w' ) as f:
-            json.dump( self.data, f, indent=3 )
+            json.dump( dumpMD, f, indent=3 )
+
+        tracefile = self.tracefile if _tracefile==None else _tracefile
+        with open(tracefile, 'w') as f:
+            json.dump( traces_data, f, indent=3 )
 
     def getFilenames( self ):
         '''
