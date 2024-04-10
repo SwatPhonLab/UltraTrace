@@ -37,20 +37,28 @@ class Metadata(Module):
         self.path = path
 
         self.mdfile = os.path.join( self.path, 'metadata.json' )
-        self.tracefile = os.path.join( self.path, 'tracedata.json' )
+        self.tracefile = os.path.join( self.path, 'traces.json' )
 
         # either load up existing metadata
         if os.path.exists( self.mdfile ):
             debug( "   - found metadata file: `%s`" % self.mdfile )
             with open( self.mdfile, 'r' ) as f:
-                self.data = json.load( f )
+                self.metadata = json.load( f )
             
-            if 'traces' not in self.data:
+            if 'traces' not in self.metadata:
             
                 with open(self.tracefile, 'r') as tracedata_file:
                     tracedata = json.load(tracedata_file)
             
-                    self.data['traces'] = tracedata.get('traces', {})
+                    self.tracedata['traces'] = tracedata.get('traces', {})
+           elif type(self.metadata['traces']) == dict:
+                "FIXME: old format; convert"
+
+           elif type(self.metadata['traces']) == str:
+                self.tracefile = self.metadata['traces']
+                if os.path.exists( self.tracefile )
+                #FIXME: continue from here
+					 # FIXME: also update .write() instances to write the right thing
 
         # or create new stuff
         else:
@@ -59,15 +67,17 @@ class Metadata(Module):
 
             self.path = os.path.abspath(self.path)
             debug( "   - creating new metadata file: `%s`" % self.mdfile )
-            self.data = {
+            self.metadata = {
                 'firstrun_path': self.path,
+                'offset':0,
+					 'traces': os.path.split(self.tracefile)[1], # just the filename, no directories
+                'files': {} } },
+				self.tracedata = {
                 'defaultTraceName': 'tongue',
                 'traces': {
                     'tongue': {
                         'color': 'red',
                         'files': {} } },
-                'offset':0,
-                'files': {} }
 
 
             # we want each object to have entries for everything here
@@ -150,8 +160,8 @@ class Metadata(Module):
                 files[key]['name'] = key
 
             # sort files, set the geometry, and write
-            self.data[ 'files' ] = [ files[key] for key in sorted(files.keys()) ]
-            self.data[ 'geometry' ] = '1150x800+1400+480'
+            self.metadata[ 'files' ] = [ files[key] for key in sorted(files.keys()) ]
+            self.metadata[ 'geometry' ] = '1150x800+1400+480'
 
             if splines != None:
                 self.importULTMeasurement(splines)
@@ -182,7 +192,7 @@ class Metadata(Module):
             #assuming traces were made at 1x zoom and no pan
             el = {"x":point1/defaultx,"y":point2/defaulty} #converts coords to "true" (i.e. % through each axis),
             new_array.append(el)
-        list_of_files = self.data['traces']['tongue']['files']
+        list_of_files = self.tracedata['traces']['tongue']['files']
         if not filenum in list_of_files:
             list_of_files[filenum]={}
         list_of_files[filenum][framenum] = new_array
@@ -209,7 +219,7 @@ class Metadata(Module):
                 confidence_loc[name] = offset
                 offset += 42
         if defaultTrace:
-            self.data['defaultTraceName'] = defaultTrace
+            self.tracedata['defaultTraceName'] = defaultTrace
         for linenum, line in enumerate(data[1:], start=2):
             dt = {}
             for k in coords_loc:
@@ -229,10 +239,10 @@ class Metadata(Module):
                     dt[k] = pts
             if dt:
                 lines.append((linenum, float(line[1].replace(',', '.')), line[2], dt))
-        self.data['traces'] = {k: {'color': 'red', 'files': {}} for k in coords_loc}
+        self.tracedata['traces'] = {k: {'color': 'red', 'files': {}} for k in coords_loc}
         # TODO: all traces are imported as the same color
         for linenum, timestamp, date, data in lines:
-            for fblob in self.data['files']:
+            for fblob in self.metadata['files']:
                 if '.txt' not in fblob or '.ult' not in fblob or 'US.txt' not in fblob:
                     continue
                 f = open(self.unrelativize(fblob['.txt']), 'rb')
@@ -256,43 +266,44 @@ class Metadata(Module):
                     height = (reader.PixPerVector + reader.ZeroOffset) / reader.PixelsPerMm
                     width = 2*math.cos((math.pi/2) - (reader.Angle * reader.NumVectors/2))*height
                     for k in data:
-                        if fblob['name'] not in self.data['traces'][k]['files']:
-                            self.data['traces'][k]['files'][fblob['name']] = {}
+                        if fblob['name'] not in self.tracedata['traces'][k]['files']:
+                            self.tracedata['traces'][k]['files'][fblob['name']] = {}
                         conv = []
                         for pt in data[k]:
                             conv.append({'x': pt[0] / width, 'y': 1 - (pt[1] / height)})
-                        self.data['traces'][k]['files'][fblob['name']][str(framenum)] = conv
+                        self.tracedata['traces'][k]['files'][fblob['name']][str(framenum)] = conv
                     info('Line %s of %s imported as %s frame %s' % (linenum, filepath, fblob['name'], framenum))
                     break
             else:
                 warn('Unable to import line %s of %s (could not match date %s)' % (linenum, filepath, date))
-
+	
     def write(self, _mdfile=None, _tracefile=None):
-        '''
-        Write metadata and tracedata out to separate files
-        '''
+        self.writeMetadata(_mdfile=_mdfile)
+        self.writeTracedata(_tracefile=_tracefile)
 
-        traces_data = {
-            'traces': self.data['traces']
-        }
-        # debug(self.data, 'write')
-
-        dumpMD = self.data.copy()
-        del dumpMD['traces']
+    def writeMetadata(self, _mdfile=None):
+        '''
+        Write metadata out
+        '''
+        # debug(self.metadata, 'write')
 
         mdfile = self.mdfile if _mdfile==None else _mdfile
         with open( mdfile, 'w' ) as f:
             json.dump( dumpMD, f, indent=3 )
 
+    def writeTracedata(self, _tracefile=None):
+        '''
+        Write tracedata out
+        '''
         tracefile = self.tracefile if _tracefile==None else _tracefile
         with open(tracefile, 'w') as f:
-            json.dump( traces_data, f, indent=3 )
+            json.dump( self.tracedata, f, indent=3 )
 
     def getFilenames( self ):
         '''
         Returns a list of all the files discovered from the initial directory traversal
         '''
-        return [ f['name'] for f in self.data['files'] ]
+        return [ f['name'] for f in self.metadata['files'] ]
 
     def getPreprocessedDicom( self, _frame=None ):
         '''
@@ -310,8 +321,8 @@ class Metadata(Module):
         '''
         Get directory-level metadata
         '''
-        if key in self.data.keys():
-            return self.data[key]
+        if key in self.metadata.keys():
+            return self.metadata[key]
         else:
             return None
 
@@ -319,7 +330,7 @@ class Metadata(Module):
         '''
         Set directory-level metadata
         '''
-        self.data[ key ] = value
+        self.metadata[ key ] = value
         self.write()
 
     def getFileLevel( self, key, _fileid=None ):
@@ -327,7 +338,7 @@ class Metadata(Module):
         Get file-level metadata
         '''
         fileid = self.app.currentFID if _fileid==None else _fileid
-        mddict = self.data[ 'files' ][ fileid ]
+        mddict = self.metadata[ 'files' ][ fileid ]
 
         if key == 'all':
             return mddict.keys()
@@ -364,14 +375,14 @@ class Metadata(Module):
         Set file-level metadata
         '''
         fileid = self.app.currentFID if _fileid==None else _fileid
-        self.data[ 'files' ][ fileid ][ key ] = value
+        self.metadata[ 'files' ][ fileid ][ key ] = value
         self.write()
 
     def getCurrentFilename( self ):
         '''
         Helper function for interacting with traces
         '''
-        return self.data[ 'files' ][ self.app.currentFID ][ 'name' ]
+        return self.metadata[ 'files' ][ self.app.currentFID ][ 'name' ]
 
     def getCurrentTraceColor( self ):
         '''
@@ -380,13 +391,13 @@ class Metadata(Module):
         trace = self.app.Trace.getCurrentTraceName()
         if trace==None:
             return None
-        return self.data[ 'traces' ][ trace ][ 'color' ]
+        return self.tracedata[ 'traces' ][ trace ][ 'color' ]
 
     def setTraceColor( self, trace, color ):
         '''
         Set color for a particular trace name
         '''
-        self.data[ 'traces' ][ trace ][ 'color' ] = color
+        self.tracedata[ 'traces' ][ trace ][ 'color' ] = color
         self.write()
 
     def getCurrentTraceAllFrames( self ):
@@ -397,7 +408,7 @@ class Metadata(Module):
         trace = self.app.Trace.getCurrentTraceName()
         filename = self.getCurrentFilename()
         try:
-            return self.data[ 'traces' ][ trace ][ 'files' ][ filename ]
+            return self.tracedata[ 'traces' ][ trace ][ 'files' ][ filename ]
         except KeyError as e:
             return {}
 
@@ -418,7 +429,7 @@ class Metadata(Module):
         filename = self.getCurrentFilename()
         frame    = str(self.app.frame)# if _frame==None else str(_frame)
         try:
-            return self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ frame ]
+            return self.tracedata[ 'traces' ][ trace ][ 'files' ][ filename ][ frame ]
         except KeyError as e:
             return []
 
@@ -430,11 +441,11 @@ class Metadata(Module):
         trace = self.app.Trace.getCurrentTraceName()
         filename = self.getCurrentFilename()
         frame = self.app.frame
-        if trace not in self.data[ 'traces' ]:
-            self.data[ 'traces' ][ trace ] = { 'files':{}, 'color':None }
-        if filename not in self.data[ 'traces' ][ trace ][ 'files' ]:
-            self.data[ 'traces' ][ trace ][ 'files' ][ filename ] = {}
-        self.data[ 'traces' ][ trace ][ 'files' ][ filename ][ str(frame) ] = crosshairs
+        if trace not in self.tracedata[ 'traces' ]:
+            self.tracedata[ 'traces' ][ trace ] = { 'files':{}, 'color':None }
+        if filename not in self.tracedata[ 'traces' ][ trace ][ 'files' ]:
+            self.tracedata[ 'traces' ][ trace ][ 'files' ][ filename ] = {}
+        self.tracedata[ 'traces' ][ trace ][ 'files' ][ filename ][ str(frame) ] = crosshairs
         self.write()
 
     def tracesExist( self, trace ):
@@ -443,7 +454,7 @@ class Metadata(Module):
         '''
         filename = self.getCurrentFilename()
         try:
-            dict = self.data[ 'traces' ][ trace ][ 'files' ][ filename ]
+            dict = self.tracedata[ 'traces' ][ trace ][ 'files' ][ filename ]
             # debug(dict)
             return [x for x in dict if dict[x] != []]
         except KeyError as e:
