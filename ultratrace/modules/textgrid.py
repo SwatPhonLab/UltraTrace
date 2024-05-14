@@ -559,7 +559,8 @@ class TextGrid(Module):
         '''
         frames = [frame[5:] for frame in frames] #to get rid of word "frame in tag"
         tracedFrames = []
-        for trace in self.app.Data.data['traces']:
+        # alina
+        for trace in self.app.Data.tracedata['traces']:
             tracedFrames = tracedFrames+self.app.Data.tracesExist(trace)
 
         return set(frames).intersection(tracedFrames)

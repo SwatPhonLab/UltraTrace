@@ -45,20 +45,32 @@ class Metadata(Module):
             with open( self.mdfile, 'r' ) as f:
                 self.metadata = json.load( f )
             
+            # traces attribute is not in existing metadata
             if 'traces' not in self.metadata:
-            
+                # assume tracefile exists, parse contents into self.tracedata
+                # TODO: handle error if it does not exist / not in the right format
                 with open(self.tracefile, 'r') as tracedata_file:
                     tracedata = json.load(tracedata_file)
-            
+                    
                     self.tracedata['traces'] = tracedata.get('traces', {})
-           elif type(self.metadata['traces']) == dict:
-                "FIXME: old format; convert"
+                    # alina: we still want to have the name of the tracefile? set to default
+                    self.metadata['traces'] = self.tracefile
 
-           elif type(self.metadata['traces']) == str:
+            # traces exist in metadata file 
+            elif type(self.metadata['traces']) == dict:
+                # (done) FIXME: old format; convert
+                self.tracedata['traces'] = self.metadata['traces']
+                self.metadata['traces'] = self.tracefile
+
+            elif type(self.metadata['traces']) == str:
+                # if traces in metadata is a path, reset it from default path
                 self.tracefile = self.metadata['traces']
-                if os.path.exists( self.tracefile )
-                #FIXME: continue from here
-					 # FIXME: also update .write() instances to write the right thing
+                if os.path.exists( self.tracefile ):
+                    # (done) FIXME: continue from here
+                    with open(self.tracefile, 'r') as tracedata_file:
+                        tracedata = json.load(tracedata_file)
+                        self.tracedata['traces'] = tracedata.get('traces', {})
+					 # (done) FIXME: also update .write() instances to write the right thing 
 
         # or create new stuff
         else:
@@ -69,15 +81,19 @@ class Metadata(Module):
             debug( "   - creating new metadata file: `%s`" % self.mdfile )
             self.metadata = {
                 'firstrun_path': self.path,
-                'offset':0,
-					 'traces': os.path.split(self.tracefile)[1], # just the filename, no directories
-                'files': {} } },
-				self.tracedata = {
+                'offset': 0,
+                'traces': os.path.split(self.tracefile)[1],  # just the filename, no directories
+                'files': {}
+            }
+            self.tracedata = {
                 'defaultTraceName': 'tongue',
                 'traces': {
                     'tongue': {
                         'color': 'red',
-                        'files': {} } },
+                        'files': {}
+                    }
+                }
+            }
 
 
             # we want each object to have entries for everything here
@@ -289,7 +305,8 @@ class Metadata(Module):
 
         mdfile = self.mdfile if _mdfile==None else _mdfile
         with open( mdfile, 'w' ) as f:
-            json.dump( dumpMD, f, indent=3 )
+            #alina: json.dump( dumpMD, f, indent=3 )
+            json.dump( self.metadata, f, indent=3 )
 
     def writeTracedata(self, _tracefile=None):
         '''
@@ -331,7 +348,8 @@ class Metadata(Module):
         Set directory-level metadata
         '''
         self.metadata[ key ] = value
-        self.write()
+        # alina
+        self.writeMetadata()
 
     def getFileLevel( self, key, _fileid=None ):
         '''
@@ -376,7 +394,7 @@ class Metadata(Module):
         '''
         fileid = self.app.currentFID if _fileid==None else _fileid
         self.metadata[ 'files' ][ fileid ][ key ] = value
-        self.write()
+        self.writeMetadata()
 
     def getCurrentFilename( self ):
         '''
@@ -398,7 +416,7 @@ class Metadata(Module):
         Set color for a particular trace name
         '''
         self.tracedata[ 'traces' ][ trace ][ 'color' ] = color
-        self.write()
+        self.writeTracedata()
 
     def getCurrentTraceAllFrames( self ):
         '''
@@ -446,7 +464,7 @@ class Metadata(Module):
         if filename not in self.tracedata[ 'traces' ][ trace ][ 'files' ]:
             self.tracedata[ 'traces' ][ trace ][ 'files' ][ filename ] = {}
         self.tracedata[ 'traces' ][ trace ][ 'files' ][ filename ][ str(frame) ] = crosshairs
-        self.write()
+        self.writeTracedata()
 
     def tracesExist( self, trace ):
         '''
