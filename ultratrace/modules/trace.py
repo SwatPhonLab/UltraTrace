@@ -24,7 +24,7 @@ class Trace(Module):
         #self.app.Data.getCurrentTraceColor()
 
         # array of trace names for this directory
-        self.available = self.app.Data.getTopLevel( 'traces' )
+        self.available = self.app.Data.getTracedataTopLevel( 'traces' )
         self.available = {} if self.available==None else self.available
 
         # dictionary to hold trace -> [crosshairs] data
@@ -53,7 +53,7 @@ class Trace(Module):
             self.listbox.insert('end', trace)
         for i, item in enumerate(self.listbox.get(0, 'end')):
             # select our "default trace"
-            if item==self.app.Data.getTopLevel( 'defaultTraceName' ):
+            if item==self.app.Data.getTracedataTopLevel( 'defaultTraceName' ):
                 self.listbox.selection_clear(0, 'end')
                 self.listbox.select_set( i )
                 break
@@ -196,7 +196,7 @@ class Trace(Module):
         '''
         wrapper for changing the default trace
         '''
-        self.app.Data.setTopLevel( 'defaultTraceName', self.getCurrentTraceName() )
+        self.app.Data.setTracedataTopLevel( 'defaultTraceName', self.getCurrentTraceName() )
 
     def select(self, ch):
         ''' select a crosshairs '''
@@ -344,7 +344,7 @@ class Trace(Module):
 
             # save the new trace name and color to metadata & update vars
             self.available[ name ] = { 'color':color, 'files':{} }
-            self.app.Data.setTopLevel( 'traces', self.available )
+            self.app.Data.setTracedataTopLevel( 'traces', self.available )
             self.traceSV.set('')
 
             # update our listbox
@@ -364,9 +364,9 @@ class Trace(Module):
             # get data from the old name and change the dictionary key in the metadata
             data = self.available.pop( oldName )
             self.available[ newName ] = data
-            self.app.Data.setTopLevel( 'traces', self.available )
+            self.app.Data.setTracedataTopLevel( 'traces', self.available )
             if oldName==self.app.Data.getTopLevel( 'defaultTraceName' ):
-                self.app.Data.setTopLevel( 'defaultTraceName', newName )
+                self.app.Data.setTracedataTopLevel( 'defaultTraceName', newName )
             self.traceSV.set('')
 
             # update our listbox

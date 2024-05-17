@@ -38,6 +38,7 @@ class Metadata(Module):
 
         self.mdfile = os.path.join( self.path, 'metadata.json' )
         self.tracefile = os.path.join( self.path, 'traces.json' )
+        self.tracedata = {}
 
         # either load up existing metadata
         if os.path.exists( self.mdfile ):
@@ -47,30 +48,28 @@ class Metadata(Module):
             
             # traces attribute is not in existing metadata
             if 'traces' not in self.metadata:
-                # assume tracefile exists, parse contents into self.tracedata
-                # TODO: handle error if it does not exist / not in the right format
+                # self.localTracefile = os.path.join(self.path, self.tracefile)
                 with open(self.tracefile, 'r') as tracedata_file:
                     tracedata = json.load(tracedata_file)
-                    
                     self.tracedata['traces'] = tracedata.get('traces', {})
-                    # alina: we still want to have the name of the tracefile? set to default
                     self.metadata['traces'] = self.tracefile
 
-            # traces exist in metadata file 
+            # traces exist in metadata file as a structure
             elif type(self.metadata['traces']) == dict:
-                # (done) FIXME: old format; convert
                 self.tracedata['traces'] = self.metadata['traces']
                 self.metadata['traces'] = self.tracefile
+                # update traces in mdfile to be a path
+                with open(self.mdfile, 'w') as file:
+                    json.dump(self.metadata, file, indent=3)
 
+            # traces in metadata is a file name
             elif type(self.metadata['traces']) == str:
-                # if traces in metadata is a path, reset it from default path
-                self.tracefile = self.metadata['traces']
-                if os.path.exists( self.tracefile ):
-                    # (done) FIXME: continue from here
+                # make a path
+                self.tracefile = os.path.join(self.path, self.metadata['traces'])
+                if os.path.exists(self.tracefile):
                     with open(self.tracefile, 'r') as tracedata_file:
                         tracedata = json.load(tracedata_file)
                         self.tracedata['traces'] = tracedata.get('traces', {})
-					 # (done) FIXME: also update .write() instances to write the right thing 
 
         # or create new stuff
         else:
@@ -342,14 +341,28 @@ class Metadata(Module):
             return self.metadata[key]
         else:
             return None
+    def getTracedataTopLevel( self, key ):
+        '''
+        Get directory-level tracedata
+        '''
+        if key in self.tracedata.keys():
+            return self.tracedata[key]
+        else:
+            return None
 
     def setTopLevel( self, key, value ):
         '''
         Set directory-level metadata
         '''
         self.metadata[ key ] = value
-        # alina
         self.writeMetadata()
+
+    def setTracedataTopLevel( self, key, value ):
+        '''
+        Set directory-level tracedata
+        '''
+        self.tracedata[ key ] = value
+        self.writeTracedata()
 
     def getFileLevel( self, key, _fileid=None ):
         '''
