@@ -48,11 +48,28 @@ class Metadata(Module):
             
             # traces attribute is not in existing metadata
             if 'traces' not in self.metadata:
-                # self.localTracefile = os.path.join(self.path, self.tracefile)
-                with open(self.tracefile, 'r') as tracedata_file:
-                    tracedata = json.load(tracedata_file)
-                    self.tracedata['traces'] = tracedata.get('traces', {})
+                # default traces.json not found - create data structure
+                if os.path.exists(self.tracefile) == False:
+                    self.tracedata = {
+                        'defaultTraceName': 'tongue',
+                        'traces': {
+                            'tongue': {
+                                'color': 'red',
+                                'files': {}
+                            }
+                        }
+                    }
                     self.metadata['traces'] = self.tracefile
+                    with open(self.mdfile, 'w') as file:
+                        json.dump(self.metadata, file, indent=3)
+                # default traces.json found - parse
+                else:
+                    with open(self.tracefile, 'r') as tracedata_file:
+                        tracedata = json.load(tracedata_file)
+                        self.tracedata['traces'] = tracedata.get('traces', {})
+                    self.metadata['traces'] = self.tracefile
+                    with open(self.mdfile, 'w') as file:
+                        json.dump(self.metadata, file, indent=3)
 
             # traces exist in metadata file as a structure
             elif type(self.metadata['traces']) == dict:
@@ -70,6 +87,9 @@ class Metadata(Module):
                     with open(self.tracefile, 'r') as tracedata_file:
                         tracedata = json.load(tracedata_file)
                         self.tracedata['traces'] = tracedata.get('traces', {})
+                else: 
+                    severe( "   - ERROR: tracefile could not be located")
+                    exit(1)
 
         # or create new stuff
         else:
@@ -304,7 +324,6 @@ class Metadata(Module):
 
         mdfile = self.mdfile if _mdfile==None else _mdfile
         with open( mdfile, 'w' ) as f:
-            #alina: json.dump( dumpMD, f, indent=3 )
             json.dump( self.metadata, f, indent=3 )
 
     def writeTracedata(self, _tracefile=None):
