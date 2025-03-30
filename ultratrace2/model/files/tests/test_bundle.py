@@ -29,7 +29,7 @@ from ..loaders.base import (
 def test_empty_file_bundle_constructor(kwargs: Mapping[str, None]) -> None:
     fb = FileBundle("test", **kwargs)
     assert not fb.has_impl()
-    assert str(fb) == 'Bundle("test",None,None,None)'
+    assert str(fb) == 'Bundle("test",None,None,None,None)'
 
 
 @pytest.mark.parametrize(

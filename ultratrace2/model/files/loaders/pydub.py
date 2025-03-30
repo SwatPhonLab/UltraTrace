@@ -1,6 +1,10 @@
+import logging
 import pydub  # type: ignore
 
 from .base import FileLoadError, SoundFileLoader
+
+
+logger = logging.getLogger(__name__)
 
 
 class PydubLoader(SoundFileLoader):
