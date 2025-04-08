@@ -11,7 +11,7 @@ pyparsing>=2.4.5
 python-dateutil>=2.8.1
 six>=1.13.0
 TextGrid==1.5
-tqdm==4.40.2
+tqdm==4.66.3
 ttkthemes==2.4.0
 xparser==0.0.4
 python-magic>=0.4.13
