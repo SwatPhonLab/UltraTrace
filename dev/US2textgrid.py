@@ -81,7 +81,7 @@ if __name__ == "__main__":
 		metadata = json.load(file)
 		for fileset in metadata['files']:
 			if 'US.txt' in fileset and '.wav' in fileset and '.TextGrid' not in fileset:
-				#print(fileset['US.txt'])
+				print(fileset['US.txt'])
 				wavlength = getLengthWav(os.path.join(dirname, fileset['.wav']))
 				data = getUSdata(os.path.join(dirname, fileset['US.txt']))
 				data.firstFrame = data.TimeInSecsOfFirstFrame
@@ -92,3 +92,7 @@ if __name__ == "__main__":
 				#print(maxlength)
 				tgfn = os.path.join(dirname, fileset['name']+".TextGrid")
 				createTextGrid(tgfn, fileset['name'], maxtime, data.firstFrame, numFrames, data.fps)
+				fileset['.TextGrid'] = fileset['name']+".TextGrid"
+
+	with open(args.filename, 'w') as file:
+		json.dump(metadata, file, indent=3)
