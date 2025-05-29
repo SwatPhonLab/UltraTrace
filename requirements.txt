@@ -13,5 +13,6 @@ six>=1.13.0
 TextGrid==1.5
 tqdm==4.40.2
 ttkthemes==2.4.0
-xparser==0.0.4
+xparser==0.0.5
 python-magic>=0.4.13
+audioop-lts>=0.2.1
