@@ -6,7 +6,7 @@ import wave
 import contextlib
 import os
 
-from textgrid import TextGrid, PointTier, Point
+from textgrid import TextGrid, PointTier, Point, IntervalTier, Interval
 
 class Object:
 	pass
@@ -38,11 +38,17 @@ def getUSdata(USfn):
 	#return (fps, firstFrame)
 	return data
 
-def createTextGrid(tgfn, name, maxtime, firstFrame, numFrames, fps):
+def createTextGrid(tgfn, name, maxtime, firstFrame, numFrames, fps, sentence, audiotime):
 	tg = TextGrid(name=name, maxTime=maxtime)
+
+	if sentence:
+		it = IntervalTier(name="sentence")
+		it.add(0, audiotime, sentence)
+		tg.append(it)
 
 	pt = PointTier(name="frames", maxTime=maxtime)
 	#print(maxtime)
+
 	for frame in range(0,numFrames):
 		#print(frame, firstFrame, firstFrame+(frame*(1/fps)))
 		pt.add(firstFrame+(frame*(1/fps)), str(frame))
@@ -68,6 +74,11 @@ def getNumFrames(data, ultfn):
 	#print(numFrames)
 	return numFrames
 
+def getSent(sentfn):
+	with open(sentfn, 'rb') as sentfile:
+		sent = sentfile.readline().decode('windows-1251').strip()
+		print(sent)
+	return sent
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
@@ -91,7 +102,10 @@ if __name__ == "__main__":
 				maxtime = max(wavlength, lengthByFrames) + data.firstFrame + 1.5*(1/data.fps) # adding 1.5 frames "just-in-case" as padding
 				#print(maxlength)
 				tgfn = os.path.join(dirname, fileset['name']+".TextGrid")
-				createTextGrid(tgfn, fileset['name'], maxtime, data.firstFrame, numFrames, data.fps)
+				sentence = None
+				if '.txt' in fileset:
+					sentence = getSent(os.path.join(dirname, fileset['.txt']))
+				createTextGrid(tgfn, fileset['name'], maxtime, data.firstFrame, numFrames, data.fps, sentence, wavlength)
 				fileset['.TextGrid'] = fileset['name']+".TextGrid"
 
 	with open(args.filename, 'w') as file:
