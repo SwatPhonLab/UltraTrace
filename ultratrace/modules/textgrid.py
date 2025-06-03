@@ -12,6 +12,7 @@ try:
 except ImportError:
     from tkinter import Spinbox
 import tempfile
+import os
 
 LIBS_INSTALLED = False
 
@@ -171,6 +172,7 @@ class TextGrid(Module):
 
     def loadOrGenerate(self):
         fname = self.app.Data.checkFileLevel('.TextGrid', shoulderror=False)
+        audio_relpath = self.app.Data.getFileLevel('audio_relpath')
         if fname:
             self.TextGrid = self.fromFile(fname)
         else:
@@ -188,7 +190,10 @@ class TextGrid(Module):
                 sentenceTier = IntervalTier("text")
                 sentenceTier.add(minTime, maxTime, "text")
                 self.TextGrid.append(sentenceTier)
-            fname = self.app.Data.unrelativize(self.app.Data.getCurrentFilename() + '.TextGrid')
+            #fname = self.app.Data.unrelativize(self.app.Data.getCurrentFilename() + '.TextGrid')
+            #debug(fname, audio_relpath)
+            fname = os.path.join(audio_relpath, self.app.Data.getCurrentFilename() + '.TextGrid')
+            #debug('(JNW REMOVE)', self.app.Data.getCurrentFilename(), fname)
             self.app.Data.setFileLevel('.TextGrid', fname)
         names = self.TextGrid.getNames()
         for i, n in enumerate(names):

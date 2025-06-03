@@ -46,6 +46,7 @@ class Metadata(Module):
 
         # or create new stuff
         else:
+            #info( '   - searching for objects in subdirectories (takes a minute if lots of files)')
             if "trace.old files exist":
                 "read the files"
 
@@ -69,13 +70,15 @@ class Metadata(Module):
                 'audio/wav'     :   ['.wav'],
                 'audio/flac'        :   ['.flac'],
                 'application/dicom' :   ['.dicom'],
-                'text/plain'        :   ['.TextGrid', 'US.txt', '.txt', '.dat'],
+                'text/plain'        :   ['.TextGrid', 'US.txt', '.txt', '.dat', '.param'],
                 'application/octet-stream' : ['.ult'],
                 'application/x-dosexec'    : ['.ult']
             }
             files = {}
 
             splines = None
+
+            audio_relpath = None
 
             # now get the objects in subdirectories
             for path, dirs, fs in os.walk( self.path ):
@@ -93,13 +96,17 @@ class Metadata(Module):
                     mime_type = Magic(mime=True).from_file(real_filepath)
 
                     # name mangling for ULT directories
-                    if mime_type == 'text/plain' and extension == '.txt' and filename.endswith('US'):
-                        filename = filename[:-2]
+                    if mime_type == 'text/plain' and ((extension == '.txt' and filename.endswith('US')) or (extension == '.param')):
+                        filename = os.path.splitext(f)[0]
                         extension = 'US.txt'
                     if extension == '.wav' and filename.endswith('_Track0'):
+                        audio_relpath = os.path.split(filepath)[0]
                         filename = filename[:-7]
                     elif extension == '.wav' and (filename.endswith('_Track1') or filename.endswith('_Track2')):
+                        audio_relpath = os.path.split(filepath)[0]
                         continue
+                    elif extension == '.flac':
+                        audio_relpath = os.path.split(filepath)[0]
                     elif extension == '.dat' and filename == 'SPLINES':
                         splines = filepath
                         continue
@@ -113,6 +120,9 @@ class Metadata(Module):
                             if filename not in files:
                                 files[filename] = { key:None for key in fileKeys }
                             files[filename][extension] = filepath
+                        if audio_relpath:    
+                            files[filename]['audio_relpath'] = audio_relpath
+                            audio_relpath = None
                     elif mime_type == 'image/png' and '_dicom_to_png' in path:
                         # check for preprocessed dicom files
                         name, frame = filename.split( '_frame_' )
@@ -151,6 +161,10 @@ class Metadata(Module):
 
         self.app.geometry( self.getTopLevel('geometry') )
         self.files = self.getFilenames()
+        debug(self.data['files'])
+        debug(self.files)
+        self.filelabels = self.getFilelabels()
+        debug(self.filelabels)
 
     def importOldMeasurement(self, filepath, filename):
         '''
@@ -273,6 +287,21 @@ class Metadata(Module):
         '''
         return [ f['name'] for f in self.data['files'] ]
 
+    def getFilelabels( self ):
+        '''
+        Returns a list of all files discovered and subdirectory they're in
+          (if not project root)
+        for display in file chooser list
+        '''
+        return [ f['name']+self.getAudioRelPathAddition(f) for f in self.data['files'] ]
+
+    def getAudioRelPathAddition( self, f ):
+        if f['audio_relpath'] and f['audio_relpath'] != "":
+            return ' (' + f['audio_relpath']+')'
+        else:
+            return ""
+
+
     def getPreprocessedDicom( self, _frame=None ):
         '''
         Gets preprocessed (.dicom->.png) picture data for a given frame
@@ -316,7 +345,7 @@ class Metadata(Module):
             #       mddict[key][el] = os.path.join(self.path, mddict[key][el])
             # else:
             #   mddict[key] = os.path.join(self.path, mddict[key])
-            # debug(mddict[key])
+            #debug(key, mddict[key])
             return mddict[key]
         else:
             return None

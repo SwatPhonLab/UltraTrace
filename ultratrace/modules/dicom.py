@@ -135,7 +135,7 @@ class Dicom(Module):
         elif self.mode == 'dicom':
             rd = DicomReader(self.app.Data.unrelativize(self.app.Data.getFileLevel('.dicom')))
             return rd.getFrameTimes()
-        elif self.mode == 'ult':
+        elif self.mode == 'ult' and self.app.Data.getFileLevel('US.txt') is not None:
             rd = ULTScanLineReader(
               self.app.Data.unrelativize(self.app.Data.getFileLevel('.ult')),
               self.app.Data.unrelativize(self.app.Data.getFileLevel('US.txt')))
