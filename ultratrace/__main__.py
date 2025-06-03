@@ -508,7 +508,8 @@ class App(ThemedTk):
 		Changes to be executed every time we change files
 		'''
 		# update variables
-		self.currentFileSV.set( self.Data.files[ self.currentFID ] )
+		#self.currentFileSV.set( self.Data.files[ self.currentFID ] )
+		self.currentFileSV.set( self.Data.filelabels[ self.currentFID ] )
 		self.frame = 1
 		self.frames= 1
 
@@ -548,7 +549,8 @@ class App(ThemedTk):
 		'''
 		jump directly to an available file (from the OptionMenu widget)
 		'''
-		self.currentFID = self.Data.files.index( choice )
+		#self.currentFID = self.Data.files.index( choice )
+		self.currentFID = self.Data.filelabels.index( choice )
 		self.filesUpdate()
 
 	def framesUpdate(self):

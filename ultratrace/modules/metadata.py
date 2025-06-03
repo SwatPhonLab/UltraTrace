@@ -161,10 +161,10 @@ class Metadata(Module):
 
         self.app.geometry( self.getTopLevel('geometry') )
         self.files = self.getFilenames()
-        debug(self.data['files'])
-        debug(self.files)
+        #debug(self.data['files'])
+        #debug(self.files)
         self.filelabels = self.getFilelabels()
-        debug(self.filelabels)
+        #debug(self.filelabels)
 
     def importOldMeasurement(self, filepath, filename):
         '''
