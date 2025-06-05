@@ -82,7 +82,7 @@ class Metadata(Module):
 
             # now get the objects in subdirectories
             for path, dirs, fs in os.walk( self.path ):
-                if ".git" not in path:
+                if ".git" not in path and ".DS_Store" not in path:
                     for f in fs:
                         # exclude some filetypes explicitly here by MIME type
                         filepath = os.path.join( path, f )
