@@ -87,6 +87,10 @@ class Metadata(Module):
                         # exclude some filetypes explicitly here by MIME type
                         filepath = os.path.join( path, f )
                         filename, extension = os.path.splitext( f )
+                        fulDirFile = os.path.split(path)
+                        #debug(fulDirFile)
+                        new_filename = os.path.join(fulDirFile[-1], filename)
+                        #debug(new_filename)
     
                         # allow us to follow symlinks
                         real_filepath = os.path.realpath(filepath)
@@ -99,10 +103,12 @@ class Metadata(Module):
                         # name mangling for ULT directories
                         if mime_type == 'text/plain' and ((extension == '.txt' and filename.endswith('US')) or (extension == '.param')):
                             filename = os.path.splitext(f)[0]
+                            new_filename = os.path.splitext(filepath)[0]
                             extension = 'US.txt'
                         if extension == '.wav' and filename.endswith('_Track0'):
                             audio_relpath = os.path.split(filepath)[0]
                             filename = filename[:-7]
+                            new_filename = os.path.splitext(filepath)[0][:-7]
                         elif extension == '.wav' and (filename.endswith('_Track1') or filename.endswith('_Track2')):
                             audio_relpath = os.path.split(filepath)[0]
                             continue
@@ -117,12 +123,13 @@ class Metadata(Module):
                             self.importOldMeasurement(real_filepath, filename)
                         elif mime_type in MIMEs:
                             # add `good` files
+                            #print(new_filename, mime_type)
                             if extension in MIMEs[ mime_type ]:
-                                if filename not in files:
-                                    files[filename] = { key:None for key in fileKeys }
-                                files[filename][extension] = filepath
+                                if new_filename not in files:
+                                    files[new_filename] = { key:None for key in fileKeys }
+                                files[new_filename][extension] = filepath
                             if audio_relpath:    
-                                files[filename]['audio_relpath'] = audio_relpath
+                                files[new_filename]['audio_relpath'] = audio_relpath
                                 audio_relpath = None
                         elif mime_type == 'image/png' and '_dicom_to_png' in path:
                             # check for preprocessed dicom files
@@ -144,6 +151,7 @@ class Metadata(Module):
             # sort the files so that we can guess about left/right ... extrema get None/null
             # also add in the "traces" bit here
             _prev = None
+            debug(files)
             for key in sorted( files.keys() ):
                 if _prev != None:
                     files[_prev]['_next'] = key
@@ -297,7 +305,7 @@ class Metadata(Module):
         return [ f['name']+self.getAudioRelPathAddition(f) for f in self.data['files'] ]
 
     def getAudioRelPathAddition( self, f ):
-        if f['audio_relpath'] and f['audio_relpath'] != "":
+        if 'audio_relpath' in f and f['audio_relpath'] != "":
             return ' (' + f['audio_relpath']+')'
         else:
             return ""

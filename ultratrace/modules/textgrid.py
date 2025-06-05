@@ -192,7 +192,7 @@ class TextGrid(Module):
                 self.TextGrid.append(sentenceTier)
             #fname = self.app.Data.unrelativize(self.app.Data.getCurrentFilename() + '.TextGrid')
             #debug(fname, audio_relpath)
-            fname = os.path.join(audio_relpath, self.app.Data.getCurrentFilename() + '.TextGrid')
+            fname = os.path.join(self.app.Data.getCurrentFilename() + '.TextGrid')
             #debug('(JNW REMOVE)', self.app.Data.getCurrentFilename(), fname)
             self.app.Data.setFileLevel('.TextGrid', fname)
         names = self.TextGrid.getNames()
