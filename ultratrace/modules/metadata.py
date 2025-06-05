@@ -82,66 +82,67 @@ class Metadata(Module):
 
             # now get the objects in subdirectories
             for path, dirs, fs in os.walk( self.path ):
-                if ".git" not in path and ".DS_Store" not in path:
+                if ".git" not in path:
                     for f in fs:
-                        # exclude some filetypes explicitly here by MIME type
-                        filepath = os.path.join( path, f )
-                        filename, extension = os.path.splitext( f )
-                        fulDirFile = os.path.split(path)
-                        #debug(fulDirFile)
-                        new_filename = os.path.join(fulDirFile[-1], filename)
-                        #debug(new_filename)
+                        if ".DS_Store" not in f:
+                            # exclude some filetypes explicitly here by MIME type
+                            filepath = os.path.join( path, f )
+                            filename, extension = os.path.splitext( f )
+                            fulDirFile = os.path.split(path)
+                            #debug(fulDirFile)
+                            new_filename = os.path.join(fulDirFile[-1], filename)
+                            #debug(new_filename)
     
-                        # allow us to follow symlinks
-                        real_filepath = os.path.realpath(filepath)
+                            # allow us to follow symlinks
+                            real_filepath = os.path.realpath(filepath)
 
-                        #make file path relative to metadata file
-                        filepath = os.path.relpath(filepath,start=self.path)
+                            #make file path relative to metadata file
+                            filepath = os.path.relpath(filepath,start=self.path)
 
-                        mime_type = Magic(mime=True).from_file(real_filepath)
+                            mime_type = Magic(mime=True).from_file(real_filepath)
 
-                        # name mangling for ULT directories
-                        if mime_type == 'text/plain' and ((extension == '.txt' and filename.endswith('US')) or (extension == '.param')):
-                            filename = os.path.splitext(f)[0]
-                            new_filename = os.path.splitext(filepath)[0]
-                            extension = 'US.txt'
-                        if extension == '.wav' and filename.endswith('_Track0'):
-                            audio_relpath = os.path.split(filepath)[0]
-                            filename = filename[:-7]
-                            new_filename = os.path.splitext(filepath)[0][:-7]
-                        elif extension == '.wav' and (filename.endswith('_Track1') or filename.endswith('_Track2')):
-                            audio_relpath = os.path.split(filepath)[0]
-                            continue
-                        elif extension == '.flac':
-                            audio_relpath = os.path.split(filepath)[0]
-                        elif extension == '.dat' and filename == 'SPLINES':
-                            splines = filepath
-                            continue
+                            # name mangling for ULT directories
+                            if mime_type == 'text/plain' and ((extension == '.txt' and filename.endswith('US')) or (extension == '.param')):
+                                filename = os.path.splitext(f)[0]
+                                new_filename = os.path.splitext(filepath)[0]
+                                extension = 'US.txt'
+                            if extension == '.wav' and filename.endswith('_Track0'):
+                                audio_relpath = os.path.split(filepath)[0]
+                                filename = filename[:-7]
+                                new_filename = os.path.splitext(filepath)[0][:-7]
+                            elif extension == '.wav' and (filename.endswith('_Track1') or filename.endswith('_Track2')):
+                                audio_relpath = os.path.split(filepath)[0]
+                                continue
+                            elif extension == '.flac':
+                                audio_relpath = os.path.split(filepath)[0]
+                            elif extension == '.dat' and filename == 'SPLINES':
+                                splines = filepath
+                                continue
 
-                        if (mime_type == 'text/plain' or mime_type == 'application/json') and extension == '.measurement':
-                            debug('Found old measurement file {}'.format(filename))
-                            self.importOldMeasurement(real_filepath, filename)
-                        elif mime_type in MIMEs:
-                            # add `good` files
-                            #print(new_filename, mime_type)
-                            if extension in MIMEs[ mime_type ]:
-                                if new_filename not in files:
-                                    files[new_filename] = { key:None for key in fileKeys }
-                                files[new_filename][extension] = filepath
-                            if audio_relpath:    
-                                files[new_filename]['audio_relpath'] = audio_relpath
-                                audio_relpath = None
-                        elif mime_type == 'image/png' and '_dicom_to_png' in path:
-                            # check for preprocessed dicom files
-                            name, frame = filename.split( '_frame_' )
-                            #debug(files)
-                            # if len(files) > 0:
-                            # might be able to combine the following; check
-                            if name not in files:
-                                files[name] = {'processed': None}
-                            if files[name]['processed'] == None:
-                                files[name]['processed'] = {}
-                            files[name]['processed'][str(int(frame))] = filepath
+                            if (mime_type == 'text/plain' or mime_type == 'application/json') and extension == '.measurement':
+                                debug('Found old measurement file {}'.format(filename))
+                                self.importOldMeasurement(real_filepath, filename)
+                            elif mime_type in MIMEs:
+                                # add `good` files
+                                #print(new_filename, mime_type)
+                                if extension in MIMEs[ mime_type ]:
+                                    if new_filename not in files:
+                                        files[new_filename] = { key:None for key in fileKeys }
+                                    files[new_filename][extension] = filepath
+                                if audio_relpath:    
+                                    files[new_filename]['audio_relpath'] = audio_relpath
+                                    audio_relpath = None
+                            elif mime_type == 'image/png' and '_dicom_to_png' in path:
+                                # check for preprocessed dicom files
+                                name, frame = filename.split( '_frame_' )
+                                #debug(files)
+                                # if len(files) > 0:
+                                # might be able to combine the following; check
+                                if name not in files:
+                                    files[name] = {'processed': None}
+                                if files[name]['processed'] == None:
+                                    files[name]['processed'] = {}
+                                files[name]['processed'][str(int(frame))] = filepath
 
             # check that we find at least one file
             if len(files) == 0:
