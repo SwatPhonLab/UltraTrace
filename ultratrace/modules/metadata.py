@@ -1,6 +1,7 @@
 from .base import Module
 from ..util.logging import *
 from .. import util
+from tqdm import tqdm
 
 import json
 import os
@@ -27,7 +28,7 @@ class Metadata(Module):
                 error("No directory chosen - exiting")
                 exit(1)
 
-        debug( '   - parsing directory: `%s`' % path )
+        info( '   - parsing directory: `%s`' % path )
 
         if os.path.exists( path ) == False:
             severe( "   - ERROR: `%s` could not be located" % path )
@@ -40,7 +41,7 @@ class Metadata(Module):
 
         # either load up existing metadata
         if os.path.exists( self.mdfile ):
-            debug( "   - found metadata file: `%s`" % self.mdfile )
+            info( "   - found metadata file: `%s`" % self.mdfile )
             with open( self.mdfile, 'r' ) as f:
                 self.data = json.load( f )
 
@@ -51,7 +52,7 @@ class Metadata(Module):
                 "read the files"
 
             self.path = os.path.abspath(self.path)
-            debug( "   - creating new metadata file: `%s`" % self.mdfile )
+            info( "   - creating new metadata file: `%s`" % self.mdfile )
             self.data = {
                 'firstrun_path': self.path,
                 'defaultTraceName': 'tongue',
@@ -83,7 +84,7 @@ class Metadata(Module):
             # now get the objects in subdirectories
             for path, dirs, fs in os.walk( self.path ):
                 if ".git" not in path:
-                    for f in fs:
+                    for f in tqdm(fs):
                         if ".DS_Store" not in f:
                             # exclude some filetypes explicitly here by MIME type
                             filepath = os.path.join( path, f )
@@ -157,7 +158,7 @@ class Metadata(Module):
             # sort the files so that we can guess about left/right ... extrema get None/null
             # also add in the "traces" bit here
             _prev = None
-            debug(files)
+            #debug(files)
             for key in sorted( files.keys() ):
                 if _prev != None:
                     files[_prev]['_next'] = key

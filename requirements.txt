@@ -16,3 +16,4 @@ ttkthemes==2.4.0
 xparser==0.0.5
 python-magic>=0.4.13
 audioop-lts>=0.2.1
+tqdm>=4.4.0
