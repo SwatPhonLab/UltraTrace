@@ -88,10 +88,11 @@ class Metadata(Module):
                             # exclude some filetypes explicitly here by MIME type
                             filepath = os.path.join( path, f )
                             filename, extension = os.path.splitext( f )
-                            fulDirFile = os.path.split(path)
-                            #debug(fulDirFile)
-                            new_filename = os.path.join(fulDirFile[-1], filename)
-                            #debug(new_filename)
+                            fulDirFile = os.path.relpath(path, self.path)
+                            if fulDirFile[-1] != ".":
+                                new_filename = os.path.join(fulDirFile[-1], filename)
+                            else:
+                                new_filename = filename
     
                             # allow us to follow symlinks
                             real_filepath = os.path.realpath(filepath)
@@ -104,8 +105,12 @@ class Metadata(Module):
                             # name mangling for ULT directories
                             if mime_type == 'text/plain' and ((extension == '.txt' and filename.endswith('US')) or (extension == '.param')):
                                 filename = os.path.splitext(f)[0]
-                                new_filename = os.path.splitext(filepath)[0]
+                                if filename.endswith('US'):
+                                    new_filename = os.path.splitext(filepath)[0][:-2]
+                                else:
+                                    new_filename = os.path.splitext(filepath)[0]
                                 extension = 'US.txt'
+
                             if extension == '.wav' and filename.endswith('_Track0'):
                                 audio_relpath = os.path.split(filepath)[0]
                                 filename = filename[:-7]
