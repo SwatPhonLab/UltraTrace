@@ -226,7 +226,6 @@ class ULTScanLineReader(FrameReader):
 		#print(argb_split[::4])
 		return bytes(argb_split)
 
-
 	def getFrameTimes(self):
 		inc = 1.0 / self.FramesPerSec
 		return [self.TimeInSecsOfFirstFrame + i * inc for i in range(self.FrameCount)]

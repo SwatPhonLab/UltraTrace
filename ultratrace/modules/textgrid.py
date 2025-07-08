@@ -207,7 +207,7 @@ class TextGrid(Module):
         self.genFramesTier()
 
     def genFramesTier(self):
-        debug('generating frames tier for %s' % self.app.Data.getCurrentFilename())
+        info('   - generating frames tier for %s' % self.app.Data.getCurrentFilename())
         self.frameTierName = 'frames'
         times = self.app.Dicom.getFrameTimes()
         self.app.Data.setFileLevel("NumberOfFrames", len(times))

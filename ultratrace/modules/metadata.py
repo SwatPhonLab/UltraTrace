@@ -73,7 +73,8 @@ class Metadata(Module):
                 'application/dicom' :   ['.dicom'],
                 'text/plain'        :   ['.TextGrid', 'US.txt', '.txt', '.dat', '.param'],
                 'application/octet-stream' : ['.ult'],
-                'application/x-dosexec'    : ['.ult']
+                'application/x-dosexec'    : ['.ult'],
+                'application/zlib'         : ['.ult']
             }
             files = {}
 
