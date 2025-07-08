@@ -216,9 +216,16 @@ class ULTScanLineReader(FrameReader):
 		xmax = math.ceil(px[3][0])
 		ymin = math.floor(px[0][1])
 		ymax = math.ceil(px[1][1])
-		ret = Image.frombytes('RGB', canvas.get_width_height(), canvas.tostring_rgb())
+		ret = Image.frombytes('RGB', canvas.get_width_height(), self.argb2rgb(canvas.tostring_argb()))
 		plt.close(fig)
 		return ret.crop((xmin, ymin, xmax, ymax))
+
+	def argb2rgb(self, argb):
+		argb_split = [argb[i] for i in range (0, len(argb))]
+		del argb_split[0::4]  # remove every 4th byte starting with index 0
+		#print(argb_split[::4])
+		return bytes(argb_split)
+
 
 	def getFrameTimes(self):
 		inc = 1.0 / self.FramesPerSec
