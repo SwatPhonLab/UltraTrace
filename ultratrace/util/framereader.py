@@ -35,7 +35,7 @@ class FrameReader(ABC):
 
 class DicomReader(FrameReader):
 	def getFrameTimes(self):
-		dcm = dicom.read_file(self.filename, stop_before_pixels=True)
+		dcm = dicom.dcmread(self.filename, stop_before_pixels=True)
 		try:
 			blob = dcm[0x200d,0x3cf4][0][0x200d,0x3cf1][0]
 			headers = blob[0x200d,0x3cfb].value
@@ -61,7 +61,7 @@ class DicomImgReader(DicomReader):
 
 	def load(self):
 		debug('DicomImgReader: reading dicom')
-		dcm = dicom.read_file(self.filename)
+		dcm = dicom.dcmread(self.filename)
 		debug('DicomImgReader: copying pixels')
 		pixels = dcm.pixel_array
 		del dcm
@@ -93,7 +93,7 @@ class DicomScanLineReader(DicomReader):
 
 	def __init__(self, filename):
 		DicomReader.__init__(self, filename)
-		dcm = dicom.read_file(self.filename, stop_before_pixels=True)
+		dcm = dicom.dcmread(self.filename, stop_before_pixels=True)
 		blob = dcm[0x200d,0x3cf4][0][0x200d,0x3cf1][0]
 		headers = blob[0x200d,0x3cfb].value
 		data = blob[0x200d,0x3cf3].value
@@ -135,7 +135,7 @@ class DicomPNGReader(DicomReader):
 	def load(self):
 		os.mkdir(self.png_dir)
 		info( 'Reading DICOM data ...', end='\r' )
-		dcm = dicom.read_file(self.filename)
+		dcm = dicom.dcmread(self.filename)
 		pixels = dcm.pixel_array
 
 		# check encoding, manipulate array if we need to
